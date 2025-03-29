@@ -11,15 +11,26 @@ fn main() {
 
     println!("Listening on {address}");
 
+    // Create a channel for communication between threads
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let receiver = Arc::new(std::sync::Mutex::new(rx));
+
+    // Start the server thread
+    std::thread::spawn(move || {
+        threads::server::server(receiver);
+    });
+
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
                 println!("New connection: {}", stream.peer_addr().unwrap());
                 let stream = Arc::new(stream);
+                let sender_clone = tx.clone();
                 
                 // Handle the connection in a separate thread
                 std::thread::spawn(move || {
-                    client(stream);
+                    client(stream, sender_clone);
                 });
             }
             Err(e) => {
