@@ -31,74 +31,48 @@ impl Client {
                 }
                 1 => {
                     // Match the type of the packet to the enum Type
-                    let packet = match packet_type[0] {
+                    let packet: Option<Type> = match packet_type[0] {
                         1 => {
-                            Type::Message(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         2 => {
-                            Type::ChangeRoom(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         3 => {
-                            Type::Fight(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         4 => {
-                            Type::PVPFight(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         5 => {
-                            Type::Loot(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         6 => {
-                            Type::Start(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         7 => {
-                            Type::Error(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         8 => {
-                            Type::Accept(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         9 => {
-                            Type::Room(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         10 => {
-                            Type::Character(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         11 => {
-                            Type::Game(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None // The client should never send a GAME packet, we are the only ones to send it
                         },
                         12 => {
-                            Type::Leave(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         13 => {
-                            Type::Connection(
-                                Default::default(), //TODO: implement deserialization
-                            )
+                            None
                         },
                         14 => {
-                            let mut buffer = vec!(0; 4);
+                            let mut buffer = vec!(0; 4); // Version is 4 bytes (Plus the extensions)
 
                             let packet = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer).unwrap();
 
@@ -113,7 +87,7 @@ impl Client {
                             };
 
                             // Send the packet to the sender
-                            object
+                            Some(object)
                         },
                         _ => {
                             // Invalid packet type
@@ -124,15 +98,23 @@ impl Client {
                         }
                     };
 
-                    // Send the packet to the sender
-                    self.sender.send(packet.clone()).map_err(|e| {
-                        std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            format!("Failed to send packet: {}", e),
-                        )
-                    })?;
-
-                    return Ok(packet);
+                    // Send the packet to the server thread
+                    match packet {
+                        Some(pkt) => {
+                            self.sender.send(pkt).map_err(|e| {
+                                std::io::Error::new(
+                                    std::io::ErrorKind::BrokenPipe,
+                                    format!("Failed to send packet: {}", e),
+                                )
+                            })?;
+                        },
+                        None => {
+                            return Err(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "You tried to send the server a bad packet... naughty!",
+                            ));
+                        }
+                    }
                 }
                 _ => { 
                     // Invalid packet size (This should not happen)
@@ -157,7 +139,16 @@ pub fn client(stream: Arc<TcpStream>, sender: Sender<Type>) {
             }
             Err(e) => {
                 eprintln!("[CLIENT] Error reading from stream: {}", e);
-                break;
+
+                if e.kind() == std::io::ErrorKind::BrokenPipe {
+                    eprintln!("[CLIENT] Broken pipe detected. Terminating thread.");
+                    break;
+                }
+
+                if e.kind() == std::io::ErrorKind::UnexpectedEof {
+                    eprintln!("[CLIENT] User closed the connection. Terminating thread.");
+                    break;
+                }
             }
         }
     }

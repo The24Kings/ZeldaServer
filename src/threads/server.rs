@@ -52,8 +52,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>) {
                     Type::Version(content) => {
                         println!("[SERVER] {:?}", content);
                     },
-                    // Handle other packet types as needed
-                    _ => {}
+                    _ => {
+                    }
                 }
             }
             Err(e) => {
