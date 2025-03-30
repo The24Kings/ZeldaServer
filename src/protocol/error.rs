@@ -1,16 +1,15 @@
-use std::fmt::{self,Display, Formatter};
-
 #[derive(Default, Debug, Clone)]
 pub enum ErrorCode {
-    #[default]  Other,          // 0
-                BadRoom,        // 1
-                PlayerExists,   // 2
-                BadMonster,     // 3
-                StatError,      // 4
-                NotReady,       // 5
-                NoTarget,       // 6
-                NoFight,        // 7
-                NoPlayerCombat, // 8
+    #[default]
+    Other,          // 0
+    BadRoom,        // 1
+    PlayerExists,   // 2
+    BadMonster,     // 3
+    StatError,      // 4
+    NotReady,       // 5
+    NoTarget,       // 6
+    NoFight,        // 7
+    NoPlayerCombat, // 8
 }
 
 impl Into<u8> for ErrorCode {
@@ -19,8 +18,8 @@ impl Into<u8> for ErrorCode {
     }
 }
 
-impl Display for ErrorCode {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl std::fmt::Display for ErrorCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ErrorCode::Other => write!(f, "Other"),
             ErrorCode::BadRoom => write!(f, "BadRoom"),

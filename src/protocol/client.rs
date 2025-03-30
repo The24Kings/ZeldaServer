@@ -3,7 +3,8 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-use crate::protocol::{Packet, Parser, Type};
+use super::packet::{Parser, Packet};
+use super::Type;
 
 pub struct Client {
     pub stream: Arc<TcpStream>,
