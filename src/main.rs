@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::threads::client::client;
+use crate::threads::processor::processor;
 
 pub mod protocol;
 pub mod threads;
@@ -30,7 +30,7 @@ fn main() {
                 
                 // Handle the connection in a separate thread
                 std::thread::spawn(move || {
-                    client(stream, sender_clone);
+                    processor(stream, sender_clone);
                 });
             }
             Err(e) => {

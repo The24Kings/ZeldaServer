@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 pub mod packet;
 pub mod error;
+pub mod client;
 
 #[derive(Debug, Clone)]
 #[repr(u8)]

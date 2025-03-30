@@ -5,9 +5,9 @@ use std::sync::mpsc::Sender;
 
 use crate::protocol::{Packet, Parser, Type};
 
-struct Client {
-    stream: Arc<TcpStream>,
-    sender: Sender<Type>,
+pub struct Client {
+    pub stream: Arc<TcpStream>,
+    pub sender: Sender<Type>,
 }
 
 impl Client {
@@ -122,32 +122,6 @@ impl Client {
                         std::io::ErrorKind::InvalidData,
                         "Invalid packet size... How did you get here?",
                     ));
-                }
-            }
-        }
-    }
-}
-
-pub fn client(stream: Arc<TcpStream>, sender: Sender<Type>) {
-    let client = Client::new(stream.clone(), sender);
-
-    loop {
-        match client.read() {
-            Ok(data) => {
-                // Process the data
-                println!("[CLIENT] Received data: {:?}", data);
-            }
-            Err(e) => {
-                eprintln!("[CLIENT] Error reading from stream: {}", e);
-
-                if e.kind() == std::io::ErrorKind::BrokenPipe {
-                    eprintln!("[CLIENT] Broken pipe detected. Terminating thread.");
-                    break;
-                }
-
-                if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                    eprintln!("[CLIENT] User closed the connection. Terminating thread.");
-                    break;
                 }
             }
         }
