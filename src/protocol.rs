@@ -60,6 +60,32 @@ impl<'a> Packet<'a> {
 
         Ok(packet)
     }
+
+    pub fn read_with_desc<'b>(stream: Arc<TcpStream>, id: u8, buffer: &'b mut Vec<u8>, index: (u8, u8)) -> Result<Packet<'b>, std::io::Error> {
+        let _partial_bytes_read = stream.as_ref().read( buffer).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                format!("Failed to read packet body: {}", e),
+            )
+        })?;
+
+        // Get the description
+        let length = u16::from_le_bytes([index.0, index.1]);
+        let mut desc = vec![0u8; length as usize];
+        stream.as_ref().read_exact(&mut desc).map_err(|e| {
+            std::io::Error::new(
+            std::io::ErrorKind::UnexpectedEof,
+            format!("Failed to read descriptor: {}", e),
+            )
+        })?;
+
+        // Combine into the packet
+        buffer.extend_from_slice(&desc);
+
+        let packet = Packet::new(stream, id, buffer);
+
+        Ok(packet)
+    }
 }
 
 /**
