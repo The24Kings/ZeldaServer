@@ -27,7 +27,7 @@ fn main() {
                 println!("New connection: {}", stream.peer_addr().unwrap());
                 let stream = Arc::new(stream);
                 let sender_clone = tx.clone();
-                
+
                 // Handle the connection in a separate thread
                 std::thread::spawn(move || {
                     processor(stream, sender_clone);
