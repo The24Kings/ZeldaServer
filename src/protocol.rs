@@ -96,10 +96,10 @@ impl<'a> Packet<'a> {
  * Display: Display the packet in a human readable format
  */
 pub trait Parser<'a>: Sized + 'a + Default {
-    fn serialize<W: Write>(&self, writer: W) -> Result<(), SerializeError> {
+    fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializeError> {
         Ok(())
     }
-    fn deserialize(packet: Packet) -> Result<Self, DeserializeError> {
+    fn deserialize(_packet: Packet) -> Result<Self, DeserializeError> {
         Ok(Self::default())
     }
 }

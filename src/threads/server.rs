@@ -51,8 +51,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>) {
                     },
                     Type::Version(content) => {
                         println!("[SERVER] {:?}", content);
-                    },
-                    _ => {
                     }
                 }
             }
