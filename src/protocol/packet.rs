@@ -11,20 +11,7 @@ use crate::protocol::{
 
 use super::error::ErrorCode;
 
-/** 
- * `author`: The client that sent the message
- * `message_type`: 1 byte - 0
- * `message_len`: 2 bytes - 1-2
- * `recipient`: 32 bytes - 3-34
- * `sender`: 32 bytes - 35-66
- * `message`: variable length - 67+
- 
- Sent by the client to message other players. Can also be used by the server to send "presentable" information to the client 
- (information that can be displayed to the user with no further processing). Clients should expect to receive this type of message 
- at any time, and servers should expect to relay messages for clients at any time. If using this to send game information, 
- the server should mark the message as narration.
-*/
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Message {
     pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
@@ -32,19 +19,6 @@ pub struct Message {
     pub recipient: String,
     pub sender: String,
     pub message: String
-}
-
-impl Default for Message {
-    fn default() -> Self {
-        Message {
-            author: None, // Replace with a valid default TcpStream if needed
-            message_type: 1,
-            message_len: 0,
-            recipient: String::new(),
-            sender: String::new(),
-            message: String::new(),
-        }
-    }
 }
 
 impl<'a> Parser<'a> for Message {
@@ -71,88 +45,40 @@ impl std::fmt::Display for Message {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct ChangeRoom {
     pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
     pub room_num: u16
 }
 
-impl Default for ChangeRoom {
-    fn default() -> Self {
-        ChangeRoom {
-            author: None, 
-            message_type: 2, 
-            room_num: 0, 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Fight {
     pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
 }
 
-impl Default for Fight {
-    fn default() -> Self {
-        Fight {
-            author: None, 
-            message_type: 3, 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct PVPFight {
     pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
     pub target_name: String,
 }
 
-impl Default for PVPFight {
-    fn default() -> Self {
-        PVPFight {
-            author: None, 
-            message_type: 4, 
-            target_name: String::new(), 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Loot {
     pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
     pub target_name: String,
 }
 
-impl Default for Loot {
-    fn default() -> Self {
-        Loot {
-            author: None, 
-            message_type: 5, 
-            target_name: String::new(), 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Start {
     pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
 }
 
-impl Default for Start {
-    fn default() -> Self {
-        Start {
-            author: None, 
-            message_type: 6, 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Error {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
@@ -161,36 +87,14 @@ pub struct Error {
     pub message: Vec<u8>
 }
 
-impl Default for Error {
-    fn default() -> Self {
-        Error {
-            author: None, 
-            message_type: 7, 
-            error: ErrorCode::Other, 
-            message_len: 30, 
-            message: "Something went terribly wrong!".as_bytes().to_vec()
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Accept {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub accept_type: u8,
 }
 
-impl Default for Accept {
-    fn default() -> Self {
-        Accept {
-            author: None, 
-            message_type: 8, 
-            accept_type: 0, 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Room {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
@@ -200,20 +104,7 @@ pub struct Room {
     pub description: Vec<u8>,
 }
 
-impl Default for Room {
-    fn default() -> Self {
-        Room {
-            author: None, 
-            message_type: 9, 
-            room_number: Vec::new(), 
-            room_name: Vec::new(), 
-            description_len: 0, 
-            description: Vec::new(), 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Character {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
@@ -229,26 +120,7 @@ pub struct Character {
     pub description: Vec<u8>,
 }
 
-impl Default for Character {
-    fn default() -> Self {
-        Character {
-            author: None, 
-            message_type: 10, 
-            name: String::new(), 
-            flags: 0x0, 
-            attack: 0, 
-            defense: 0, 
-            regen: 0, 
-            health: 0, 
-            gold: 0, 
-            current_room: 0, 
-            description_len: 0, 
-            description: Vec::new(), 
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Game {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
@@ -256,19 +128,6 @@ pub struct Game {
     pub stat_limit: u16,
     pub description_len: u16,
     pub description: String,
-}
-
-impl Default for Game {
-    fn default() -> Self {
-        Game {
-            author: None, 
-            message_type: 11, 
-            initial_points: 0,
-            stat_limit: 0,
-            description_len: 0,
-            description: String::new(),
-        }
-    }
 }
 
 impl<'a> Parser<'a> for Game {
@@ -298,22 +157,13 @@ impl std::fmt::Display for Game {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Leave {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
 }
 
-impl Default for Leave {
-    fn default() -> Self {
-        Leave {
-            author: None,
-            message_type: 12
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Connection {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
@@ -323,20 +173,7 @@ pub struct Connection {
     pub description: Vec<u8>,
 }
 
-impl Default for Connection {
-    fn default() -> Self {
-        Connection {
-            author: None,
-            message_type: 0,
-            room_number: 0,
-            room_name: Vec::new(),
-            description_len: 0,
-            description: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Version {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
@@ -344,19 +181,6 @@ pub struct Version {
     pub minor_rev: u8,
     pub extension_len: u16, // Can be 0, just ignore
     pub extensions: Vec<u8>, // 0-1 length, 2-+ first extention;
-}
-
-impl Default for Version {
-    fn default() -> Self {
-        Version {
-            author: None,
-            message_type: 14,
-            major_rev: 0,
-            minor_rev: 0,
-            extension_len: 0,
-            extensions: Vec::new(), // 0-1 length, 2-+ first extention;
-        }
-    }
 }
 
 impl<'a> Parser<'a> for Version {
