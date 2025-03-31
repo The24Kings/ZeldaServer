@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::net::TcpListener;
 
-use crate::threads::processor::processor;
+use crate::threads::{processor::connection, server::server};
 
 pub mod protocol;
 pub mod threads;
@@ -47,7 +47,7 @@ fn main() {
 
     // Start the server thread
     std::thread::spawn(move || {
-        threads::server::server(receiver);
+        server(receiver);
     });
 
     for stream in listener.incoming() {
@@ -59,7 +59,7 @@ fn main() {
 
                 // Handle the connection in a separate thread
                 std::thread::spawn(move || {
-                    processor(stream, sender);
+                    connection(stream, sender);
                 });
             }
             Err(e) => {

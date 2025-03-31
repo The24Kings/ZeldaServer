@@ -5,7 +5,7 @@ use std::sync::mpsc::Sender;
 use crate::protocol::Type;
 use crate::protocol::client::Client;
 
-pub fn processor(stream: Arc<TcpStream>, sender: Sender<Type>) {
+pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
     let client = Client::new(stream.clone(), sender);
 
     loop {
