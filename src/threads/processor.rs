@@ -2,12 +2,40 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-use crate::protocol::Type;
 use crate::protocol::client::Client;
+use crate::protocol::packet::game::Game;
+use crate::protocol::packet::version::Version;
+use crate::protocol::{Type, send};
 
 pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
     let client = Client::new(stream.clone(), sender);
 
+    // Send the initial game info to the client
+    send(Type::Version(Version {
+        author: Some(stream.clone()),
+        message_type: 14,
+        major_rev: 2,
+        minor_rev: 3,
+        extension_len: 0,
+        extensions: None,
+    }))
+    .unwrap_or_else(|e| {
+        eprintln!("[ERROR] Failed to send version packet: {}", e);
+    });
+
+    send(Type::Game(Game {
+        author: Some(stream.clone()),
+        message_type: 11,
+        initial_points: 100,
+        stat_limit: 65225,
+        description_len: 11,
+        description: "Hello world".to_string(),
+    }))
+    .unwrap_or_else(|e| {
+        eprintln!("[ERROR] Failed to send game packet: {}", e);
+    });
+
+    // Main loop to read packets from the client
     loop {
         match client.read() {
             Ok(data) => {
