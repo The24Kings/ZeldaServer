@@ -54,19 +54,29 @@ impl<'a> Packet<'a> {
             )
         })?;
 
+        println!(
+            "[Packet] Read packet body: {}",
+            buffer
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+
         // Create a new packet with the read bytes
         let packet = Packet::new(stream, id, buffer);
 
         Ok(packet)
     }
 
-    /// Read the packet with a description.
-    /// This function reads the packet body and then reads the description
-    pub fn read_with_desc<'b>(
+    /// Read the packet with a varied length.
+    /// This function reads the packet body and then reads the extended description or data
+    /// based on the provided index.
+    pub fn read_extended<'b>(
         stream: Arc<TcpStream>,
         id: u8,
         buffer: &'b mut Vec<u8>,
-        index: (u8, u8),
+        index: (usize, usize),
     ) -> Result<Packet<'b>, std::io::Error> {
         stream.as_ref().read(buffer).map_err(|e| {
             std::io::Error::new(
@@ -75,10 +85,25 @@ impl<'a> Packet<'a> {
             )
         })?;
 
-        // Get the description
-        let length = u16::from_le_bytes([index.0, index.1]);
-        let mut desc = vec![0u8; length as usize];
+        println!(
+            "[Packet] Read packet body: {}",
+            buffer
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
 
+        // Get the description length from the buffer
+        let length = usize::from_le_bytes([buffer[index.0], buffer[index.1], 0, 0, 0, 0, 0, 0]);
+        let mut desc = vec![0u8; length];
+
+        println!(
+            "[Packet] Reading description of length {} at index {}, {}",
+            length, index.0, index.1
+        );
+
+        // Read the description from the stream
         stream.as_ref().read_exact(&mut desc).map_err(|e| {
             std::io::Error::new(
                 std::io::ErrorKind::UnexpectedEof,
@@ -86,7 +111,12 @@ impl<'a> Packet<'a> {
             )
         })?;
 
-        // Combine into the packet
+        println!(
+            "[Packet] Read description: {}",
+            String::from_utf8_lossy(&desc)
+        );
+
+        // Extend the buffer with the description
         buffer.extend_from_slice(&desc);
 
         let packet = Packet::new(stream, id, buffer);
