@@ -21,6 +21,8 @@ impl Client {
 
         let bytes_read = self.stream.as_ref().read(&mut packet_type)?;
 
+        println!("[Client] Read packet type: {}", packet_type[0]);
+
         if bytes_read != 1 {
             // Connection closed
             return Err(std::io::Error::new(
@@ -31,49 +33,65 @@ impl Client {
 
         // Match the type of the packet to the enum Type
         let packet: Option<Type> = match packet_type[0] {
-            1 => {
+            1 => { // MESSAGE
                 None
             },
-            2 => {
+            2 => { // CHANGEROOM
                 None
             },
-            3 => {
+            3 => { // FIGHT
                 None
             },
-            4 => {
+            4 => { // PVPFIGHT
                 None
             },
-            5 => {
+            5 => { // LOOT
                 None
             },
-            6 => {
+            6 => { // START
                 None
             },
-            7 => {
+            7 => { // ERROR
                 None
             },
-            8 => {
+            8 => { // ACCEPT
                 None
             },
-            9 => {
+            9 => { // ROOM
                 None
             },
-            10 => {
+            10 => { // CHARACTER
                 None
             },
-            11 => {
-                None // The client should never send a GAME packet, we are the only ones to send it
-            },
-            12 => {
-                None
-            },
-            13 => {
-                None
-            },
-            14 => {
-                let mut buffer = vec!(0; 4); // Version is 4 bytes (Plus the extensions)
+            11 => { // GAME
+                let mut buffer = vec!(0; 6); 
 
-                let packet = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer).unwrap();
+                let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (4, 5))?;
+
+                let object = match Parser::deserialize(packet) {
+                    Ok(deserialized) => Type::Game(deserialized),
+                    Err(e) => {
+                        return Err(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            format!("Failed to deserialize packet: {}", e),
+                        ));
+                    }
+                };
+
+                // Send the packet to the sender
+                Some(object) //TODO: This is for testing purposes, remove it later
+                //None
+            },
+            12 => { // LEAVE
+                None
+            },
+            13 => { // CONNECTION
+                None
+            },
+            14 => { // VERSION
+                let mut buffer = vec!(0; 4);
+
+                let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (2, 3))?;
 
                 let object = match Parser::deserialize(packet) {
                     Ok(deserialized) => Type::Version(deserialized),
@@ -86,7 +104,8 @@ impl Client {
                 };
 
                 // Send the packet to the sender
-                Some(object)
+                Some(object) //TODO: This is for testing purposes, remove it later
+                //None
             },
             _ => {
                 // Invalid packet type
