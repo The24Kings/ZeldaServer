@@ -40,59 +40,59 @@ pub fn send(packed: Type) -> Result<(), std::io::Error> {
 
     // Serialize the packet and send it to the server
     match packed {
-        Type::Message( content ) => {
+        Type::Message(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?;
-        },
-        Type::ChangeRoom( content ) => {
+        }
+        Type::ChangeRoom(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Fight( content ) => {
+        }
+        Type::Fight(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::PVPFight( content ) => {
+        }
+        Type::PVPFight(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Loot( content ) => {
+        }
+        Type::Loot(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Start( content ) => {
+        }
+        Type::Start(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Error( content ) => {
+        }
+        Type::Error(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Accept( content ) => {
+        }
+        Type::Accept(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Room( content ) => {
+        }
+        Type::Room(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Character( content ) => {
+        }
+        Type::Character(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Game( content ) => {
+        }
+        Type::Game(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Leave( content ) => {
+        }
+        Type::Leave(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Connection( content ) => {
+        }
+        Type::Connection(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
-        },
-        Type::Version( content ) => {
+        }
+        Type::Version(content) => {
             author = content.author.clone();
             content.serialize(&mut byte_stream)?
         }
