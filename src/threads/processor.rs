@@ -15,8 +15,6 @@ pub fn processor(stream: Arc<TcpStream>, sender: Sender<Type>) {
                 println!("[PROCESS] Received data: {:?}", data);
             }
             Err(e) => {
-                eprintln!("[PROCESS] Error reading from stream: {}", e);
-
                 match e.kind() {
                     std::io::ErrorKind::ConnectionReset => {
                         eprintln!("[PROCESS] Connection reset by peer. Terminating thread.");
@@ -39,7 +37,7 @@ pub fn processor(stream: Arc<TcpStream>, sender: Sender<Type>) {
                         break;
                     }
                     _ => {
-                        eprintln!("[PROCESS] Non-terminal error: {}. Continuing.", e);
+                        eprintln!("[PROCESS] Non-terminal error: '{}'. Continuing.", e);
                         // Continue processing other packets
                         continue;
                     }
