@@ -30,22 +30,16 @@ impl<'a> Parser<'a> for Message {
         // If the last 2 bytes of the sender is 0x00 0x01, it means the sender is a narrator
         let narration = match s_bytes.get(32..34) {
             Some(&[0x00, 0x01]) => {
-                s_bytes.truncate(32);
+                s_bytes.truncate(32); // Remove the last 2 bytes
                 true
             }
             _ => false,
         };
 
-        // Remove null bytes from the byte arrays
-        r_bytes.retain(|&x| x != 0);
-        s_bytes.retain(|&x| x != 0);
-
-        let sender = String::from_utf8_lossy(&s_bytes).to_string();
-        let recipient = String::from_utf8_lossy(&r_bytes).to_string();
-
+        let sender = String::from_utf8_lossy(&s_bytes).trim_end_matches('\0').to_string();
+        let recipient = String::from_utf8_lossy(&r_bytes).trim_end_matches('\0').to_string();
         let message = String::from_utf8_lossy(&packet.body[66..]).to_string();
 
-        // Implement deserialization logic here
         Ok(Message {
             author: packet.author,
             message_type: packet.message_type,
