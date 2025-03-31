@@ -137,3 +137,18 @@ pub trait Parser<'a>: Sized + 'a + Default {
         Ok(Self::default())
     }
 }
+
+impl<'a> std::fmt::Display for Packet<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+            "Packet {{ author: {:?}, message_type: {}, body: {:?} }}",
+            self.author,
+            self.message_type,
+            self.body
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        )
+    }
+}
