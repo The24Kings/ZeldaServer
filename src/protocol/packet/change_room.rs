@@ -22,3 +22,13 @@ impl<'a> Parser<'a> for ChangeRoom {
         Ok(Self::default())
     }
 }
+
+impl std::fmt::Display for ChangeRoom {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ChangeRoom {{ author: {:?}, message_type: {}, room_num: {} }}",
+            self.author, self.message_type, self.room_num
+        )
+    }
+}

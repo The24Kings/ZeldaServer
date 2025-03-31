@@ -11,7 +11,7 @@ pub struct Error {
     pub message_type: u8,
     pub error: ErrorCode,
     pub message_len: u16,
-    pub message: Vec<u8>,
+    pub message: String,
 }
 
 impl<'a> Parser<'a> for Error {
@@ -23,5 +23,14 @@ impl<'a> Parser<'a> for Error {
     fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {
         // Implement deserialization logic here
         Ok(Self::default())
+    }
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, 
+            "Error {{ author: {:?}, message_type: {}, error: {}, message_len: {}, message: {} }}",
+            self.author, self.message_type, self.error, self.message_len, self.message
+        )
     }
 }

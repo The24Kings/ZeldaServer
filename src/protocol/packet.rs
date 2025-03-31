@@ -53,7 +53,7 @@ impl<'a> Packet<'a> {
         })?;
 
         println!(
-            "[Packet] Read packet body: {}",
+            "[PACKET] Read packet body: {}",
             buffer
                 .iter()
                 .map(|b| format!("{:02x}", b))
@@ -84,7 +84,7 @@ impl<'a> Packet<'a> {
         })?;
 
         println!(
-            "[Packet] Read packet body: {}",
+            "[PACKET] Read packet body: {}",
             buffer
                 .iter()
                 .map(|b| format!("{:02x}", b))
@@ -97,7 +97,7 @@ impl<'a> Packet<'a> {
         let mut desc = vec![0u8; length];
 
         println!(
-            "[Packet] Reading description of length {} at index {}, {}",
+            "[PACKET] Reading description of length {} at index {}, {}",
             length, index.0, index.1
         );
 
@@ -110,7 +110,7 @@ impl<'a> Packet<'a> {
         })?;
 
         println!(
-            "[Packet] Read description: {}",
+            "[PACKET] Read description: {}",
             String::from_utf8_lossy(&desc)
         );
 
@@ -141,7 +141,7 @@ pub trait Parser<'a>: Sized + 'a + Default {
 impl<'a> std::fmt::Display for Packet<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,
-            "Packet {{ author: {:?}, message_type: {}, body: {:?} }}",
+            "Packet {{ author: {:?}, message_type: {}, body: {} }}",
             self.author,
             self.message_type,
             self.body

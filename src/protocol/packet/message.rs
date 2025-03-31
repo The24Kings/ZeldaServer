@@ -21,6 +21,8 @@ impl<'a> Parser<'a> for Message {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
+        println!("[MESSAGE] Deserializing packet: {}", packet);
+        
         let message_len = u16::from_le_bytes([packet.body[0], packet.body[1]]);
 
         // Process the names for recipient and sender
@@ -55,7 +57,7 @@ impl<'a> Parser<'a> for Message {
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,
-            "Message {{ author: {:?}, message_type: {}, message_len: {:?}, recipient: {:?}, sender: {:?}, message: {:?} }}",
+            "Message {{ author: {:?}, message_type: {}, message_len: {}, recipient: {}, sender: {}, message: {} }}",
             self.author,
             self.message_type,
             self.message_len,

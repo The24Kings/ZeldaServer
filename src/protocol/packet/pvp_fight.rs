@@ -21,3 +21,9 @@ impl<'a> Parser<'a> for PVPFight {
         Ok(PVPFight::default())
     }
 }
+
+impl std::fmt::Display for PVPFight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PVPFight {{ message_type: {}, target_name: {} }}", self.message_type, self.target_name)
+    }
+}

@@ -40,7 +40,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
         match client.read() {
             Ok(data) => {
                 // Process the data
-                println!("[PROCESS] Received data: {:?}", data);
+                println!("[PROCESS] Received data: {}", data);
             }
             Err(e) => {
                 match e.kind() {

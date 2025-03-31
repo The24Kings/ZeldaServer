@@ -41,6 +41,8 @@ impl<'a> Parser<'a> for Version {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
+        println!("[VERSION] Deserializing packet: {}", packet);
+        
         Ok(Version {
             author: packet.author,
             message_type: packet.message_type,

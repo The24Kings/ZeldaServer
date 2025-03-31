@@ -32,6 +32,27 @@ pub enum Type {
     Version(Version),
 }
 
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::Message(msg) => write!(f, "{}", msg),
+            Type::ChangeRoom(room) => write!(f, "{}", room),
+            Type::Fight(fight) => write!(f, "{}", fight),
+            Type::PVPFight(pvp_fight) => write!(f, "{}", pvp_fight),
+            Type::Loot(loot) => write!(f, "{}", loot),
+            Type::Start(start) => write!(f, "{}", start),
+            Type::Error(error) => write!(f, "{}", error),
+            Type::Accept(accept) => write!(f, "{}", accept),
+            Type::Room(room) => write!(f, "{}", room),
+            Type::Character(character) => write!(f, "{}", character),
+            Type::Game(game) => write!(f, "{}", game),
+            Type::Leave(leave) => write!(f, "{}", leave),
+            Type::Connection(connection) => write!(f, "{}", connection),
+            Type::Version(version) => write!(f, "{}", version),
+        }
+    }
+}
+
 pub fn send(packed: Type) -> Result<(), std::io::Error> {
     let author: Option<Arc<TcpStream>>;
     let mut byte_stream: Vec<u8> = Vec::new();

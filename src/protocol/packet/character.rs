@@ -17,7 +17,7 @@ pub struct Character {
     pub gold: u16,
     pub current_room: u16,
     pub description_len: u16,
-    pub description: Vec<u8>,
+    pub description: String,
 }
 
 impl<'a> Parser<'a> for Character {
@@ -29,5 +29,26 @@ impl<'a> Parser<'a> for Character {
     fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {
         // Implement deserialization logic here
         Ok(Self::default())
+    }
+}
+
+impl std::fmt::Display for Character {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Character {{ author: {:?}, message_type: {}, name: {}, flags: {}, attack: {}, defense: {}, regen: {}, health: {}, gold: {}, current_room: {}, description_len: {}, description: {} }}",
+            self.author,
+            self.message_type,
+            self.name,
+            format!("{:08b}", self.flags),
+            self.attack,
+            self.defense,
+            self.regen,
+            self.health,
+            self.gold,
+            self.current_room,
+            self.description_len,
+            self.description
+        )
     }
 }

@@ -39,6 +39,8 @@ impl<'a> Parser<'a> for Game {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
+        println!("[GAME] Deserializing packet: {}", packet);
+        
         let initial_points = u16::from_le_bytes([packet.body[0], packet.body[1]]);
         let stat_limit = u16::from_le_bytes([packet.body[2], packet.body[3]]);
         let description_len = u16::from_le_bytes([packet.body[4], packet.body[5]]);
