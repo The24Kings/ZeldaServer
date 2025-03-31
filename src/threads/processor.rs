@@ -17,14 +17,32 @@ pub fn processor(stream: Arc<TcpStream>, sender: Sender<Type>) {
             Err(e) => {
                 eprintln!("[CLIENT] Error reading from stream: {}", e);
 
-                if e.kind() == std::io::ErrorKind::BrokenPipe {
-                    eprintln!("[CLIENT] Broken pipe detected. Terminating thread.");
-                    break;
-                }
-
-                if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                    eprintln!("[CLIENT] User closed the connection. Terminating thread.");
-                    break;
+                match e.kind() {
+                    std::io::ErrorKind::ConnectionReset => {
+                        eprintln!("[CLIENT] Connection reset by peer. Terminating thread.");
+                        break;
+                    }
+                    std::io::ErrorKind::ConnectionAborted => {
+                        eprintln!("[CLIENT] Connection aborted. Terminating thread.");
+                        break;
+                    }
+                    std::io::ErrorKind::NotConnected => {
+                        eprintln!("[CLIENT] Not connected. Terminating thread.");
+                        break;
+                    }
+                    std::io::ErrorKind::BrokenPipe => {
+                        eprintln!("[CLIENT] Broken pipe. Terminating thread.");
+                        break;
+                    }
+                    std::io::ErrorKind::UnexpectedEof => {
+                        eprintln!("[CLIENT] Unexpected EOF. Terminating thread.");
+                        break;
+                    }
+                    _ => {
+                        eprintln!("[CLIENT] Non-terminal error: {}. Continuing.", e);
+                        // Continue processing other packets
+                        continue;
+                    }
                 }
             }
         }
