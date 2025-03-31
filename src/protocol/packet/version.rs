@@ -10,7 +10,7 @@ pub struct Version {
     pub major_rev: u8,
     pub minor_rev: u8,
     pub extension_len: u16,
-    pub extensions: Option<Vec<u8>>,    // 0-1 length, 2+ extention;
+    pub extensions: Option<Vec<u8>>, // 0-1 length, 2+ extention;
 }
 
 impl<'a> Parser<'a> for Version {
@@ -18,7 +18,6 @@ impl<'a> Parser<'a> for Version {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        // Write the message type
         packet.push(self.message_type);
         packet.extend(self.major_rev.to_le_bytes());
         packet.extend(self.minor_rev.to_le_bytes());
@@ -29,16 +28,14 @@ impl<'a> Parser<'a> for Version {
         }
 
         // Write the packet to the buffer
-        writer
-            .write_all(&packet)
-            .map_err(|_| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Failed to write packet to buffer",
-                )
-            })?;
+        writer.write_all(&packet).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to write packet to buffer",
+            )
+        })?;
 
-        println!("[Version] Serialized packet: {:?}", packet);
+        println!("[VERSION] Serialized packet: {:?}", packet);
 
         Ok(())
     }
@@ -57,9 +54,15 @@ impl<'a> Parser<'a> for Version {
 
 impl std::fmt::Display for Version {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,
+        write!(
+            f,
             "Version {{ author: {:?}, message_type: {}, major_rev: {}, minor_rev: {}, extension_len: {}, extensions: {:?} }}",
-            self.author, self.message_type, self.major_rev, self.minor_rev, self.extension_len, self.extensions
+            self.author,
+            self.message_type,
+            self.major_rev,
+            self.minor_rev,
+            self.extension_len,
+            self.extensions
         )
     }
 }
