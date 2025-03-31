@@ -12,34 +12,34 @@ pub fn processor(stream: Arc<TcpStream>, sender: Sender<Type>) {
         match client.read() {
             Ok(data) => {
                 // Process the data
-                println!("[CLIENT] Received data: {:?}", data);
+                println!("[PROCESS] Received data: {:?}", data);
             }
             Err(e) => {
-                eprintln!("[CLIENT] Error reading from stream: {}", e);
+                eprintln!("[PROCESS] Error reading from stream: {}", e);
 
                 match e.kind() {
                     std::io::ErrorKind::ConnectionReset => {
-                        eprintln!("[CLIENT] Connection reset by peer. Terminating thread.");
+                        eprintln!("[PROCESS] Connection reset by peer. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::ConnectionAborted => {
-                        eprintln!("[CLIENT] Connection aborted. Terminating thread.");
+                        eprintln!("[PROCESS] Connection aborted. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::NotConnected => {
-                        eprintln!("[CLIENT] Not connected. Terminating thread.");
+                        eprintln!("[PROCESS] Not connected. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::BrokenPipe => {
-                        eprintln!("[CLIENT] Broken pipe. Terminating thread.");
+                        eprintln!("[PROCESS] Broken pipe. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::UnexpectedEof => {
-                        eprintln!("[CLIENT] Unexpected EOF. Terminating thread.");
+                        eprintln!("[PROCESS] Unexpected EOF. Terminating thread.");
                         break;
                     }
                     _ => {
-                        eprintln!("[CLIENT] Non-terminal error: {}. Continuing.", e);
+                        eprintln!("[PROCESS] Non-terminal error: {}. Continuing.", e);
                         // Continue processing other packets
                         continue;
                     }
