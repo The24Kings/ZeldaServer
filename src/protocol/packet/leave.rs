@@ -3,7 +3,6 @@ use std::net::TcpStream;
 use std::sync::Arc;
 
 use crate::protocol::packet::{Packet, Parser};
-use crate::protocol::parsing_error::{DeserializeError, SerializeError};
 
 #[derive(Default, Debug, Clone)]
 pub struct Leave {
@@ -12,12 +11,12 @@ pub struct Leave {
 }
 
 impl<'a> Parser<'a> for Leave {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializeError> {
+    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
         // Implement serialization logic here
         Ok(())
     }
 
-    fn deserialize(_packet: Packet) -> Result<Self, DeserializeError> {
+    fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {
         // Implement deserialization logic here
         Ok(Self::default())
     }

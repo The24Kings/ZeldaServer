@@ -7,7 +7,6 @@ use crate::protocol::packet::{
 pub mod client;
 pub mod error;
 pub mod packet;
-pub mod parsing_error;
 
 #[derive(Debug, Clone)]
 pub enum Type {

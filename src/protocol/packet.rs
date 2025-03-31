@@ -2,8 +2,6 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
 
-use crate::protocol::parsing_error::{DeserializeError, SerializeError};
-
 pub mod accept;
 pub mod change_room;
 pub mod character;
@@ -132,10 +130,10 @@ impl<'a> Packet<'a> {
  * Display: Display the packet in a human readable format
  */
 pub trait Parser<'a>: Sized + 'a + Default {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializeError> {
+    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
         Ok(())
     }
-    fn deserialize(_packet: Packet) -> Result<Self, DeserializeError> {
+    fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {
         Ok(Self::default())
     }
 }

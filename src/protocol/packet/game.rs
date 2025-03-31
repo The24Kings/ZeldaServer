@@ -3,7 +3,6 @@ use std::net::TcpStream;
 use std::sync::Arc;
 
 use crate::protocol::packet::{Packet, Parser};
-use crate::protocol::parsing_error::{DeserializeError, SerializeError};
 
 #[derive(Default, Debug, Clone)]
 pub struct Game {
@@ -16,11 +15,11 @@ pub struct Game {
 }
 
 impl<'a> Parser<'a> for Game {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializeError> {
+    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
         Ok(())
     }
 
-    fn deserialize(packet: Packet) -> Result<Self, DeserializeError> {
+    fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         let initial_points = u16::from_le_bytes([packet.body[0], packet.body[1]]);
         let stat_limit = u16::from_le_bytes([packet.body[2], packet.body[3]]);
         let description_len = u16::from_le_bytes([packet.body[4], packet.body[5]]);
@@ -32,7 +31,12 @@ impl<'a> Parser<'a> for Game {
             stat_limit,
             description_len,
             description: String::from_utf8(packet.body[6..(6 + description_len as usize)].to_vec())
-                .unwrap_or_default(),
+                .map_err(|e| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        format!("Failed to parse description: {}", e),
+                    )
+                })?
         })
     }
 }
