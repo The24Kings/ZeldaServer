@@ -14,7 +14,7 @@ impl Default for Leave {
     fn default() -> Self {
         Leave {
             author: None,
-            message_type: 12
+            message_type: 12,
         }
     }
 }
@@ -33,6 +33,12 @@ impl<'a> Parser<'a> for Leave {
 
 impl std::fmt::Display for Leave {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Leave {{ message_type: {} }}", self.message_type)
+        write!(
+            f,
+            "\n  Leave {{ 
+             \n    message_type: {}
+             \n  }}",
+            self.message_type
+        )
     }
 }

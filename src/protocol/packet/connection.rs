@@ -30,7 +30,14 @@ impl std::fmt::Display for Connection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Connection {{ author: {:?}, message_type: {}, room_number: {}, room_name: {}, description_len: {}, description: {} }}",
+            "\n  Connection {{
+             \n    author: {:?},
+             \n    message_type: {},
+             \n    room_number: {},
+             \n    room_name: {},
+             \n    description_len: {},
+             \n    description: {}
+             \n  }}",
             self.author,
             self.message_type,
             self.room_number,

@@ -27,7 +27,11 @@ impl std::fmt::Display for Accept {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Accept {{ author: {:?}, message_type: {}, accept_type: {} }}",
+            "\n  Accept {{ 
+             \n    author: {:?},
+             \n    message_type: {},
+             \n    accept_type: {}
+             \n  }}",
             self.author, self.message_type, self.accept_type
         )
     }

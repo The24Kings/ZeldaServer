@@ -22,7 +22,7 @@ impl<'a> Parser<'a> for Message {
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         println!("[MESSAGE] Deserializing packet: {}", packet);
-        
+
         let message_len = u16::from_le_bytes([packet.body[0], packet.body[1]]);
 
         // Process the names for recipient and sender
@@ -38,8 +38,12 @@ impl<'a> Parser<'a> for Message {
             _ => false,
         };
 
-        let sender = String::from_utf8_lossy(&s_bytes).trim_end_matches('\0').to_string();
-        let recipient = String::from_utf8_lossy(&r_bytes).trim_end_matches('\0').to_string();
+        let sender = String::from_utf8_lossy(&s_bytes)
+            .trim_end_matches('\0')
+            .to_string();
+        let recipient = String::from_utf8_lossy(&r_bytes)
+            .trim_end_matches('\0')
+            .to_string();
         let message = String::from_utf8_lossy(&packet.body[66..]).to_string();
 
         Ok(Message {
@@ -56,8 +60,16 @@ impl<'a> Parser<'a> for Message {
 
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,
-            "Message {{ author: {:?}, message_type: {}, message_len: {}, recipient: {}, sender: {}, message: {} }}",
+        write!(
+            f,
+            "\n  Message {{
+             \n    author: {:?},
+             \n    message_type: {},
+             \n    message_len: {},
+             \n    recipient: {},
+             \n    sender: {},
+             \n    message: {}
+             \n  }}",
             self.author,
             self.message_type,
             self.message_len,

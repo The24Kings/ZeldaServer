@@ -35,7 +35,8 @@ impl<'a> Parser<'a> for Version {
             )
         })?;
 
-        println!("[VERSION] Serialized packet: {}",
+        println!(
+            "[VERSION] Serialized packet: {}",
             packet
                 .iter()
                 .map(|b| format!("0x{:02x}", b))
@@ -64,7 +65,14 @@ impl std::fmt::Display for Version {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Version {{ author: {:?}, message_type: {}, major_rev: {}, minor_rev: {}, extension_len: {}, extensions: {:?} }}",
+            "\n  Version {{
+             \n    author: {:?},
+             \n    message_type: {},
+             \n    major_rev: {},
+             \n    minor_rev: {},
+             \n    extension_len: {},
+             \n    extensions: {:?}
+             \n  }}",
             self.author,
             self.message_type,
             self.major_rev,
