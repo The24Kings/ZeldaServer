@@ -21,7 +21,14 @@ impl Client {
 
         let bytes_read = self.stream.as_ref().read(&mut packet_type)?;
 
-        println!("[CLIENT] Read packet type: {}", packet_type[0]);
+        println!(
+            "[CLIENT] Read packet type: {}", 
+            packet_type
+                .iter()
+                .map(|b| format!("0x{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
 
         if bytes_read != 1 {
             // Connection closed

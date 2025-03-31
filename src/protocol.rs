@@ -57,7 +57,7 @@ pub fn send(packed: Type) -> Result<(), std::io::Error> {
     let author: Option<Arc<TcpStream>>;
     let mut byte_stream: Vec<u8> = Vec::new();
 
-    println!("[SEND] Sending packet: {:?}", packed);
+    println!("[SEND] Sending packet: {}", packed);
 
     // Serialize the packet and send it to the server
     match packed {

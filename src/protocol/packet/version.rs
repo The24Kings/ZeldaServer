@@ -35,14 +35,20 @@ impl<'a> Parser<'a> for Version {
             )
         })?;
 
-        println!("[VERSION] Serialized packet: {:?}", packet);
+        println!("[VERSION] Serialized packet: {}",
+            packet
+                .iter()
+                .map(|b| format!("0x{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
 
         Ok(())
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         println!("[VERSION] Deserializing packet: {}", packet);
-        
+
         Ok(Version {
             author: packet.author,
             message_type: packet.message_type,
