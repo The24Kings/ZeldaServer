@@ -1,4 +1,3 @@
-use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 
@@ -11,12 +10,37 @@ pub struct Version {
     pub message_type: u8,
     pub major_rev: u8,
     pub minor_rev: u8,
-    pub extension_len: u16, // Can be 0, just ignore
-    pub extensions: Vec<u8>, // 0-1 length, 2-+ first extention;
+    pub extension_len: u16,
+    pub extensions: Option<Vec<u8>>,    // 0-1 length, 2+ extention;
 }
 
 impl<'a> Parser<'a> for Version {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), SerializeError> {
+    fn serialize<W: std::io::Write>(&self, mut writer: W) -> Result<(), SerializeError> {
+        // Package into a byte array
+        let mut packet: Vec<u8> = Vec::new();
+
+        // Write the message type
+        packet.push(self.message_type);
+        packet.extend(self.major_rev.to_le_bytes());
+        packet.extend(self.minor_rev.to_le_bytes());
+        packet.extend(self.extension_len.to_le_bytes());
+
+        if let Some(extensions) = &self.extensions {
+            packet.extend(extensions);
+        }
+
+        // Write the packet to the buffer
+        writer
+            .write_all(&packet)
+            .map_err(|e| {
+                SerializeError::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to write packet: {}", e),
+                )
+            })?;
+
+        println!("[Version] Serialized packet: {:?}", packet);
+
         Ok(())
     }
 
@@ -26,8 +50,8 @@ impl<'a> Parser<'a> for Version {
             message_type: packet.message_type,
             major_rev: packet.body[0],
             minor_rev: packet.body[1],
-            extension_len: 0,       //TODO: LurkCat doesn't send this, add it in the future
-            extensions: Vec::new(), //TODO: LurkCat doesn't send this, add it in the future
+            extension_len: 0,
+            extensions: None, // Server currently does not use extensions
         })
     }
 }
