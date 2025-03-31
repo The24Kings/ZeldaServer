@@ -11,6 +11,7 @@ pub struct Message {
     pub message_len: u16,
     pub recipient: String,
     pub sender: String,
+    pub narration: bool,
     pub message: String,
 }
 
@@ -20,14 +21,39 @@ impl<'a> Parser<'a> for Message {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
+        let message_len = u16::from_le_bytes([packet.body[0], packet.body[1]]);
+
+        // Process the names for recipient and sender
+        let mut r_bytes = packet.body[2..34].to_vec();
+        let mut s_bytes = packet.body[34..66].to_vec();
+
+        // If the last 2 bytes of the sender is 0x00 0x01, it means the sender is a narrator
+        let narration = match s_bytes.get(32..34) {
+            Some(&[0x00, 0x01]) => {
+                s_bytes.truncate(32);
+                true
+            }
+            _ => false,
+        };
+
+        // Remove null bytes from the byte arrays
+        r_bytes.retain(|&x| x != 0);
+        s_bytes.retain(|&x| x != 0);
+
+        let sender = String::from_utf8_lossy(&s_bytes).to_string();
+        let recipient = String::from_utf8_lossy(&r_bytes).to_string();
+
+        let message = String::from_utf8_lossy(&packet.body[66..]).to_string();
+
         // Implement deserialization logic here
         Ok(Message {
             author: packet.author,
             message_type: packet.message_type,
-            message_len: 0,
-            recipient: String::new(),
-            sender: String::new(),
-            message: String::new(),
+            message_len,
+            recipient,
+            sender,
+            narration,
+            message,
         })
     }
 }

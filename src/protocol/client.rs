@@ -34,7 +34,22 @@ impl Client {
         // Match the type of the packet to the enum Type
         let packet: Option<Type> = match packet_type[0] {
             1 => { // MESSAGE
-                None
+                let mut buffer = vec!(0; 66);
+
+                let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (0, 1))?;
+
+                let object = match Parser::deserialize(packet) {
+                    Ok(deserialized) => Type::Message(deserialized),
+                    Err(e) => {
+                        return Err(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            format!("Failed to deserialize packet: {}", e),
+                        ));
+                    }
+                };
+
+                // Send the packet to the sender
+                Some(object)
             },
             2 => { // CHANGEROOM
                 None
