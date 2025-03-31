@@ -4,10 +4,19 @@ use std::sync::Arc;
 
 use crate::protocol::packet::{Packet, Parser};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Leave {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
+}
+
+impl Default for Leave {
+    fn default() -> Self {
+        Leave {
+            author: None,
+            message_type: 12
+        }
+    }
 }
 
 impl<'a> Parser<'a> for Leave {

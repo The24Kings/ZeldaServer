@@ -3,8 +3,8 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-use super::packet::{Parser, Packet};
 use super::Type;
+use super::packet::{Parser, Packet, leave::Leave};
 
 pub struct Client {
     pub stream: Arc<TcpStream>,
@@ -21,6 +21,14 @@ impl Client {
 
         let bytes_read = self.stream.as_ref().read(&mut packet_type)?;
 
+        if bytes_read != 1 {
+            // Connection closed
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "Connection closed",
+            ));
+        }
+
         println!(
             "[CLIENT] Read packet type: {}", 
             packet_type
@@ -29,14 +37,6 @@ impl Client {
                 .collect::<Vec<String>>()
                 .join(" ")
         );
-
-        if bytes_read != 1 {
-            // Connection closed
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Connection closed",
-            ));
-        }
 
         // Match the type of the packet to the enum Type
         let packet: Option<Type> = match packet_type[0] {
@@ -105,7 +105,12 @@ impl Client {
                 //None
             },
             12 => { // LEAVE
-                None
+                Some(Type::Leave(
+                    Leave {
+                        author: Some(self.stream.clone()),
+                        ..Leave::default()
+                    }
+                ))
             },
             13 => { // CONNECTION
                 None
