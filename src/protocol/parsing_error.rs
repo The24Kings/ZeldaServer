@@ -1,49 +1,43 @@
+use std::io::ErrorKind;
+
 #[derive(Debug, Clone)]
 pub struct SerializeError {
+    error: ErrorKind,
     message: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct DeserializeError {
-    message: String,
+impl SerializeError {
+    pub fn new(error: ErrorKind, message: String) -> Self {
+        SerializeError {
+            error,
+            message
+        }
+    }
 }
 
 impl std::fmt::Display for SerializeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error serializing message: {}", self.message)
+        write!(f, "{}: {}", self.error, self.message)
     }
 }
 
-impl SerializeError {
-    pub fn new() -> Self {
-        SerializeError {
-            message: String::from("Serialization error"),
-        }
-    }
+#[derive(Debug, Clone)]
+pub struct DeserializeError {
+    error: ErrorKind,
+    message: String,
+}
 
-    pub fn with_message(message: &str) -> Self {
-        SerializeError {
-            message: String::from(message),
+impl DeserializeError {
+    pub fn new(error: ErrorKind, message: String) -> Self {
+        DeserializeError {
+            error,
+            message
         }
     }
 }
 
 impl std::fmt::Display for DeserializeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error deserializing message: {}", self.message)
-    }
-}
-
-impl DeserializeError {
-    pub fn new() -> Self {
-        DeserializeError {
-            message: String::from("Deserialization error"),
-        }
-    }
-
-    pub fn with_message(message: &str) -> Self {
-        DeserializeError {
-            message: String::from(message),
-        }
+        write!(f, "{}: {}", self.error, self.message)
     }
 }
