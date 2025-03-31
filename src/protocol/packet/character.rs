@@ -21,7 +21,7 @@ pub struct Character {
 }
 
 impl<'a> Parser<'a> for Character {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
         // Implement serialization logic here
         Ok(())
     }

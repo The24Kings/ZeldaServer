@@ -15,7 +15,7 @@ pub struct Game {
 }
 
 impl<'a> Parser<'a> for Game {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
         Ok(())
     }
 

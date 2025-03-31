@@ -11,7 +11,7 @@ pub struct Fight {
 }
 
 impl<'a> Parser<'a> for Fight {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
         // Implement serialization logic here
         Ok(())
     }

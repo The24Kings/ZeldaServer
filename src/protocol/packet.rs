@@ -130,7 +130,7 @@ impl<'a> Packet<'a> {
  * Display: Display the packet in a human readable format
  */
 pub trait Parser<'a>: Sized + 'a + Default {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
         Ok(())
     }
     fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {

@@ -15,7 +15,7 @@ pub struct Connection {
 }
 
 impl<'a> Parser<'a> for Connection {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
         // Implement serialization logic here
         Ok(())
     }

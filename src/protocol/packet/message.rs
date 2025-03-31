@@ -16,7 +16,7 @@ pub struct Message {
 }
 
 impl<'a> Parser<'a> for Message {
-    fn serialize<W: Write>(&self, _writer: W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
         Ok(())
     }
 
@@ -24,7 +24,7 @@ impl<'a> Parser<'a> for Message {
         let message_len = u16::from_le_bytes([packet.body[0], packet.body[1]]);
 
         // Process the names for recipient and sender
-        let mut r_bytes = packet.body[2..34].to_vec();
+        let r_bytes = packet.body[2..34].to_vec();
         let mut s_bytes = packet.body[34..66].to_vec();
 
         // If the last 2 bytes of the sender is 0x00 0x01, it means the sender is a narrator

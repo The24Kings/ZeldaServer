@@ -14,7 +14,7 @@ pub struct Version {
 }
 
 impl<'a> Parser<'a> for Version {
-    fn serialize<W: std::io::Write>(&self, mut writer: W) -> Result<(), std::io::Error> {
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
