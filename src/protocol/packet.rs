@@ -24,7 +24,7 @@ pub mod version;
  * message_type: Type of the packet
  * body: Body of the packet
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Packet<'a> {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
