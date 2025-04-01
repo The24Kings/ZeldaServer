@@ -73,12 +73,7 @@ impl std::fmt::Display for Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\n  Game {{
-             \n    initial_points: {},
-             \n    stat_limit: {},
-             \n    description_len: {},
-             \n    description: {}
-             \n  }}",
+            "Game {{ initial_points: {}, stat_limit: {}, description_len: {}, description: {} }}",
             self.initial_points, self.stat_limit, self.description_len, self.description
         )
     }

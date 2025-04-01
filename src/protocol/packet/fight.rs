@@ -26,10 +26,7 @@ impl std::fmt::Display for Fight {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\n  Fight {{
-             \n    author: {:?},
-             \n    message_type: {} 
-             \n  }}",
+            "Fight {{ author: {:?}, message_type: {} }}",
             self.author, self.message_type
         )
     }

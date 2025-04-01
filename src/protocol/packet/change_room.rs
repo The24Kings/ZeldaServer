@@ -27,11 +27,7 @@ impl std::fmt::Display for ChangeRoom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\n  ChangeRoom {{
-             \n    author: {:?},
-             \n    message_type: {},
-             \n    room_num: {}
-             \n  }}",
+            "ChangeRoom {{ author: {:?}, message_type: {}, room_num: {} }}",
             self.author, self.message_type, self.room_num
         )
     }

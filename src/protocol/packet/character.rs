@@ -36,24 +36,11 @@ impl std::fmt::Display for Character {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\n  Character {{
-             \n    author: {:?},
-             \n    message_type: {},
-             \n    name: {},
-             \n    flags: {:08b},
-             \n    attack: {},
-             \n    defense: {},
-             \n    regen: {},
-             \n    health: {},
-             \n    gold: {},
-             \n    current_room: {},
-             \n    description_len: {},
-             \n    description: {}
-             \n  }}",
+            "Character {{ author: {:?}, message_type: {}, name: {}, flags: {}, attack: {}, defense: {}, regen: {}, health: {}, gold: {}, current_room: {}, description_len: {}, description: {} }}",
             self.author,
             self.message_type,
             self.name,
-            self.flags,
+            format!("{:08b}", self.flags),
             self.attack,
             self.defense,
             self.regen,

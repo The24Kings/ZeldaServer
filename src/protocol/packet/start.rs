@@ -23,12 +23,6 @@ impl<'a> Parser<'a> for Start {
 
 impl std::fmt::Display for Start {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f, 
-            "\n  Start {{
-            \n    message_type: {}
-            \n  }}", 
-            self.message_type
-        )
+        write!(f, "Start {{ message_type: {} }}", self.message_type)
     }
 }

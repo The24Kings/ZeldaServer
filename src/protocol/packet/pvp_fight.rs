@@ -6,7 +6,7 @@ use crate::protocol::packet::{Packet, Parser};
 
 #[derive(Default, Debug, Clone)]
 pub struct PVPFight {
-    pub author: Option<Arc<TcpStream>>,
+    pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
     pub target_name: String,
 }
@@ -24,13 +24,6 @@ impl<'a> Parser<'a> for PVPFight {
 
 impl std::fmt::Display for PVPFight {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "\n  PVPFight {{
-             \n    message_type: {},
-             \n    target_name: {}
-             \n  }}",
-            self.message_type, self.target_name
-        )
+        write!(f, "PVPFight {{ message_type: {}, target_name: {} }}", self.message_type, self.target_name)
     }
 }

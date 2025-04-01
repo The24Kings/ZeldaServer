@@ -28,15 +28,8 @@ impl<'a> Parser<'a> for Error {
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "\n  Error {{
-             \n    author: {:?},
-             \n    message_type: {},
-             \n    error: {},
-             \n    message_len: {},
-             \n    message: {}
-             \n  }}",
+        write!(f, 
+            "Error {{ author: {:?}, message_type: {}, error: {}, message_len: {}, message: {} }}",
             self.author, self.message_type, self.error, self.message_len, self.message
         )
     }
