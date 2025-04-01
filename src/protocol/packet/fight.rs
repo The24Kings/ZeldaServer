@@ -4,10 +4,19 @@ use std::sync::Arc;
 
 use crate::protocol::packet::{Packet, Parser};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Fight {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
+}
+
+impl Default for Fight {
+    fn default() -> Self {
+        Fight {
+            author: None,
+            message_type: 3
+        }
+    }
 }
 
 impl<'a> Parser<'a> for Fight {

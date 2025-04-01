@@ -46,6 +46,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>) {
                 println!("[SERVER] {:?}", content);
             }
             Type::Game(content) => {
+                // Don't do anything, the server only SENDS this, never receive
                 println!("[SERVER] {:?}", content);
             }
             Type::Leave(content) => {
@@ -55,6 +56,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>) {
                 println!("[SERVER] {:?}", content);
             }
             Type::Version(content) => {
+                // Don't do anything, the server only SENDS this, never receive
                 println!("[SERVER] {:?}", content);
             }
         }

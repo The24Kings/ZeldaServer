@@ -56,7 +56,7 @@ impl<'a> Packet<'a> {
             "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .map(|b| format!("{:02x}", b))
+                .map(|b| format!("0x{:02x}", b))
                 .collect::<Vec<String>>()
                 .join(" ")
         );
@@ -87,7 +87,7 @@ impl<'a> Packet<'a> {
             "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .map(|b| format!("{:02x}", b))
+                .map(|b| format!("0x{:02x}", b))
                 .collect::<Vec<String>>()
                 .join(" ")
         );
