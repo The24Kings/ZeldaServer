@@ -40,32 +40,32 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
         match client.read() {
             Ok(data) => {
                 // Process the data
-                println!("[PROCESS] Received data: {}", data);
+                println!("[CONNECTION] Received data: {}", data);
             }
             Err(e) => {
                 match e.kind() {
                     std::io::ErrorKind::ConnectionReset => {
-                        eprintln!("[PROCESS] Connection reset by peer. Terminating thread.");
+                        eprintln!("[CONNECTION] Connection reset by peer. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::ConnectionAborted => {
-                        eprintln!("[PROCESS] Connection aborted. Terminating thread.");
+                        eprintln!("[CONNECTION] Connection aborted. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::NotConnected => {
-                        eprintln!("[PROCESS] Not connected. Terminating thread.");
+                        eprintln!("[CONNECTION] Not connected. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::BrokenPipe => {
-                        eprintln!("[PROCESS] Broken pipe. Terminating thread.");
+                        eprintln!("[CONNECTION] Broken pipe. Terminating thread.");
                         break;
                     }
                     std::io::ErrorKind::UnexpectedEof => {
-                        eprintln!("[PROCESS] Unexpected EOF. Terminating thread.");
+                        eprintln!("[CONNECTION] Unexpected EOF. Terminating thread.");
                         break;
                     }
                     _ => {
-                        eprintln!("[PROCESS] Non-terminal error: '{}'. Continuing.", e);
+                        eprintln!("[CONNECTION] Non-terminal error: '{}'. Continuing.", e);
                         // Continue processing other packets
                         continue;
                     }
