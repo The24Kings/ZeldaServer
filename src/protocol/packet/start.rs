@@ -20,9 +20,3 @@ impl<'a> Parser<'a> for Start {
         Ok(Start::default())
     }
 }
-
-impl std::fmt::Display for Start {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Start {{ message_type: {} }}", self.message_type)
-    }
-}

@@ -24,17 +24,3 @@ impl<'a> Parser<'a> for Room {
         Ok(Room::default())
     }
 }
-
-impl std::fmt::Display for Room {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,
-            "Room {{ author: {:?}, message_type: {}, room_number: {}, room_name: {}, description_len: {}, description: {} }}",
-            self.author,
-            self.message_type,
-            self.room_number,
-            self.room_name,
-            self.description_len,
-            self.description
-        )
-    }
-}

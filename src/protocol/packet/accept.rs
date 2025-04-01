@@ -22,13 +22,3 @@ impl<'a> Parser<'a> for Accept {
         Ok(Self::default())
     }
 }
-
-impl std::fmt::Display for Accept {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Accept {{ author: {:?}, message_type: {}, accept_type: {} }}",
-            self.author, self.message_type, self.accept_type
-        )
-    }
-}

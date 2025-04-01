@@ -30,9 +30,3 @@ impl<'a> Parser<'a> for Leave {
         Ok(Self::default())
     }
 }
-
-impl std::fmt::Display for Leave {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Leave {{ message_type: {} }}", self.message_type)
-    }
-}

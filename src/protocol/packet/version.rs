@@ -59,18 +59,3 @@ impl<'a> Parser<'a> for Version {
         })
     }
 }
-
-impl std::fmt::Display for Version {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Version {{ author: {:?}, message_type: {}, major_rev: {}, minor_rev: {}, extension_len: {}, extensions: {:?} }}",
-            self.author,
-            self.message_type,
-            self.major_rev,
-            self.minor_rev,
-            self.extension_len,
-            self.extensions
-        )
-    }
-}

@@ -22,9 +22,3 @@ impl<'a> Parser<'a> for Loot {
         Ok(Self::default())
     }
 }
-
-impl std::fmt::Display for Loot {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Loot {{ message_type: {}, target_name: {} }}", self.message_type, self.target_name)
-    }
-}

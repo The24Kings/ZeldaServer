@@ -31,24 +31,3 @@ impl<'a> Parser<'a> for Character {
         Ok(Self::default())
     }
 }
-
-impl std::fmt::Display for Character {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Character {{ author: {:?}, message_type: {}, name: {}, flags: {}, attack: {}, defense: {}, regen: {}, health: {}, gold: {}, current_room: {}, description_len: {}, description: {} }}",
-            self.author,
-            self.message_type,
-            self.name,
-            format!("{:08b}", self.flags),
-            self.attack,
-            self.defense,
-            self.regen,
-            self.health,
-            self.gold,
-            self.current_room,
-            self.description_len,
-            self.description
-        )
-    }
-}

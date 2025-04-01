@@ -68,13 +68,3 @@ impl<'a> Parser<'a> for Game {
         })
     }
 }
-
-impl std::fmt::Display for Game {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Game {{ initial_points: {}, stat_limit: {}, description_len: {}, description: {} }}",
-            self.initial_points, self.stat_limit, self.description_len, self.description
-        )
-    }
-}

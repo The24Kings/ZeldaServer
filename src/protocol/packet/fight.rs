@@ -21,13 +21,3 @@ impl<'a> Parser<'a> for Fight {
         Ok(Self::default())
     }
 }
-
-impl std::fmt::Display for Fight {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Fight {{ author: {:?}, message_type: {} }}",
-            self.author, self.message_type
-        )
-    }
-}
