@@ -18,6 +18,23 @@ impl Into<u8> for ErrorCode {
     }
 }
 
+impl From<u8> for ErrorCode {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => ErrorCode::Other,
+            1 => ErrorCode::BadRoom,
+            2 => ErrorCode::PlayerExists,
+            3 => ErrorCode::BadMonster,
+            4 => ErrorCode::StatError,
+            5 => ErrorCode::NotReady,
+            6 => ErrorCode::NoTarget,
+            7 => ErrorCode::NoFight,
+            8 => ErrorCode::NoPlayerCombat,
+            _ => ErrorCode::Other, // Default case
+        }
+    }
+}
+
 impl std::fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
