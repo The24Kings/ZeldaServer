@@ -29,7 +29,7 @@ pub struct CharacterFlags {
 }
 
 impl<'a> Parser<'a> for Character {
-    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
@@ -63,7 +63,7 @@ impl<'a> Parser<'a> for Character {
         packet.extend(self.description.as_bytes());
 
         // Write the packet to the buffer
-        _writer.write_all(&packet).map_err(|_| {
+        writer.write_all(&packet).map_err(|_| {
             std::io::Error::new(
                 std::io::ErrorKind::Other,
                 "Failed to write packet to buffer",
