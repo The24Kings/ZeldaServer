@@ -20,13 +20,36 @@ impl Default for Fight {
 }
 
 impl<'a> Parser<'a> for Fight {
-    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
-        // Implement serialization logic here
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+        // Package into a byte array
+        let mut packet: Vec<u8> = Vec::new();
+
+        packet.push(self.message_type);
+        
+        // Send the packet to the author
+        writer.write_all(&packet).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to write packet to buffer",
+            )
+        })?;
+
+        println!("[FIGHT] Serialized packet: {}",
+            packet
+                .iter()
+                .map(|b| format!("0x{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+
         Ok(())
     }
 
-    fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {
+    fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         // Implement deserialization logic here
-        Ok(Self::default())
+        Ok(Fight {
+            author: packet.author,
+            message_type: packet.message_type,
+        })
     }
 }
