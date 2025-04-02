@@ -16,7 +16,48 @@ pub struct Message {
 }
 
 impl<'a> Parser<'a> for Message {
-    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+        // Package into a byte array
+        let mut packet: Vec<u8> = Vec::new();
+
+        packet.push(self.message_type);
+        packet.extend(self.message_len.to_le_bytes());
+
+        let mut r_bytes = self.recipient.as_bytes().to_vec();
+        let mut s_bytes = self.sender.as_bytes().to_vec();
+
+        // Pad the recipient and sender names to 32 bytes
+        r_bytes.resize(32, 0x00);
+        s_bytes.resize(30, 0x00);
+
+        // If the sender is a narrator, append 0x00 0x01 to the end of the sender name
+        if self.narration {
+            s_bytes.extend_from_slice(&[0x00, 0x01]);
+        } else {
+            s_bytes.resize(32, 0x00);
+        }
+        packet.extend(r_bytes);
+        packet.extend(s_bytes);
+
+        // Append the message
+        packet.extend(self.message.as_bytes());
+
+        // Write the packet to the buffer
+        writer.write_all(&packet).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to write packet to buffer",
+            )
+        })?;
+
+        println!("[MESSAGE] Serialized packet: {}",
+            packet
+                .iter()
+                .map(|b| format!("0x{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+
         Ok(())
     }
 

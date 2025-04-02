@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
 use crate::protocol::client::Client;
+use crate::protocol::packet::message::Message;
 use crate::protocol::packet::{game::Game, version::Version};
 use crate::protocol::{Type, send};
 
@@ -34,6 +35,20 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send game packet: {}", e);
         return; // This is a critical error, so we return
+    });
+
+    // Send test message
+    send(Type::Message(Message{
+        author: Some(stream.clone()),
+        message_type: 1,
+        message_len: 11,
+        recipient: "Riley".to_string(),
+        sender: "Narrator".to_string(),
+        narration: true,
+        message: "Hello world".to_string(),
+    }))
+    .unwrap_or_else(|e| {
+        eprintln!("[CONNECTION] Failed to send message packet: {}", e);
     });
 
     // Main loop to read packets from the client
