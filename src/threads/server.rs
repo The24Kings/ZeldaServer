@@ -16,48 +16,48 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>) {
         // Match the type of the packet to the enum Type
         match packet {
             Type::Message(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::ChangeRoom(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Fight(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::PVPFight(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Loot(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Start(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Error(content) => {
-                eprintln!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Accept(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Room(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Character(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Game(content) => {
                 // Don't do anything, the server only SENDS this, never receive
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Leave(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Connection(content) => {
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
             Type::Version(content) => {
                 // Don't do anything, the server only SENDS this, never receive
-                println!("[SERVER] {:?}", content);
+                println!("[SERVER] \n{:#?}", content);
             }
         }
     }
