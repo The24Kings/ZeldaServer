@@ -33,8 +33,7 @@ impl<'a> Parser<'a> for Game {
             )
         })?;
 
-        println!(
-            "[GAME] Serialized packet: {}",
+        println!("[GAME] Serialized packet: {}",
             packet
                 .iter()
                 .map(|b| format!("0x{:02x}", b))
