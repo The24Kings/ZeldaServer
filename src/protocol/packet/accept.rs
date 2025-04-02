@@ -13,12 +13,38 @@ pub struct Accept {
 
 impl<'a> Parser<'a> for Accept {
     fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
-        // Implement serialization logic here
+        // Package into a byte array
+        let mut packet: Vec<u8> = Vec::new();
+
+        packet.push(self.message_type);
+        packet.extend(self.accept_type.to_le_bytes());
+
+        // Write the packet to the buffer
+        _writer.write_all(&packet).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to write packet to buffer",
+            )
+        })?;
+
+        println!("[ACCEPT] Serialized packet: {}",
+            packet
+                .iter()
+                .map(|b| format!("0x{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+
         Ok(())
     }
 
-    fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {
-        // Implement deserialization logic here
-        Ok(Self::default())
+    fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
+        println!("[ACCEPT] Deserializing packet: {}", packet);
+
+        Ok(Accept {
+            author: packet.author,
+            message_type: packet.message_type,
+            accept_type: packet.body[0],
+        })
     }
 }
