@@ -46,7 +46,6 @@ impl<'a> Parser<'a> for Fight {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        // Implement deserialization logic here
         Ok(Fight {
             author: packet.author,
             message_type: packet.message_type,
