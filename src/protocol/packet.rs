@@ -109,9 +109,12 @@ impl<'a> Packet<'a> {
             )
         })?;
 
+        // Print the description
+        let desc_str = String::from_utf8_lossy(&desc);
+
         println!(
             "[PACKET] Read description: {}",
-            String::from_utf8_lossy(&desc)
+            String::from(if desc.is_empty() { "No description provided" } else { &desc_str })
         );
 
         // Extend the buffer with the description
@@ -140,7 +143,8 @@ pub trait Parser<'a>: Sized + 'a + Default {
 
 impl<'a> std::fmt::Display for Packet<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,
+        write!(
+            f,
             "Packet {{ author: {:?}, message_type: {}, body: {} }}",
             self.author,
             self.message_type,

@@ -45,9 +45,9 @@ impl<'a> Parser<'a> for Error {
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         let message_type = packet.message_type;
-        let error = ErrorCode::from(packet.body[1]);
-        let message_len = u16::from_le_bytes([packet.body[2], packet.body[3]]);
-        let message = String::from_utf8_lossy(&packet.body[4..])
+        let error = ErrorCode::from(packet.body[0]);
+        let message_len = u16::from_le_bytes([packet.body[1], packet.body[2]]);
+        let message = String::from_utf8_lossy(&packet.body[3..])
             .trim_end_matches('\0')
             .to_string();
         

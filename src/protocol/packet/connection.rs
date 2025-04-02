@@ -50,12 +50,12 @@ impl<'a> Parser<'a> for Connection {
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         let message_type = packet.message_type;
-        let room_number = u16::from_le_bytes([packet.body[1], packet.body[2]]);
-        let room_name = String::from_utf8_lossy(&packet.body[3..35])
+        let room_number = u16::from_le_bytes([packet.body[0], packet.body[1]]);
+        let room_name = String::from_utf8_lossy(&packet.body[2..34])
             .trim_end_matches('\0')
             .to_string();
-        let description_len = u16::from_le_bytes([packet.body[35], packet.body[36]]);
-        let description = String::from_utf8_lossy(&packet.body[37..]).to_string();
+        let description_len = u16::from_le_bytes([packet.body[34], packet.body[35]]);
+        let description = String::from_utf8_lossy(&packet.body[36..]).to_string();
 
         Ok(Connection {
             author: packet.author,
