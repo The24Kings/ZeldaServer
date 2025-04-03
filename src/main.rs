@@ -1,5 +1,8 @@
+use std::fs::File;
 use std::sync::{Arc, Mutex, mpsc};
 use std::net::TcpListener;
+
+use protocol::map::Map;
 
 use crate::threads::{processor::connection, server::server};
 
@@ -8,7 +11,7 @@ pub mod threads;
 
 fn main() {
     let address = "0.0.0.0:5051";
-    let listener = TcpListener::bind(address).expect("Failed to bind to address");
+    let listener = TcpListener::bind(address).expect("[MAIN] Failed to bind to address");
 
     println!("Listening on {address}");
 
@@ -17,43 +20,28 @@ fn main() {
 
     let receiver = Arc::new(Mutex::new(rx));
 
-    /*
-        Build the game map from a JSON file
-        the map should compile into a struct:
+    // Build the game map
+    let file = File::open("src/game_map.json").expect("[MAIN] Failed to open map file!");
+    let map = Map::build(file);
 
-        Map {
-            tiles: Vec<Tile>,
-            players: Vec<Player>,
-            monsters: Vec<Monster>,
-            desc: String
+    // Start the server thread with the map
+    match map {
+        Ok(map) => {
+            println!("[MAIN] Parsed map successfully");
+            std::thread::spawn(move || {
+                server(receiver, &map);
+            });
         }
-        Tile {
-            id: u8,                         // Unique ID
-            title: String,                  // Title of the tile (also needs to be unique)
-            exits: Vec<Exit>,               // Possible exits (Points to other tiles)
-            players: Vec<Player_index>,     // All players currently on the tile (index to the player list in the map)
-            monsters: Vec<Monster_index>,   // All monsters currently on the tile (index to the monster list in the map)
-            desc: String
-        }    
-        Exit {
-            id: u8,         // Same as the Tile id we are going to
-            title: String,  // Title of the tile we are going to
-            desc: String    // May be an abbreviated description of the Tile we are going to
+        Err(e) => {
+            eprintln!("[MAIN] Error parsing map: {}", e);
         }
+    }
 
-        This struct is mutable and should be passed to the server thread
-        The server thread should be able to modify the map according to packets sent by the client
-     */
-
-    // Start the server thread
-    std::thread::spawn(move || {
-        server(receiver);
-    });
-
+    // Listen for incoming connections
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                println!("New connection: {:?}", stream.peer_addr());
+                println!("[MAIN] New connection: {:?}", stream.peer_addr());
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
 
@@ -63,7 +51,7 @@ fn main() {
                 });
             }
             Err(e) => {
-                eprintln!("Error accepting connection: {}", e);
+                eprintln!("[MAIN] Error accepting connection: {}", e);
             }
         }
     }

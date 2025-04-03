@@ -13,6 +13,7 @@ use crate::protocol::packet::{
 pub mod client;
 pub mod error;
 pub mod packet;
+pub mod map;
 
 #[derive(Debug, Clone)]
 pub enum Type {

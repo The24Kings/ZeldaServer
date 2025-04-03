@@ -1,0 +1,54 @@
+{
+    "tiles": [
+        {
+            "id": 0,
+            "title": "Test Room 1",
+            "connections": [1, 2, 3],
+            "desc": "Testing map parsing 1",
+            "monsters": [0, 1],
+            "players": []
+        },
+        {
+            "id": 1,
+            "title": "Test Room 2",
+            "connections": [0, 2],
+            "desc": "Testing map parsing 2",
+            "monsters": [],
+            "players": []
+        },
+        {
+            "id": 2,
+            "title": "Test Room 3",
+            "connections": [0, 1],
+            "desc": "Testing map parsing 3",
+            "monsters": [1],
+            "players": []
+        },
+        {
+            "id": 3,
+            "title": "Test Room 4",
+            "connections": [0],
+            "desc": "Testing map parsing 4",
+            "monsters": [0],
+            "players": []
+        }
+    ],
+    "monsters": [
+        {
+            "id": 0,
+            "name": "Goblin",
+            "health": 10,
+            "attack": 2,
+            "defense": 1,
+            "desc": "A small green creature."
+        },
+        {
+            "id": 1,
+            "name": "Orc",
+            "health": 20,
+            "attack": 4,
+            "defense": 2,
+            "desc": "A large brutish creature."
+        }
+    ]
+}
