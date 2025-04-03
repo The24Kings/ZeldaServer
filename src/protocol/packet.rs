@@ -156,3 +156,20 @@ impl<'a> std::fmt::Display for Packet<'a> {
         )
     }
 }
+
+/// Debug function to print the packet in a human readable format
+/// This function prints the first 64 bytes of the packet
+#[macro_export]
+macro_rules! debug_packet {
+    ($packet:expr) => {
+        {
+            print!("[DEBUG] Serialized packet: ");
+
+            for i in 0..64.min($packet.len()) {
+                print!("0x{:02x} ", $packet[i]);
+            }
+
+            println!("... {} bytes", $packet.len());
+        }
+    };
+}
