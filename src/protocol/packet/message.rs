@@ -2,7 +2,7 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 
-use crate::protocol::packet::{Packet, Parser};
+use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Message {
@@ -50,13 +50,7 @@ impl<'a> Parser<'a> for Message {
             )
         })?;
 
-        println!("[MESSAGE] Serialized packet: {}",
-            packet
-                .iter()
-                .map(|b| format!("0x{:02x}", b))
-                .collect::<Vec<String>>()
-                .join(" ")
-        );
+        debug_packet!(&packet);
 
         Ok(())
     }

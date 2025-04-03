@@ -2,7 +2,7 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 
-use crate::protocol::packet::{Packet, Parser};
+use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Room {
@@ -37,13 +37,7 @@ impl<'a> Parser<'a> for Room {
             )
         })?;
 
-        println!("[ROOM] Serialized packet: {}",
-            packet
-                .iter()
-                .map(|b| format!("0x{:02x}", b))
-                .collect::<Vec<String>>()
-                .join(" ")
-        );
+        debug_packet!(&packet);
         
         Ok(())
     }
