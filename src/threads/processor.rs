@@ -9,6 +9,8 @@ use crate::protocol::{Type, send};
 pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
     let client = Client::new(stream.clone(), sender);
 
+    let description = std::fs::read_to_string("src/desc.txt").expect("[CONNECTION] Failed to read description file!");
+
     // Send the initial game info to the client
     send(Type::Version(Version {
         author: Some(stream.clone()),
@@ -28,8 +30,8 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
         message_type: 11,
         initial_points: 100,
         stat_limit: 65225,
-        description_len: 11,
-        description: "Hello world".to_string(),
+        description_len: description.len() as u16,
+        description
     }))
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send game packet: {}", e);

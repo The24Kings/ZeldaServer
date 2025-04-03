@@ -95,7 +95,7 @@ impl Map {
 
     pub fn build(data: File) -> Result<Self, serde_json::Error> {
         println!("[MAP] Building game map...");
-        
+
         match serde_json::from_reader::<File, Value>(data) {
             Ok(json) => {
                 let mut map = Map::new();
@@ -130,6 +130,8 @@ impl Map {
                         println!("[MAP] {:#?}", room);
                     }
                 }
+
+                //TODO: Compile all the monsters into the map's monster vector
 
                 return Ok(map);
             }

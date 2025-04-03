@@ -21,13 +21,14 @@ fn main() {
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let file = File::open("src/game_map.json").expect("[MAIN] Failed to open map file!");
+    let file = File::open("src/game.json").expect("[MAIN] Failed to open map file!");
     let map = Map::build(file);
 
     // Start the server thread with the map
     match map {
         Ok(map) => {
             println!("[MAIN] Parsed map successfully");
+            
             std::thread::spawn(move || {
                 server(receiver, &map);
             });
