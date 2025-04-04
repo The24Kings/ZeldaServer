@@ -124,56 +124,26 @@ impl Client {
             7 => { // ERROR
                 let mut buffer = vec!(0; 3);
 
-                let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (1, 2))?;
+                let _ = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (1, 2))?;
 
-                let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Error(deserialized),
-                    Err(e) => {
-                        return Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            format!("Failed to deserialize packet: {}", e),
-                        ));
-                    }
-                };
-
-                // Send the packet to the sender
-                Some(object)
+                // Ignore this packet, the clients shouldn't be sending us this
+                None
             },
             8 => { // ACCEPT
                 let mut buffer = vec!(0; 1);
 
-                let packet = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer)?;
+                let _ = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer)?;
 
-                let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Accept(deserialized),
-                    Err(e) => {
-                        return Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            format!("Failed to deserialize packet: {}", e),
-                        ));
-                    }
-                };
-
-                // Send the packet to the sender
-                Some(object)
+                // Ignore this packet, the clients shouldn't be sending us this
+                None
             },
             9 => { // ROOM
                 let mut buffer = vec!(0; 36);
 
-                let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (34, 35))?;
+                let _ = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (34, 35))?; // Consueme all data in stream
 
-                let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Room(deserialized),
-                    Err(e) => {
-                        return Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            format!("Failed to deserialize packet: {}", e),
-                        ));
-                    }
-                };
-
-                // Send the packet to the sender
-                Some(object)
+                // Ignore this packet, the clients shouldn't be sending us this
+                None
             },
             10 => { // CHARACTER
                 let mut buffer = vec!(0; 47);
@@ -212,20 +182,10 @@ impl Client {
             13 => { // CONNECTION
                 let mut buffer = vec!(0; 36);
 
-                let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (34, 35))?;
+                let _ = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (34, 35))?; // Consueme all data in stream
 
-                let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Connection(deserialized),
-                    Err(e) => {
-                        return Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            format!("Failed to deserialize packet: {}", e),
-                        ));
-                    }
-                };
-
-                // Send the packet to the sender
-                Some(object)
+                // Ignore this packet, the clients shouldn't be sending us this
+                None
             },
             14 => { // VERSION
                 let mut buffer = vec!(0; 4);
@@ -238,7 +198,7 @@ impl Client {
             _ => {
                 // Invalid packet type
                 return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
+                    std::io::ErrorKind::Unsupported,
                     "Invalid packet type",
                 ));
             }
