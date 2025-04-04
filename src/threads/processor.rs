@@ -3,13 +3,14 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
 use crate::protocol::client::Client;
-use crate::protocol::packet::{game::Game, version::Version};
+use crate::protocol::packet::{game::Game, leave::Leave, version::Version};
 use crate::protocol::{Type, send};
 
 pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
     let client = Client::new(stream.clone(), sender);
 
-    let description = std::fs::read_to_string("src/desc.txt").expect("[CONNECTION] Failed to read description file!");
+    let description = std::fs::read_to_string("src/desc.txt")
+        .expect("[CONNECTION] Failed to read description file!");
 
     // Send the initial game info to the client
     send(Type::Version(Version {
@@ -31,7 +32,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
         initial_points: 100,
         stat_limit: 65225,
         description_len: description.len() as u16,
-        description
+        description,
     }))
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send game packet: {}", e);
@@ -48,22 +49,82 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
                 match e.kind() {
                     std::io::ErrorKind::ConnectionReset => {
                         eprintln!("[CONNECTION] Connection reset by peer. Terminating thread.");
+
+                        // Ensure the server thread is notified of the disconnection
+                        client
+                            .sender
+                            .send(Type::Leave(Leave {
+                                author: Some(stream.clone()),
+                                ..Leave::default()
+                            }))
+                            .unwrap_or_else(|_| {
+                                eprintln!("[CONNECTION] Failed to send leave packet");
+                            });
+
                         break;
                     }
                     std::io::ErrorKind::ConnectionAborted => {
                         eprintln!("[CONNECTION] Connection aborted. Terminating thread.");
+
+                        // Ensure the server thread is notified of the disconnection
+                        client
+                            .sender
+                            .send(Type::Leave(Leave {
+                                author: Some(stream.clone()),
+                                ..Leave::default()
+                            }))
+                            .unwrap_or_else(|_| {
+                                eprintln!("[CONNECTION] Failed to send leave packet");
+                            });
+
                         break;
                     }
                     std::io::ErrorKind::NotConnected => {
                         eprintln!("[CONNECTION] Not connected. Terminating thread.");
+
+                        // Ensure the server thread is notified of the disconnection
+                        client
+                            .sender
+                            .send(Type::Leave(Leave {
+                                author: Some(stream.clone()),
+                                ..Leave::default()
+                            }))
+                            .unwrap_or_else(|_| {
+                                eprintln!("[CONNECTION] Failed to send leave packet");
+                            });
+
                         break;
                     }
                     std::io::ErrorKind::BrokenPipe => {
                         eprintln!("[CONNECTION] Broken pipe. Terminating thread.");
+
+                        // Ensure the server thread is notified of the disconnection
+                        client
+                            .sender
+                            .send(Type::Leave(Leave {
+                                author: Some(stream.clone()),
+                                ..Leave::default()
+                            }))
+                            .unwrap_or_else(|_| {
+                                eprintln!("[CONNECTION] Failed to send leave packet");
+                            });
+
                         break;
                     }
                     std::io::ErrorKind::UnexpectedEof => {
                         eprintln!("[CONNECTION] Unexpected EOF. Terminating thread.");
+
+                        // Ensure the server thread is notified of the disconnection
+                        client
+                            .sender
+                            .send(Type::Leave(Leave {
+                                author: Some(stream.clone()),
+                                ..Leave::default()
+                            }))
+                            .unwrap_or_else(|_| {
+                                eprintln!("[CONNECTION] Failed to send leave packet");
+                            });
+
                         break;
                     }
                     _ => {
