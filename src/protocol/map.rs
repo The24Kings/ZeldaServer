@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::fs::File;
 
-use super::packet::character::Character;
+use super::packet::{character::Character, room::Room};
 
 /*
    Build the game map from a JSON file
@@ -32,28 +32,17 @@ use super::packet::character::Character;
 */
 #[derive(Default, Debug, Clone)]
 pub struct Map {
-    pub tiles: Vec<Tile>,
+    pub rooms: Vec<Room>,
     pub players: Vec<Character>,
     pub monsters: Vec<Character>,
     pub desc_len: u16,
     pub desc: String,
 }
 
-#[derive(Default, Debug, Clone)]
-pub struct Tile {
-    pub id: u8,               // Unique ID (Room Number)
-    pub title: String,        // Title of the tile (Room Name)
-    pub exits: Vec<usize>,    // Possible exits (Points to other tiles)
-    pub players: Vec<usize>, // All players currently on the tile (index to the player list in the map)
-    pub monsters: Vec<usize>, // All monsters currently on the tile (index to the monster list in the map)
-    pub description_len: u16,
-    pub desc: String,
-}
-
 impl Map {
     pub fn new() -> Self {
         Map {
-            tiles: Vec::new(),
+            rooms: Vec::new(),
             players: Vec::new(),
             monsters: Vec::new(),
             desc_len: 0,
@@ -61,8 +50,8 @@ impl Map {
         }
     }
 
-    pub fn find_tile(&self, id: u8) -> Option<&Tile> {
-        self.tiles.iter().find(|tile| tile.id == id)
+    pub fn find_room(&self, id: u16) -> Option<&Room> {
+        self.rooms.iter().find(|room| room.room_number == id)
     }
 
     pub fn find_player(&self, name: String) -> Option<&Character> {
@@ -102,9 +91,9 @@ impl Map {
 
                 // Parse the JSON data into the Map struct
                 if let Some(tiles) = json["tiles"].as_array() {
-                    // Add all existing tiles to the map
+                    // Add all existing room to the map
                     for tile in tiles {
-                        let id = tile["id"].as_u64().unwrap_or(99) as u8;
+                        let id = tile["id"].as_u64().unwrap_or(99) as u16;
                         let title = tile["title"].as_str().unwrap_or("ERROR").to_string();
                         let desc = tile["desc"].as_str().unwrap_or("ERROR").to_string();
                         let exits = tile["connections"]
@@ -123,9 +112,16 @@ impl Map {
                             .map(|v| v as usize)
                             .collect::<Vec<_>>();
 
-                        let room = Tile::new(id, title.clone(), desc.clone(), monsters.clone(), exits.clone());
+                        // Create a new room and add it to the map
+                        let room = Room::new(
+                            id,
+                            title.clone(),
+                            exits.clone(),
+                            monsters.clone(),
+                            desc.clone(),
+                        );
 
-                        map.tiles.push(room.clone());
+                        map.rooms.push(room.clone());
 
                         println!("[MAP] {:#?}", room);
                     }
@@ -137,23 +133,5 @@ impl Map {
             }
             Err(e) => return Err(e),
         }
-    }
-}
-
-impl Tile {
-    pub fn new(id: u8, title: String, desc: String, monsters: Vec<usize>, exits: Vec<usize>) -> Self {
-        Tile {
-            id,
-            title,
-            exits,
-            players: Vec::new(),
-            monsters,
-            description_len: desc.len() as u16,
-            desc,
-        }
-    }
-
-    pub fn add_exit(&mut self, exit: usize) {
-        self.exits.push(exit);
     }
 }

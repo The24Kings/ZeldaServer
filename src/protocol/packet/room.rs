@@ -8,10 +8,30 @@ use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 pub struct Room {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
-    pub room_number: u16, // Same as room_num in ChangeRoom
+    pub room_number: u16,                   // Same as room_number in ChangeRoom
     pub room_name: String,
+    pub connections: Option<Vec<usize>>,    // Used for the game map
+    pub players: Option<Vec<usize>>,        // Used for the game map
+    pub monsters: Option<Vec<usize>>,       // Used for the game map
     pub description_len: u16,
     pub description: String,
+}
+
+impl Room {
+    /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
+    pub fn new(room: u16, title: String, conns: Vec<usize>, mnstrs: Vec<usize>, desc: String) -> Self {
+        Room {
+            author: None,
+            message_type: 9,
+            room_number: room,
+            room_name: title,
+            connections: Some(conns),
+            players: Some(Vec::new()), // Players are empty at the start
+            monsters: Some(mnstrs),
+            description_len: desc.len() as u16,
+            description: desc
+        }
+    }
 }
 
 impl<'a> Parser<'a> for Room {
@@ -41,6 +61,7 @@ impl<'a> Parser<'a> for Room {
         
         Ok(())
     }
+
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         let author = packet.author;
         let message_type = packet.message_type;
@@ -56,6 +77,9 @@ impl<'a> Parser<'a> for Room {
             message_type,
             room_number,
             room_name,
+            connections: None,
+            players: None,
+            monsters: None,
             description_len,
             description,
         })
