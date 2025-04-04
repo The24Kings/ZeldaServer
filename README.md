@@ -7,7 +7,7 @@ A new and improved version of my [Lurk Server](https://github.com/The24Kings/lur
 This rewrite was from the ground up, implementing better data serialization and deserialization. Making it super easy to add new messages to the protocol
 or edit existing ones. Simply make a new struct, add it to the types and write the serializer and deserializer methods.
 
-```TXT
+```
  ______    _     _           _____ 
 |___  /   | |   | |         / ____|                         
    / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __ 
