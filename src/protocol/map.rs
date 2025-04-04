@@ -1,35 +1,14 @@
 use serde_json::Value;
 use std::fs::File;
 
-use super::packet::{character::Character, room::Room};
+use crate::protocol::packet::message::Message;
 
-/*
-   Build the game map from a JSON file
-   the map should compile into a struct:
+use super::{
+    Type,
+    packet::{character::Character, room::Room},
+    send,
+};
 
-   Map {
-       tiles: Vec<Tile>,
-       players: Vec<Player>,
-       monsters: Vec<Monster>,
-       desc: String
-   }
-   Tile {
-       id: u8,                         // Unique ID
-       title: String,                  // Title of the tile (also needs to be unique)
-       exits: Vec<Exit>,               // Possible exits (Points to other tiles)
-       players: Vec<Player_index>,     // All players currently on the tile (index to the player list in the map)
-       monsters: Vec<Monster_index>,   // All monsters currently on the tile (index to the monster list in the map)
-       desc: String
-   }
-   Exit {
-       id: u8,         // Same as the Tile id we are going to
-       title: String,  // Title of the tile we are going to
-       desc: String    // May be an abbreviated description of the Tile we are going to
-   }
-
-   This struct is mutable and should be passed to the server thread
-   The server thread should be able to modify the map according to packets sent by the client
-*/
 #[derive(Default, Debug, Clone)]
 pub struct Map {
     pub rooms: Vec<Room>,
@@ -80,6 +59,37 @@ impl Map {
         if let Some(pos) = self.monsters.iter().position(|x| x.name == name) {
             self.monsters.remove(pos);
         }
+    }
+
+    /// Broadcast a message to all players in the game
+    pub fn broadcast(&self, message: String) -> Result<(), std::io::Error> {
+        println!("[BROADCAST] Sending message: {}", message);
+
+        // Send the packet to the server
+        for player in &self.players {
+            send(Type::Message(Message {
+                author: player.author.clone(),
+                message_type: 1,
+                message_len: message.len() as u16,
+                recipient: player.name.clone(),
+                sender: "Server".to_string(),
+                narration: false,
+                message: message.clone(),
+            }))
+            .unwrap_or_else(|e| {
+                eprintln!(
+                    "[BROADCAST] Failed to send message to {}: {}",
+                    player.name, e
+                );
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Alert all players in the current room of a character change
+    pub fn alert() -> Result<(), std::io::Error> {
+        Ok(())
     }
 
     pub fn build(data: File) -> Result<Self, serde_json::Error> {
