@@ -1,8 +1,18 @@
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 
-use crate::protocol::{error::ErrorCode, map::Map, packet::error::Error, send, Type};
+use crate::protocol::{
+    Type,
+    error::ErrorCode,
+    map::Map,
+    packet::{
+        accept::Accept,
+        character::{Character, CharacterFlags},
+        error::Error,
+    },
+    send,
+};
 
-pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, _map: &Map) {
+pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
     loop {
         // Wait for a packet from the receiver
         let packet = match receiver.lock().unwrap().recv() {
@@ -63,21 +73,73 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, _map: &Map) {
             }
             Type::Start(content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
+
                 // Find the character in the map and mark it as active send it back to the client
+                if let Some(player) = map.find_player_conn(content.author.clone()) {
+                    player.flags.started = true;
+
+                    send(Type::Character(player.clone())).unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send character packet: {}", e);
+                    });
+                }
             }
             Type::Character(content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
-                /*
-                   Check if the character is already in the map
-                   If not, add it to the map in the starting room
 
-                   Send the character back to the client with the new info (flags, staring room, etc)
-                   If they are already in the map, just send the character back to the client with the updated flags and connection info
-                */
+                // Check to make sure the character's stats are valid
+                let total_stats = content.attack + content.defense + content.regen;
+
+                // Send an error packet if the stats are invalid
+                if total_stats > map.init_points {
+                    send(Type::Error(Error {
+                        author: content.author.clone(),
+                        message_type: 7,
+                        error: ErrorCode::StatError,
+                        message_len: 13,
+                        message: "Invalid stats".to_string(),
+                    }))
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue; // Skip this iteration and wait for the next packet
+                }
+
+                // Check if the character is already in the map reset the flags
+                // If not, add it to the map in the starting room
+                if let Some(player) = map.find_player(content.name.clone()) {
+                    player.flags = CharacterFlags::default();
+
+                    println!("[SERVER] Found character in map, resetting flags.");
+                } else {
+                    map.add_player(Character::new(content.clone()));
+
+                    println!("[SERVER] Added character to map!");
+                }
+
+                // Send an accept packet to the client
+                send(Type::Accept(Accept {
+                    author: content.author.clone(),
+                    message_type: 8,
+                    accept_type: 10,
+                }))
+                .unwrap_or_else(|e| {
+                    eprintln!("[SERVER] Failed to send accept packet: {}", e);
+                });
+
+                // Send the character back to the client with the new info (flags, staring room, etc)
+                send(Type::Character(
+                    map.find_player(content.name.clone())
+                        .map(|player| player.clone())
+                        .unwrap_or_default(), // We just added this character, so it should be in the map, but just in case
+                ))
+                .unwrap_or_else(|e| {
+                    eprintln!("[SERVER] Failed to send character packet: {}", e);
+                });
             }
             Type::Leave(content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
-                // Find the character in the map and mark it as inactive
+                // Find the character in the map and mark it as inactive, not ready, not started, and do not join battle
                 // If the character is not in the map, just ignore it
             }
             Type::Error(_) => {}

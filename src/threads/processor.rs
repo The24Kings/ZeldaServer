@@ -6,7 +6,7 @@ use crate::protocol::client::Client;
 use crate::protocol::packet::{game::Game, leave::Leave, version::Version};
 use crate::protocol::{Type, send};
 
-pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
+pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, sender: Sender<Type>) {
     let client = Client::new(stream.clone(), sender);
 
     let description = std::fs::read_to_string("src/desc.txt")
@@ -29,8 +29,8 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Type>) {
     send(Type::Game(Game {
         author: Some(stream.clone()),
         message_type: 11,
-        initial_points: 100,
-        stat_limit: 65225,
+        initial_points,
+        stat_limit,
         description_len: description.len() as u16,
         description,
     }))

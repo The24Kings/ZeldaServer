@@ -1,5 +1,5 @@
 use serde_json::Value;
-use std::fs::File;
+use std::{fs::File, net::TcpStream, sync::Arc};
 
 use crate::protocol::packet::message::Message;
 
@@ -11,6 +11,8 @@ use super::{
 
 #[derive(Default, Debug, Clone)]
 pub struct Map {
+    pub init_points: u16,
+    pub stat_limit: u16,
     pub rooms: Vec<Room>,
     pub players: Vec<Character>,
     pub monsters: Vec<Character>,
@@ -21,6 +23,8 @@ pub struct Map {
 impl Map {
     pub fn new() -> Self {
         Map {
+            init_points: 100,
+            stat_limit: 65525,
             rooms: Vec::new(),
             players: Vec::new(),
             monsters: Vec::new(),
@@ -33,12 +37,22 @@ impl Map {
         self.rooms.iter().find(|room| room.room_number == id)
     }
 
-    pub fn find_player(&self, name: String) -> Option<&Character> {
-        self.players.iter().find(|player| player.name == name)
+    pub fn find_player(&mut self, name: String) -> Option<&mut Character> {
+        self.players.iter_mut().find(|player| player.name == name)
     }
 
-    pub fn find_monster(&self, name: String) -> Option<&Character> {
-        self.monsters.iter().find(|monster| monster.name == name)
+    pub fn find_player_conn(&mut self, conn: Option<Arc<TcpStream>>) -> Option<&mut Character> {
+        self.players.iter_mut().find(|player| {
+            if let Some(author) = &player.author {
+                conn.as_ref().map_or(false, |plyr_con| Arc::ptr_eq(author, plyr_con))
+            } else {
+                false
+            }
+        })
+    }
+
+    pub fn find_monster(&mut self, name: String) -> Option<&mut Character> {
+        self.monsters.iter_mut().find(|monster| monster.name == name)
     }
 
     pub fn add_player(&mut self, player: Character) {

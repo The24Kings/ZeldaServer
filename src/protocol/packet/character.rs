@@ -1,14 +1,17 @@
+use crate::{
+    debug_packet,
+    protocol::packet::{Packet, Parser},
+};
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Character {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub name: String,
-    pub flags: CharacterFlags, 
+    pub flags: CharacterFlags,
     pub attack: u16,
     pub defense: u16,
     pub regen: u16,
@@ -19,13 +22,44 @@ pub struct Character {
     pub description: String,
 }
 
-#[derive(Default, Debug, Clone)]
+impl Character {
+    pub fn new(incoming: Character) -> Self {
+        Character {
+            author: incoming.author,
+            message_type: incoming.message_type,
+            name: incoming.name,
+            flags: CharacterFlags::default(),
+            attack: incoming.attack,
+            defense: incoming.defense,
+            regen: incoming.regen,
+            health: 100,
+            gold: 0,
+            current_room: 0,
+            description_len: incoming.description_len,
+            description: incoming.description,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct CharacterFlags {
     pub alive: bool,
     pub join_battle: bool,
     pub monster: bool,
     pub started: bool,
     pub ready: bool,
+}
+
+impl Default for CharacterFlags {
+    fn default() -> Self {
+        CharacterFlags {
+            alive: true,
+            join_battle: true,
+            monster: false,
+            started: false,
+            ready: true,
+        }
+    }
 }
 
 impl<'a> Parser<'a> for Character {

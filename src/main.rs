@@ -24,13 +24,16 @@ fn main() {
     let file = File::open("src/game.json").expect("[MAIN] Failed to open map file!");
     let map = Map::build(file);
 
+    let initial_points = map.as_ref().map(|m| m.init_points).unwrap_or(100);
+    let stat_limit = map.as_ref().map(|m| m.stat_limit).unwrap_or(65525);
+
     // Start the server thread with the map
     match map {
-        Ok(map) => {
+        Ok(mut map) => {
             println!("[MAIN] Parsed map successfully");
             
             std::thread::spawn(move || {
-                server(receiver, &map);
+                server(receiver, &mut map);
             });
         }
         Err(e) => {
@@ -48,7 +51,7 @@ fn main() {
 
                 // Handle the connection in a separate thread
                 std::thread::spawn(move || {
-                    connection(stream, sender);
+                    connection(stream, initial_points, stat_limit, sender);
                 });
             }
             Err(e) => {
