@@ -149,7 +149,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 send(Type::Character(
                     map.find_player(content.name.clone())
                         .map(|player| player.clone())
-                        .unwrap_or_default(), // We just added this character, so it should be in the map, but just in case...
+                        .unwrap_or(Character::from(content.author.clone(), &Character::default()))
                 ))
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send character packet: {}", e);

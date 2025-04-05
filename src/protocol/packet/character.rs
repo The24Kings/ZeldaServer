@@ -6,7 +6,7 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Character {
     pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
@@ -37,6 +37,26 @@ impl Character {
             current_room: 0,
             description_len: incoming.description_len,
             description: incoming.description.clone(),
+        }
+    }
+}
+
+
+impl Default for Character {
+    fn default() -> Self {
+        Character {
+            author: None,
+            message_type: 10,
+            name: "Error".to_string(),
+            flags: CharacterFlags::default(),
+            attack: 0,
+            defense: 0,
+            regen: 0,
+            health: 100,
+            gold: 0,
+            current_room: 0,
+            description_len: 60,
+            description: "Something went wrong, please close the client and try again!".to_string(),
         }
     }
 }
