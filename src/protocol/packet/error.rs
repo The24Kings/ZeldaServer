@@ -15,6 +15,18 @@ pub struct Error {
     pub message: String,
 }
 
+impl Error {
+    pub fn new(author: Option<Arc<TcpStream>>, error: ErrorCode, message: &str) -> Self {
+        Error {
+            author,
+            message_type: 7,
+            error,
+            message_len: message.len() as u16,
+            message: message.to_string(),
+        }
+    }
+}
+
 impl<'a> Parser<'a> for Error {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array

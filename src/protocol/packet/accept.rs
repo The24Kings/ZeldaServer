@@ -11,6 +11,16 @@ pub struct Accept {
     pub accept_type: u8,
 }
 
+impl Accept {
+    pub fn new(author: Option<Arc<TcpStream>>, accept_type: u8) -> Self {
+        Accept {
+            author,
+            message_type: 8,
+            accept_type,
+        }
+    }
+}
+
 impl<'a> Parser<'a> for Accept {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array

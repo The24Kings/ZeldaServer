@@ -56,6 +56,7 @@ impl Map {
     }
 
     pub fn add_player(&mut self, player: Character) {
+        println!("[MAP] Added new player");
         self.players.push(player);
     }
 

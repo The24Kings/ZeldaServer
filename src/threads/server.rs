@@ -57,13 +57,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Disabled, no player combat allowed
-                send(Type::Error(Error {
-                    author: content.author.clone(),
-                    message_type: 7,
-                    error: ErrorCode::NoPlayerCombat,
-                    message_len: 24,
-                    message: "No player combat allowed".to_string(),
-                }))
+                send(Type::Error(Error::new(content.author.clone(), ErrorCode::NoPlayerCombat, "No player combat allowed")))
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send error packet: {}", e);
                 });
@@ -118,15 +112,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 // Check to make sure the character's stats are valid
                 let total_stats = content.attack + content.defense + content.regen;
 
-                // Send an error packet if the stats are invalid
                 if total_stats > map.init_points {
-                    send(Type::Error(Error {
-                        author: content.author.clone(),
-                        message_type: 7,
-                        error: ErrorCode::StatError,
-                        message_len: 13,
-                        message: "Invalid stats".to_string(),
-                    }))
+                    send(Type::Error(Error::new(content.author.clone(), ErrorCode::StatError, "Invalid stats")))
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send error packet: {}", e);
                     });
@@ -135,33 +122,32 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 }
 
                 // Check if the character is already in the map reset the flags
-                // If not, add it to the map in the starting room
                 if let Some(player) = map.find_player(content.name.clone()) {
-                    //TODO: Check if the player is already active, send PlayerExists error
+                    if player.flags.started {
+                        send(Type::Error(Error::new(content.author.clone(), ErrorCode::PlayerExists, "Player is already in the game; please leave the game and rejoin")))
+                        .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+
                     player.flags = CharacterFlags::default();
 
                     println!("[SERVER] Found character in map, resetting flags.");
                 } else {
                     map.add_player(Character::from(&content));
-
-                    println!("[SERVER] Added character to map!");
                 }
 
-                // Send an accept packet to the client
-                send(Type::Accept(Accept {
-                    author: content.author.clone(),
-                    message_type: 8,
-                    accept_type: 10,
-                }))
+                send(Type::Accept(Accept::new(content.author.clone(), 10)))
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send accept packet: {}", e);
                 });
 
-                // Send the character back to the client with the new info (flags, staring room, etc)
                 send(Type::Character(
                     map.find_player(content.name.clone())
                         .map(|player| player.clone())
-                        .unwrap_or_default(), // We just added this character, so it should be in the map, but just in case
+                        .unwrap_or_default(), // We just added this character, so it should be in the map, but just in case...
                 ))
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send character packet: {}", e);
