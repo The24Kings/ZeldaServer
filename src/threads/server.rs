@@ -7,7 +7,9 @@ use crate::protocol::{
     packet::{
         accept::Accept,
         character::{Character, CharacterFlags},
+        connection::Connection,
         error::Error,
+        room::Room,
     },
     send,
 };
@@ -78,9 +80,36 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 if let Some(player) = map.find_player_conn(content.author.clone()) {
                     player.flags.started = true;
 
-                    send(Type::Character(player.clone())).unwrap_or_else(|e| {
+                    send(Type::Character(player.clone()))
+                    .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send character packet: {}", e);
                     });
+                } else {
+                    eprintln!("[SERVER] Unable to find character...");
+
+                    continue; // Tried to start before sending a character
+                }
+
+                // Send Room
+                if let Some(room) = map.find_room(0) {
+                    send(Type::Room(Room::from(room, content.author.clone())))
+                    .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send room packet: {}", e);
+                        },
+                    );
+                }
+
+                //TODO: Send all players and monsters in the room
+                //TODO: Alert all players in the room that a new player has joined
+
+                // Send the connections to the client
+                if let Some(connections) = map.get_exits(0) {
+                    for connection in connections {
+                        send(Type::Connection(Connection::from(&connection,content.author.clone())))
+                        .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send connection packet: {}", e);
+                        });
+                    }
                 }
             }
             Type::Character(content) => {
@@ -108,11 +137,12 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 // Check if the character is already in the map reset the flags
                 // If not, add it to the map in the starting room
                 if let Some(player) = map.find_player(content.name.clone()) {
+                    //TODO: Check if the player is already active, send PlayerExists error
                     player.flags = CharacterFlags::default();
 
                     println!("[SERVER] Found character in map, resetting flags.");
                 } else {
-                    map.add_player(Character::new(content.clone()));
+                    map.add_player(Character::from(&content));
 
                     println!("[SERVER] Added character to map!");
                 }

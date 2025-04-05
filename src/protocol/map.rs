@@ -106,6 +106,24 @@ impl Map {
         Ok(())
     }
 
+    pub fn get_exits(&self, id: u16) -> Option<Vec<&Room>> {
+        if let Some(room) = self.find_room(id) {
+            let mut exits = Vec::new();
+
+            if let Some(connections) = &room.connections {
+                for exit in connections {
+                    if let Some(exit_room) = self.find_room(*exit) {
+                        exits.push(exit_room);
+                    }
+                }
+            }
+
+            return Some(exits);
+        }
+
+        None
+    }
+
     pub fn build(data: File) -> Result<Self, serde_json::Error> {
         println!("[MAP] Building game map...");
 
@@ -125,7 +143,7 @@ impl Map {
                             .unwrap_or(&vec![])
                             .iter()
                             .filter_map(|v| v.as_u64())
-                            .map(|v| v as usize)
+                            .map(|v| v as u16)
                             .collect::<Vec<_>>();
 
                         let monsters = tile["monsters"]

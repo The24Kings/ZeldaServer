@@ -10,7 +10,7 @@ pub struct Room {
     pub message_type: u8,
     pub room_number: u16,                   // Same as room_number in ChangeRoom
     pub room_name: String,
-    pub connections: Option<Vec<usize>>,    // Used for the game map
+    pub connections: Option<Vec<u16>>,    // Used for the game map
     pub players: Option<Vec<usize>>,        // Used for the game map
     pub monsters: Option<Vec<usize>>,       // Used for the game map
     pub description_len: u16,
@@ -19,7 +19,7 @@ pub struct Room {
 
 impl Room {
     /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
-    pub fn new(room: u16, title: String, conns: Vec<usize>, mnstrs: Vec<usize>, desc: String) -> Self {
+    pub fn new(room: u16, title: String, conns: Vec<u16>, mnstrs: Vec<usize>, desc: String) -> Self {
         Room {
             author: None,
             message_type: 9,
@@ -30,6 +30,21 @@ impl Room {
             monsters: Some(mnstrs),
             description_len: desc.len() as u16,
             description: desc
+        }
+    }
+
+    /// Create a new room from the game map to send to the client
+    pub fn from(room: &Room, author: Option<Arc<TcpStream>>) -> Self {
+        Room {
+            author,
+            message_type: room.message_type,
+            room_number: room.room_number,
+            room_name: room.room_name.clone(),
+            connections: None,
+            players: None,
+            monsters: None,
+            description_len: room.description_len,
+            description: room.description.clone()
         }
     }
 }

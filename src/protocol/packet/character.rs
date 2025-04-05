@@ -23,11 +23,11 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn new(incoming: Character) -> Self {
+    pub fn from(incoming: &Character) -> Self {
         Character {
-            author: incoming.author,
+            author: incoming.author.clone(),
             message_type: incoming.message_type,
-            name: incoming.name,
+            name: incoming.name.clone(),
             flags: CharacterFlags::default(),
             attack: incoming.attack,
             defense: incoming.defense,
@@ -36,7 +36,7 @@ impl Character {
             gold: 0,
             current_room: 0,
             description_len: incoming.description_len,
-            description: incoming.description,
+            description: incoming.description.clone(),
         }
     }
 }

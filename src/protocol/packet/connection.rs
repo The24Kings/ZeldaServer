@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
+use super::room::Room;
+
 #[derive(Default, Debug, Clone)]
 pub struct Connection {
     pub author: Option<Arc<TcpStream>>,
@@ -12,6 +14,20 @@ pub struct Connection {
     pub room_name: String,
     pub description_len: u16,
     pub description: String,
+}
+
+impl Connection {
+    /// Create a new connection from the game map to send to the client
+    pub fn from(room: &Room, author: Option<Arc<TcpStream>>) -> Self {
+        Connection {
+            author,
+            message_type: 13,
+            room_number: room.room_number,
+            room_name: room.room_name.clone(),
+            description_len: room.description_len,
+            description: room.description.clone()
+        }
+    }
 }
 
 impl<'a> Parser<'a> for Connection {
