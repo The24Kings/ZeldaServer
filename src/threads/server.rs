@@ -136,7 +136,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                     println!("[SERVER] Found character in map, resetting flags.");
                 } else {
-                    map.add_player(Character::from(&content));
+                    map.add_player(Character::from(content.author.clone(), &content));
+
+                    println!("[SERVER] Added character to map.");
                 }
 
                 send(Type::Accept(Accept::new(content.author.clone(), 10)))

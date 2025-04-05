@@ -56,7 +56,6 @@ impl Map {
     }
 
     pub fn add_player(&mut self, player: Character) {
-        println!("[MAP] Added new player");
         self.players.push(player);
     }
 
@@ -102,8 +101,26 @@ impl Map {
         Ok(())
     }
 
+    //TODO: Test this
     /// Alert all players in the current room of a character change
-    pub fn alert() -> Result<(), std::io::Error> {
+    pub fn alert(&self, id: u16, plyr: &Character) -> Result<(), std::io::Error> {
+        println!("[ALERT] Alerting players about: {}", plyr.name);
+
+        if let Some(room) = self.find_room(id) {
+            room.players.iter().flatten().for_each(|&player_index| {
+                match self.players.get(player_index) {
+                    Some(to_alert) => {
+                        if let Err(e) = send(Type::Character(Character::from(to_alert.author.clone(), plyr))) {
+                            eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
+                        }
+                    }
+                    None => {
+                        eprintln!("[ALERT] Invalid player index: {}", player_index);
+                    }
+                }
+            });
+        }
+
         Ok(())
     }
 
