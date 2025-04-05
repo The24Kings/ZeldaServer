@@ -169,7 +169,11 @@ macro_rules! debug_packet {
                 print!("0x{:02x} ", $packet[i]);
             }
 
-            println!("... {} bytes", $packet.len());
+            if $packet.len() > 64 {
+                println!("...(+{} bytes)", $packet.len());
+            } else {
+                println!();
+            }
         }
     };
 }
