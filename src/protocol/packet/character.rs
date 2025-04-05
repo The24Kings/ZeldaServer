@@ -23,9 +23,9 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn from(incoming: &Character) -> Self {
+    pub fn from(author: Option<Arc<TcpStream>>,incoming: &Character) -> Self {
         Character {
-            author: incoming.author.clone(),
+            author,
             message_type: incoming.message_type,
             name: incoming.name.clone(),
             flags: CharacterFlags::default(),
