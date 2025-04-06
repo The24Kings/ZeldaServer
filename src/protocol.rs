@@ -34,7 +34,7 @@ pub enum Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::Message(msg) => write!(f, "\n{}", msg),
+            Type::Message(msg) => write!(f, "\n{:#?}", msg),
             Type::ChangeRoom(room) => write!(f, "\n{:#?}", room),
             Type::Fight(fight) => write!(f, "\n{:#?}", fight),
             Type::PVPFight(pvp_fight) => write!(f, "\n{:#?}", pvp_fight),
@@ -43,8 +43,8 @@ impl std::fmt::Display for Type {
             Type::Error(error) => write!(f, "\n{:#?}", error),
             Type::Accept(accept) => write!(f, "\n{:#?}", accept),
             Type::Room(room) => write!(f, "\n{:#?}", room),
-            Type::Character(character) => write!(f, "\n{}", character),
-            Type::Game(game) => write!(f, "\n{}", game),
+            Type::Character(character) => write!(f, "\n{:#?}", character),
+            Type::Game(game) => write!(f, "\n{:#?}", game),
             Type::Leave(leave) => write!(f, "\n{:#?}", leave),
             Type::Connection(connection) => write!(f, "\n{:#?}", connection),
             Type::Version(version) => write!(f, "\n{:#?}", version),

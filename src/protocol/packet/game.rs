@@ -14,27 +14,6 @@ pub struct Game {
     pub description: String,
 }
 
-impl std::fmt::Display for Game {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:#?}",
-            Game {
-                description: if self.description.len() > 64 {
-                    format!(
-                        "{}... (+{} bytes)",
-                        &self.description[..64],
-                        self.description.len() - 64
-                    )
-                } else {
-                    self.description.clone()
-                },
-                ..self.clone()
-            }
-        )
-    }
-}
-
 impl<'a> Parser<'a> for Game {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array

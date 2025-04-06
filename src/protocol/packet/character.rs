@@ -41,28 +41,6 @@ impl Character {
     }
 }
 
-impl std::fmt::Display for Character {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:#?}",
-            Character {
-                description: if self.description.len() > 64 {
-                    format!(
-                        "{}... (+{} bytes)",
-                        &self.description[..64],
-                        self.description.len() - 64
-                    )
-                } else {
-                    self.description.clone()
-                },
-                ..self.clone()
-            }
-        )
-    }
-}
-
-
 impl Default for Character {
     fn default() -> Self {
         Character {

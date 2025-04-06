@@ -53,21 +53,13 @@ impl<'a> Packet<'a> {
         })?;
 
         print!(
-            "[PACKET] Read packet body: [{}",
+            "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .take(64)
                 .map(|b| format!("0x{:02x}", b))
                 .collect::<Vec<String>>()
                 .join(" ")
         );
-
-        if buffer.len() > 64 {
-            println!("]...(+{} bytes)", buffer.len() - 64);
-        } else {
-            println!("]");
-        }
-
         // Create a new packet with the read bytes
         let packet = Packet::new(stream, id, buffer);
 
@@ -91,20 +83,13 @@ impl<'a> Packet<'a> {
         })?;
 
         print!(
-            "[PACKET] Read packet body: [{}",
+            "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .take(64)
                 .map(|b| format!("0x{:02x}", b))
                 .collect::<Vec<String>>()
                 .join(" ")
         );
-
-        if buffer.len() > 64 {
-            println!("]...(+{} bytes)", buffer.len() - 64);
-        } else {
-            println!("]");
-        }
 
         // Get the description length from the buffer
         let length = usize::from_le_bytes([buffer[index.0], buffer[index.1], 0, 0, 0, 0, 0, 0]);
@@ -177,15 +162,9 @@ impl<'a> std::fmt::Display for Packet<'a> {
 macro_rules! debug_packet {
     ($packet:expr) => {
         {
-            print!("[DEBUG] Serialized packet: [");
+            print!("[DEBUG] Serialized packet: ");
         
-            print!("{}", $packet.iter().take(64).map(|b| format!("0x{:02x}", b)).collect::<Vec<String>>().join(" "));
-
-            if $packet.len() > 64 {
-                println!("]...(+{} bytes)", $packet.len());
-            } else {
-                println!("]");
-            }
+            print!("{}", $packet.iter().map(|b| format!("0x{:02x}", b)).collect::<Vec<String>>().join(" "));
         }
     };
 }
