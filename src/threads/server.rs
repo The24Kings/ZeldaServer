@@ -110,9 +110,20 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Check to make sure the character's stats are valid
-                let total_stats = content.attack + content.defense + content.regen;
+                if let Some(total_stats) = content.attack.checked_add(content.defense).and_then(|sum| sum.checked_add(content.regen)) {
+                    println!("[SERVER] Total stats: {}", total_stats);
+                    
+                    if total_stats > map.init_points {
+                        send(Type::Error(Error::new(content.author.clone(), ErrorCode::StatError, "Invalid stats")))
+                        .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        });
+    
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+                } else {
+                    println!("[SERVER] Overflow in stats calculation");
 
-                if total_stats > map.init_points {
                     send(Type::Error(Error::new(content.author.clone(), ErrorCode::StatError, "Invalid stats")))
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send error packet: {}", e);
