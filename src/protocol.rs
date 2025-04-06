@@ -1,6 +1,4 @@
 use std::io::Write;
-use std::net::TcpStream;
-use std::sync::Arc;
 
 use crate::protocol::packet::Parser;
 
@@ -55,68 +53,67 @@ impl std::fmt::Display for Type {
 }
 
 pub fn send(packed: Type) -> Result<(), std::io::Error> {
-    let author: Option<Arc<TcpStream>>;
     let mut byte_stream: Vec<u8> = Vec::new();
 
     println!("[SEND] Sending packet: {}", packed);
 
     // Serialize the packet and send it to the server
-    match packed {
+    let author = match packed {
         Type::Message(content) => {
-            author = content.author.clone();
             content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::ChangeRoom(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Fight(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::PVPFight(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Loot(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Start(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Error(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Accept(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Room(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Character(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Game(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Leave(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Connection(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
         Type::Version(content) => {
-            author = content.author.clone();
-            content.serialize(&mut byte_stream)?
+            content.serialize(&mut byte_stream)?;
+            content.author
         }
     };
 
