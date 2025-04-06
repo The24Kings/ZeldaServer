@@ -15,6 +15,27 @@ pub struct Message {
     pub message: String,
 }
 
+impl std::fmt::Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:#?}",
+            Message {
+                message: if self.message.len() > 64 {
+                    format!(
+                        "{}... (+{} bytes)",
+                        &self.message[..64],
+                        self.message.len() - 64
+                    )
+                } else {
+                    self.message.clone()
+                },
+                ..self.clone()
+            }
+        )
+    }
+}
+
 impl<'a> Parser<'a> for Message {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
