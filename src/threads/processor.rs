@@ -9,7 +9,7 @@ use crate::protocol::{Type, send};
 pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, sender: Sender<Type>) {
     let client = Client::new(stream.clone(), sender);
 
-    let description = std::fs::read_to_string("src/desc.txt")
+    let description = std::fs::read_to_string("src/content/desc.txt")
         .expect("[CONNECTION] Failed to read description file!");
 
     // Send the initial game info to the client

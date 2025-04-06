@@ -21,7 +21,7 @@ fn main() {
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let file = File::open("src/game.json").expect("[MAIN] Failed to open map file!");
+    let file = File::open("src/content/game.json").expect("[MAIN] Failed to open map file!");
     let map = Map::build(file);
 
     let initial_points = map.as_ref().map(|m| m.init_points).unwrap_or(100);
