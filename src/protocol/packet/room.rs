@@ -1,12 +1,9 @@
 use std::io::Write;
-use std::net::TcpStream;
-use std::sync::Arc;
 
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Room {
-    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub room_number: u16,                   // Same as room_number in ChangeRoom
     pub room_name: String,
@@ -21,7 +18,6 @@ impl Room {
     /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
     pub fn new(room: u16, title: String, conns: Vec<u16>, mnstrs: Vec<usize>, desc: String) -> Self {
         Room {
-            author: None,
             message_type: 9,
             room_number: room,
             room_name: title,
@@ -30,21 +26,6 @@ impl Room {
             monsters: Some(mnstrs),
             description_len: desc.len() as u16,
             description: desc
-        }
-    }
-
-    /// Create a new room from the game map to send to the client
-    pub fn from(room: &Room, author: Option<Arc<TcpStream>>) -> Self {
-        Room {
-            author,
-            message_type: room.message_type,
-            room_number: room.room_number,
-            room_name: room.room_name.clone(),
-            connections: None,
-            players: None,
-            monsters: None,
-            description_len: room.description_len,
-            description: room.description.clone()
         }
     }
 }
@@ -78,7 +59,6 @@ impl<'a> Parser<'a> for Room {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        let author = packet.author;
         let message_type = packet.message_type;
         let room_number = u16::from_le_bytes([packet.body[0], packet.body[1]]);
         let room_name = String::from_utf8_lossy(&packet.body[2..34])
@@ -88,7 +68,6 @@ impl<'a> Parser<'a> for Room {
         let description = String::from_utf8_lossy(&packet.body[36..]).to_string();
         
         Ok(Room {
-            author,
             message_type,
             room_number,
             room_name,

@@ -1,12 +1,9 @@
 use std::io::Write;
-use std::net::TcpStream;
-use std::sync::Arc;
 
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Loot {
-    pub author: Option<Arc<TcpStream>>, 
     pub message_type: u8,
     pub target_name: String,
 }
@@ -36,12 +33,10 @@ impl<'a> Parser<'a> for Loot {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        let author = packet.author.clone();
         let message_type = packet.message_type;
         let target_name = String::from_utf8_lossy(&packet.body[0..32]).trim_end_matches('\0').to_string();
         
         Ok(Loot {
-            author,
             message_type,
             target_name,
         })

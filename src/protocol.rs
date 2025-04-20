@@ -1,4 +1,6 @@
 use std::io::Write;
+use std::net::TcpStream;
+use std::sync::Arc;
 
 use crate::protocol::packet::Parser;
 
@@ -15,39 +17,39 @@ pub mod map;
 
 #[derive(Debug, Clone)]
 pub enum Type {
-    Message(Message),
-    ChangeRoom(ChangeRoom),
-    Fight(Fight),
-    PVPFight(PVPFight),
-    Loot(Loot),
-    Start(Start),
-    Error(Error),
-    Accept(Accept),
-    Room(Room),
-    Character(Character),
-    Game(Game),
-    Leave(Leave),
-    Connection(Connection),
-    Version(Version),
+    Message(Arc<TcpStream>, Message),
+    ChangeRoom(Arc<TcpStream>, ChangeRoom),
+    Fight(Arc<TcpStream>, Fight),
+    PVPFight(Arc<TcpStream>, PVPFight),
+    Loot(Arc<TcpStream>, Loot),
+    Start(Arc<TcpStream>, Start),
+    Error(Arc<TcpStream>, Error),
+    Accept(Arc<TcpStream>, Accept),
+    Room(Arc<TcpStream>, Room),
+    Character(Arc<TcpStream>, Character),
+    Game(Arc<TcpStream>, Game),
+    Leave(Arc<TcpStream>, Leave),
+    Connection(Arc<TcpStream>, Connection),
+    Version(Arc<TcpStream>, Version),
 }
 
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::Message(msg) => write!(f, "\n{:#?}", msg),
-            Type::ChangeRoom(room) => write!(f, "\n{:#?}", room),
-            Type::Fight(fight) => write!(f, "\n{:#?}", fight),
-            Type::PVPFight(pvp_fight) => write!(f, "\n{:#?}", pvp_fight),
-            Type::Loot(loot) => write!(f, "\n{:#?}", loot),
-            Type::Start(start) => write!(f, "\n{:#?}", start),
-            Type::Error(error) => write!(f, "\n{:#?}", error),
-            Type::Accept(accept) => write!(f, "\n{:#?}", accept),
-            Type::Room(room) => write!(f, "\n{:#?}", room),
-            Type::Character(character) => write!(f, "\n{:#?}", character),
-            Type::Game(game) => write!(f, "\n{:#?}", game),
-            Type::Leave(leave) => write!(f, "\n{:#?}", leave),
-            Type::Connection(connection) => write!(f, "\n{:#?}", connection),
-            Type::Version(version) => write!(f, "\n{:#?}", version),
+            Type::Message(_, msg) => write!(f, "\n{:#?}", msg),
+            Type::ChangeRoom(_, room) => write!(f, "\n{:#?}", room),
+            Type::Fight(_, fight) => write!(f, "\n{:#?}", fight),
+            Type::PVPFight(_, pvp_fight) => write!(f, "\n{:#?}", pvp_fight),
+            Type::Loot(_, loot) => write!(f, "\n{:#?}", loot),
+            Type::Start(_, start) => write!(f, "\n{:#?}", start),
+            Type::Error(_, error) => write!(f, "\n{:#?}", error),
+            Type::Accept(_, accept) => write!(f, "\n{:#?}", accept),
+            Type::Room(_, room) => write!(f, "\n{:#?}", room),
+            Type::Character(_, character) => write!(f, "\n{:#?}", character),
+            Type::Game(_, game) => write!(f, "\n{:#?}", game),
+            Type::Leave(_, leave) => write!(f, "\n{:#?}", leave),
+            Type::Connection(_, connection) => write!(f, "\n{:#?}", connection),
+            Type::Version(_, version) => write!(f, "\n{:#?}", version),
         }
     }
 }
@@ -59,76 +61,66 @@ pub fn send(packed: Type) -> Result<(), std::io::Error> {
 
     // Serialize the packet and send it to the server
     let author = match packed {
-        Type::Message(content) => {
+        Type::Message(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::ChangeRoom(content) => {
+        Type::ChangeRoom(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Fight(content) => {
+        Type::Fight(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::PVPFight(content) => {
+        Type::PVPFight(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Loot(content) => {
+        Type::Loot(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Start(content) => {
+        Type::Start(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Error(content) => {
+        Type::Error(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Accept(content) => {
+        Type::Accept(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Room(content) => {
+        Type::Room(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Character(content) => {
+        Type::Character(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Game(content) => {
+        Type::Game(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Leave(content) => {
+        Type::Leave(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Connection(content) => {
+        Type::Connection(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
-        Type::Version(content) => {
+        Type::Version(author, content) => {
             content.serialize(&mut byte_stream)?;
-            content.author
+            author
         }
     };
 
     // Send the packet to the server
-    match author {
-        Some(author) => {
-            author.as_ref().write_all(&byte_stream)?; // Send the packet to the server
-        }
-        None => {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "No author found for message",
-            ));
-        }
-    }
+    author.as_ref().write_all(&byte_stream)?; // Send the packet to the server
 
     Ok(())
 }

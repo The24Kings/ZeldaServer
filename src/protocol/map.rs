@@ -41,14 +41,15 @@ impl Map {
         self.players.iter_mut().find(|player| player.name == name)
     }
 
-    pub fn find_player_conn(&mut self, conn: Option<Arc<TcpStream>>) -> Option<&mut Character> {
-        self.players.iter_mut().find(|player| {
-            if let Some(author) = &player.author {
-                conn.as_ref().map_or(false, |plyr_con| Arc::ptr_eq(author, plyr_con))
-            } else {
-                false
-            }
-        })
+    pub fn find_player_conn(&mut self, _conn: Arc<TcpStream>) -> Option<&mut Character> {
+        // self.players.iter_mut().find(|player| {
+        //     if let Some(author) = &player.author {
+        //         conn.as_ref().map_or(false, |plyr_con| Arc::ptr_eq(author, plyr_con))
+        //     } else {
+        //         false
+        //     }
+        // })
+        None
     }
 
     pub fn find_monster(&mut self, name: String) -> Option<&mut Character> {
@@ -81,15 +82,17 @@ impl Map {
 
         // Send the packet to the server
         for player in &self.players {
-            send(Type::Message(Message {
-                author: player.author.clone(),
-                message_type: 1,
-                message_len: message.len() as u16,
-                recipient: player.name.clone(),
-                sender: "Server".to_string(),
-                narration: false,
-                message: message.clone(),
-            }))
+            send(Type::Message(
+                player.author.clone(), //FIXME: This should be the player's connection, maybe change to use Client rather than Character for the player list
+                Message {
+                    message_type: 1,
+                    message_len: message.len() as u16,
+                    recipient: player.name.clone(),
+                    sender: "Server".to_string(),
+                    narration: false,
+                    message: message.clone(),
+                }
+            ))
             .unwrap_or_else(|e| {
                 eprintln!(
                     "[BROADCAST] Failed to send message to {}: {}",
@@ -110,7 +113,7 @@ impl Map {
             room.players.iter().flatten().for_each(|&player_index| {
                 match self.players.get(player_index) {
                     Some(to_alert) => {
-                        if let Err(e) = send(Type::Character(Character::from(to_alert.author.clone(), plyr))) {
+                        if let Err(e) = send(Type::Character(plyr.author.clone(), plyr.clone())) { //FIXME: This should be the player's connection, maybe change to use Client rather than Character for the player list
                             eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                         }
                     }

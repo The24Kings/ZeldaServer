@@ -8,8 +8,7 @@ use crate::protocol::{
         accept::Accept,
         character::{Character, CharacterFlags},
         connection::Connection,
-        error::Error,
-        room::Room,
+        error::Error
     },
     send,
 };
@@ -27,18 +26,18 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
         // Match the type of the packet to the enum Type
         match packet {
-            Type::Message(content) => {
+            Type::Message(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
                 // Find the recipient in the map and send the message to them
                 // If the recipient is not found, send an error packet back to the sender
             }
-            Type::ChangeRoom(content) => {
+            Type::ChangeRoom(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
                 // Find the character in the map, move it to the new room if possible
                 // and send the updated character back to the client
                 // Alert the other players in the room about the change and alert all players in the new room
             }
-            Type::Fight(content) => {
+            Type::Fight(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
                 // TODO: Fight logic
 
@@ -53,28 +52,31 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                     the message to all players in the room
                 */
             }
-            Type::PVPFight(content) => {
+            Type::PVPFight(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Disabled, no player combat allowed
-                send(Type::Error(Error::new(content.author.clone(), ErrorCode::NoPlayerCombat, "No player combat allowed")))
+                send(Type::Error(
+                    author.clone(),
+                    Error::new(ErrorCode::NoPlayerCombat, "No player combat allowed")
+                ))
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send error packet: {}", e);
                 });
             }
-            Type::Loot(content) => {
+            Type::Loot(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
                 // Find the character in the map and the thing being looted
                 // Loot the thing and send both the updated character and the looted thing back to the client
             }
-            Type::Start(content) => {
+            Type::Start(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Find the character in the map and mark it as active send it back to the client
-                if let Some(player) = map.find_player_conn(content.author.clone()) {
+                if let Some(player) = map.find_player_conn(author.clone()) { //FIXME: Need to fix this implementation
                     player.flags.started = true;
 
-                    send(Type::Character(player.clone()))
+                    send(Type::Character(author.clone(), player.clone()))
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send character packet: {}", e);
                     });
@@ -86,7 +88,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                 // Send Room
                 if let Some(room) = map.find_room(0) {
-                    send(Type::Room(Room::from(room, content.author.clone())))
+                    send(Type::Room(author.clone(), room.clone()))
                     .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send room packet: {}", e);
                         },
@@ -98,15 +100,15 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                 // Send the connections to the client
                 if let Some(connections) = map.get_exits(0) {
-                    for connection in connections {
-                        send(Type::Connection(Connection::from(&connection,content.author.clone())))
+                    for room in connections {
+                        send(Type::Connection(author.clone(), Connection::from(&room)))
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send connection packet: {}", e);
                         });
                     }
                 }
             }
-            Type::Character(content) => {
+            Type::Character(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Check to make sure the character's stats are valid
@@ -114,7 +116,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                     println!("[SERVER] Total stats: {}", total_stats);
                     
                     if total_stats > map.init_points {
-                        send(Type::Error(Error::new(content.author.clone(), ErrorCode::StatError, "Invalid stats")))
+                        send(Type::Error(
+                            author.clone(),
+                            Error::new(ErrorCode::StatError, "Invalid stats")
+                        ))
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
                         });
@@ -124,7 +129,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 } else {
                     println!("[SERVER] Overflow in stats calculation");
 
-                    send(Type::Error(Error::new(content.author.clone(), ErrorCode::StatError, "Invalid stats")))
+                    send(Type::Error(
+                        author.clone(), 
+                        Error::new(ErrorCode::StatError, "Invalid stats")
+                    ))
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send error packet: {}", e);
                     });
@@ -135,7 +143,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 // Check if the character is already in the map reset the flags
                 if let Some(player) = map.find_player(content.name.clone()) {
                     if player.flags.started {
-                        send(Type::Error(Error::new(content.author.clone(), ErrorCode::PlayerExists, "Player is already in the game; please leave the game and rejoin")))
+                        send(Type::Error(
+                            author.clone(), 
+                            Error::new(ErrorCode::PlayerExists, "Player is already in the game; please leave the game and rejoin")
+                        ))
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
                         });
@@ -147,36 +158,37 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                     println!("[SERVER] Found character in map, resetting flags.");
                 } else {
-                    map.add_player(Character::from(content.author.clone(), &content));
+                    map.add_player(content.clone());
 
                     println!("[SERVER] Added character to map.");
                 }
 
-                send(Type::Accept(Accept::new(content.author.clone(), 10)))
+                send(Type::Accept(author.clone(), Accept::default()))
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send accept packet: {}", e);
                 });
 
                 send(Type::Character(
+                    author.clone(), 
                     map.find_player(content.name.clone())
                         .map(|player| player.clone())
-                        .unwrap_or(Character::from(content.author.clone(), &Character::default()))
+                        .unwrap_or(Character::default())
                 ))
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send character packet: {}", e);
                 });
             }
-            Type::Leave(content) => {
+            Type::Leave(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
                 // Find the character in the map and mark it as inactive, not ready, not started, and do not join battle
                 // If the character is not in the map, just ignore it
             }
-            Type::Error(_) => {}
-            Type::Accept(_) => {}
-            Type::Room(_) => {}
-            Type::Game(_) => {}
-            Type::Connection(_) => {}
-            Type::Version(_) => {}
+            Type::Error(_, _) => {}
+            Type::Accept(_, _) => {}
+            Type::Room(_, _) => {}
+            Type::Game(_, _) => {}
+            Type::Connection(_, _) => {}
+            Type::Version(_, _) => {}
         }
     }
 }

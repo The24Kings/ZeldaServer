@@ -1,11 +1,7 @@
-use std::net::TcpStream;
-use std::sync::Arc;
-
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Version {
-    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub major_rev: u8,
     pub minor_rev: u8,
@@ -44,7 +40,6 @@ impl<'a> Parser<'a> for Version {
         println!("[VERSION] Deserializing packet: {}", packet);
 
         Ok(Version {
-            author: packet.author,
             message_type: packet.message_type,
             major_rev: packet.body[0],
             minor_rev: packet.body[1],

@@ -3,17 +3,20 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
+use super::packet::character::{self, Character};
 use super::Type;
 use super::packet::{Packet, Parser, leave::Leave, start::Start, fight::Fight};
 
+#[derive(Debug, Clone)]
 pub struct Client {
     pub stream: Arc<TcpStream>,
     pub sender: Sender<Type>,
+    pub character: Option<Character>,
 }
 
 impl Client {
-    pub fn new(stream: Arc<TcpStream>, sender: Sender<Type>) -> Self {
-        Client { stream, sender }
+    pub fn new(stream: Arc<TcpStream>, sender: Sender<Type>, character: Option<Character>) -> Self {
+        Client { stream, sender, character }
     }
 
     pub fn read(&self) -> Result<Type, std::io::Error> {
@@ -39,7 +42,7 @@ impl Client {
                 let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (0, 1))?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Message(deserialized),
+                    Ok(deserialized) => Type::Message(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -57,7 +60,7 @@ impl Client {
                 let packet = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer)?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::ChangeRoom(deserialized),
+                    Ok(deserialized) => Type::ChangeRoom(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -70,12 +73,7 @@ impl Client {
                 Some(object)
             },
             3 => { // FIGHT
-                Some(Type::Fight(
-                    Fight {
-                        author: Some(self.stream.clone()),
-                        ..Fight::default()
-                    }
-                ))
+                Some(Type::Fight(self.stream.clone(), Fight::default()))
             },
             4 => { // PVPFIGHT
                 let mut buffer = vec!(0; 32);
@@ -83,7 +81,7 @@ impl Client {
                 let packet = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer)?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::PVPFight(deserialized),
+                    Ok(deserialized) => Type::PVPFight(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -101,7 +99,7 @@ impl Client {
                 let packet = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer)?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Loot(deserialized),
+                    Ok(deserialized) => Type::Loot(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -114,12 +112,7 @@ impl Client {
                 Some(object)
             },
             6 => { // START
-                Some(Type::Start(
-                    Start {
-                        author: Some(self.stream.clone()),
-                        ..Start::default()
-                    }
-                ))
+                Some(Type::Start(self.stream.clone(), Start::default()))
             },
             7 => { // ERROR
                 let mut buffer = vec!(0; 3);
@@ -151,7 +144,7 @@ impl Client {
                 let packet = Packet::read_extended(self.stream.clone(), packet_type[0], &mut buffer, (45, 46))?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Character(deserialized),
+                    Ok(deserialized) => Type::Character(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -172,12 +165,7 @@ impl Client {
                 None
             },
             12 => { // LEAVE
-                Some(Type::Leave(
-                    Leave {
-                        author: Some(self.stream.clone()),
-                        ..Leave::default()
-                    }
-                ))
+                Some(Type::Leave(self.stream.clone(), Leave::default()))
             },
             13 => { // CONNECTION
                 let mut buffer = vec!(0; 36);

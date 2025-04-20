@@ -1,12 +1,9 @@
 use std::io::Write;
-use std::net::TcpStream;
-use std::sync::Arc;
 
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Message {
-    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub message_len: u16,
     pub recipient: String,
@@ -82,7 +79,6 @@ impl<'a> Parser<'a> for Message {
         let message = String::from_utf8_lossy(&packet.body[66..]).to_string();
 
         Ok(Message {
-            author: packet.author,
             message_type: packet.message_type,
             message_len,
             recipient,

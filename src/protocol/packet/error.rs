@@ -1,6 +1,4 @@
 use std::io::Write;
-use std::net::TcpStream;
-use std::sync::Arc;
 
 use crate::debug_packet;
 use crate::protocol::error::ErrorCode;
@@ -8,7 +6,6 @@ use crate::protocol::packet::{Packet, Parser};
 
 #[derive(Default, Debug, Clone)]
 pub struct Error {
-    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub error: ErrorCode,
     pub message_len: u16,
@@ -16,9 +13,8 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn new(author: Option<Arc<TcpStream>>, error: ErrorCode, message: &str) -> Self {
+    pub fn new(error: ErrorCode, message: &str) -> Self {
         Error {
-            author,
             message_type: 7,
             error,
             message_len: message.len() as u16,
@@ -59,7 +55,6 @@ impl<'a> Parser<'a> for Error {
             .to_string();
         
         Ok(Error {
-            author: packet.author,
             message_type,
             error,
             message_len,

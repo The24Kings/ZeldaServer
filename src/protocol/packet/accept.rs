@@ -1,20 +1,15 @@
 use std::io::Write;
-use std::net::TcpStream;
-use std::sync::Arc;
-
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Accept {
-    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub accept_type: u8,
 }
 
 impl Accept {
-    pub fn new(author: Option<Arc<TcpStream>>, accept_type: u8) -> Self {
+    pub fn new(accept_type: u8) -> Self {
         Accept {
-            author,
             message_type: 8,
             accept_type,
         }
@@ -46,7 +41,6 @@ impl<'a> Parser<'a> for Accept {
         println!("[ACCEPT] Deserializing packet: {}", packet);
 
         Ok(Accept {
-            author: packet.author,
             message_type: packet.message_type,
             accept_type: packet.body[0],
         })

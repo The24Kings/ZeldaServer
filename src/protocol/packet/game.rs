@@ -1,12 +1,9 @@
 use std::io::Write;
-use std::net::TcpStream;
-use std::sync::Arc;
 
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct Game {
-    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub initial_points: u16,
     pub stat_limit: u16,
@@ -46,7 +43,6 @@ impl<'a> Parser<'a> for Game {
         let description_len = u16::from_le_bytes([packet.body[4], packet.body[5]]);
 
         Ok(Game {
-            author: packet.author,
             message_type: packet.message_type,
             initial_points,
             stat_limit,
