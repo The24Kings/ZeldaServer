@@ -24,15 +24,13 @@ pub mod version;
  */
 #[derive(Debug, Clone)]
 pub struct Packet<'a> {
-    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub body: &'a [u8],
 }
 
 impl<'a> Packet<'a> {
-    pub fn new(author: Arc<TcpStream>, id: u8, bytes: &'a [u8]) -> Self {
+    pub fn new(id: u8, bytes: &'a [u8]) -> Self {
         Packet {
-            author: Some(author),
             message_type: id,
             body: &bytes[0..],
         }
@@ -61,7 +59,7 @@ impl<'a> Packet<'a> {
                 .join(" ")
         );
         // Create a new packet with the read bytes
-        let packet = Packet::new(stream, id, buffer);
+        let packet = Packet::new(id, buffer);
 
         Ok(packet)
     }
@@ -119,7 +117,7 @@ impl<'a> Packet<'a> {
         // Extend the buffer with the description
         buffer.extend_from_slice(&desc);
 
-        let packet = Packet::new(stream, id, buffer);
+        let packet = Packet::new(id, buffer);
 
         Ok(packet)
     }
@@ -144,8 +142,7 @@ impl<'a> std::fmt::Display for Packet<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\nPacket {{\n    author: {:?},\n    message_type: {},\n    body: [\n        {}\n    ]\n}}",
-            self.author,
+            "\nPacket {{\n    message_type: {},\n    body: [\n        {}\n    ]\n}}",
             self.message_type,
             self.body
                 .iter()
