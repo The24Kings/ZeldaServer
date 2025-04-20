@@ -3,7 +3,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-use super::packet::character::{self, Character};
+use super::packet::character::Character;
 use super::Type;
 use super::packet::{Packet, Parser, leave::Leave, start::Start, fight::Fight};
 
@@ -11,12 +11,11 @@ use super::packet::{Packet, Parser, leave::Leave, start::Start, fight::Fight};
 pub struct Client {
     pub stream: Arc<TcpStream>,
     pub sender: Sender<Type>,
-    pub character: Option<Character>,
 }
 
 impl Client {
-    pub fn new(stream: Arc<TcpStream>, sender: Sender<Type>, character: Option<Character>) -> Self {
-        Client { stream, sender, character }
+    pub fn new(stream: Arc<TcpStream>, sender: Sender<Type>) -> Self {
+        Client { stream, sender }
     }
 
     pub fn read(&self) -> Result<Type, std::io::Error> {
