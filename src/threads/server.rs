@@ -73,7 +73,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Find the character in the map and mark it as active send it back to the client
-                if let Some(player) = map.find_player_conn(author.clone()) { //FIXME: Need to fix this implementation
+                if let Some(player) = map.find_player_conn(author.clone()) {
                     player.flags.started = true;
 
                     send(Type::Character(author.clone(), player.clone()))

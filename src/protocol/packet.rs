@@ -24,13 +24,15 @@ pub mod version;
  */
 #[derive(Debug, Clone)]
 pub struct Packet<'a> {
+    pub stream: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub body: &'a [u8],
 }
 
 impl<'a> Packet<'a> {
-    pub fn new(id: u8, bytes: &'a [u8]) -> Self {
+    pub fn new(stream: Option<Arc<TcpStream>>, id: u8, bytes: &'a [u8]) -> Self {
         Packet {
+            stream,
             message_type: id,
             body: &bytes[0..],
         }
@@ -59,7 +61,7 @@ impl<'a> Packet<'a> {
                 .join(" ")
         );
         // Create a new packet with the read bytes
-        let packet = Packet::new(id, buffer);
+        let packet = Packet::new(Some(stream), id, buffer);
 
         Ok(packet)
     }
@@ -117,7 +119,7 @@ impl<'a> Packet<'a> {
         // Extend the buffer with the description
         buffer.extend_from_slice(&desc);
 
-        let packet = Packet::new(id, buffer);
+        let packet = Packet::new(Some(stream), id, buffer);
 
         Ok(packet)
     }

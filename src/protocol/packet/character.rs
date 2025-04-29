@@ -2,9 +2,10 @@ use crate::{
     debug_packet,
     protocol::packet::{Packet, Parser},
 };
-use std::io::Write;
+use std::{io::Write, net::TcpStream, sync::Arc};
 #[derive(Debug, Clone)]
 pub struct Character {
+    pub author: Option<Arc<TcpStream>>,
     pub message_type: u8,
     pub name: String,
     pub flags: CharacterFlags,
@@ -19,8 +20,9 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn from(incoming: &Character) -> Self {
+    pub fn from(author: Option<Arc<TcpStream>>, incoming: &Character) -> Self {
         Character {
+            author,
             message_type: incoming.message_type,
             name: incoming.name.clone(),
             flags: CharacterFlags::default(),
@@ -39,6 +41,7 @@ impl Character {
 impl Default for Character {
     fn default() -> Self {
         Character {
+            author: None,
             message_type: 10,
             name: "Error".to_string(),
             flags: CharacterFlags::default(),
@@ -148,6 +151,7 @@ impl<'a> Parser<'a> for Character {
         }; // Other bits are reserved for future use
 
         Ok(Character {
+            author: packet.stream,
             message_type: packet.message_type,
             name,
             flags,

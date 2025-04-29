@@ -41,15 +41,20 @@ impl Map {
         self.players.iter_mut().find(|player| player.name == name)
     }
 
-    pub fn find_player_conn(&mut self, _conn: Arc<TcpStream>) -> Option<&mut Character> {
-        // self.players.iter_mut().find(|player| {
-        //     if let Some(author) = &player.author {
-        //         conn.as_ref().map_or(false, |plyr_con| Arc::ptr_eq(author, plyr_con))
-        //     } else {
-        //         false
-        //     }
-        // })
-        None
+    pub fn find_player_conn(&mut self, conn: Option<Arc<TcpStream>>) -> Option<&mut Character> {
+        let conn = match conn {
+            Some(c) => c,
+            None => return None,
+        };
+
+        // Find the player with the same connection
+        self.players.iter_mut().find(|player| {
+            if let Some(author) = &player.author {
+                Arc::ptr_eq(author, &conn)
+            } else {
+                false
+            }
+        })
     }
 
     pub fn find_monster(&mut self, name: String) -> Option<&mut Character> {
@@ -83,7 +88,7 @@ impl Map {
         // Send the packet to the server
         for player in &self.players {
             send(Type::Message(
-                player.author.clone(), //FIXME: This should be the player's connection, maybe change to use Client rather than Character for the player list
+                player.author.clone(),
                 Message {
                     message_type: 1,
                     message_len: message.len() as u16,
@@ -113,7 +118,7 @@ impl Map {
             room.players.iter().flatten().for_each(|&player_index| {
                 match self.players.get(player_index) {
                     Some(to_alert) => {
-                        if let Err(e) = send(Type::Character(plyr.author.clone(), plyr.clone())) { //FIXME: This should be the player's connection, maybe change to use Client rather than Character for the player list
+                        if let Err(e) = send(Type::Character(plyr.author.clone(), plyr.clone())) {
                             eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                         }
                     }
