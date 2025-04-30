@@ -180,6 +180,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                         // Reset the player's flags safely
                         player.flags = CharacterFlags::default();
 
+                        // Update with new connection data
+                        player.author = author.clone();
+
                         println!("[SERVER] Found character in map, resetting flags.");
                     }
                     None => {
@@ -208,12 +211,24 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                     eprintln!("[SERVER] Failed to send character packet: {}", e);
                 });
             }
-            Type::Leave(_author, content) => {
+            Type::Leave(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
                 // Find the character in the map and mark it as inactive, not ready, not started, and do not join battle
                 // If the character is not in the map, just ignore it
 
-                //TODO: Actually deactivate the character lmao
+                let player = match map.find_player_conn(&author) {
+                    Some(player) => player,
+                    None => {
+                        eprintln!("[SERVER] Unable to find player in map");
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+                };
+
+                // Reset the player's flags safely (leave the alive flag alone as it may have been set by the server during battle)
+                player.flags.started = false;
+                player.flags.ready = false;
+
+                println!("[SERVER] Found character in map, resetting flags.");
             }
             Type::Error(_, _) => {}
             Type::Accept(_, _) => {}
