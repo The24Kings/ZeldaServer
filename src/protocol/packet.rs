@@ -52,13 +52,13 @@ impl<'a> Packet<'a> {
             )
         })?;
 
-        print!(
+        println!(
             "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .map(|b| format!("0x{:02x}", b))
+                .map(|b| format!("\\x{:02x}", b))
                 .collect::<Vec<String>>()
-                .join(" ")
+                .join("")
         );
         // Create a new packet with the read bytes
         let packet = Packet::new(Some(stream), id, buffer);
@@ -82,13 +82,13 @@ impl<'a> Packet<'a> {
             )
         })?;
 
-        print!(
+        println!(
             "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .map(|b| format!("0x{:02x}", b))
+                .map(|b| format!("\\x{:02x}", b))
                 .collect::<Vec<String>>()
-                .join(" ")
+                .join("")
         );
 
         // Get the description length from the buffer
@@ -161,11 +161,7 @@ impl<'a> std::fmt::Display for Packet<'a> {
 macro_rules! debug_packet {
     ($packet:expr) => {
         {
-            print!("[DEBUG] Serialized packet: ");
-        
-            print!("{}", $packet.iter().map(|b| format!("\\x{:02x}", b)).collect::<Vec<String>>().join(""));
-
-            println!();
+            println!("[DEBUG] Serialized packet: {}", $packet.iter().map(|b| format!("\\x{:02x}", b)).collect::<Vec<String>>().join("")); // TODO: Add another field for the message; (message, packet)
         }
     };
 }
