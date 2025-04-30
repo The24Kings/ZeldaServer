@@ -178,7 +178,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                         }
 
                         // Reset the player's flags safely
-                        player.flags = CharacterFlags::default();
+                        player.flags = CharacterFlags::activate(false);
 
                         // Update with new connection data
                         player.author = author.clone();
@@ -213,8 +213,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
             }
             Type::Leave(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
-                // Find the character in the map and mark it as inactive, not ready, not started, and do not join battle
-                // If the character is not in the map, just ignore it
 
                 let player = match map.find_player_conn(&author) {
                     Some(player) => player,
@@ -224,9 +222,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                     }
                 };
 
-                // Reset the player's flags safely (leave the alive flag alone as it may have been set by the server during battle)
-                player.flags.started = false;
-                player.flags.ready = false;
+                // Reset the player's flags safely
+                player.flags = CharacterFlags::deactivate(false);
 
                 println!("[SERVER] Found character in map, resetting flags.");
             }

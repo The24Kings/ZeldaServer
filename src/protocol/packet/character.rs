@@ -78,6 +78,38 @@ impl Default for CharacterFlags {
     }
 }
 
+impl CharacterFlags {
+    pub fn deactivate(monster: bool) -> Self {
+        CharacterFlags {
+            alive: false,
+            join_battle: false,
+            monster,
+            started: false,
+            ready: false,
+        }
+    }
+
+    pub fn activate(monster: bool) -> Self{
+        CharacterFlags {
+            alive: true,
+            join_battle: true,
+            monster,
+            started: false,
+            ready: true,
+        }
+    }
+
+    pub fn dead(monster: bool) -> Self {
+        CharacterFlags {
+            alive: false,
+            join_battle: false,
+            monster,
+            started: false,
+            ready: true,
+        }
+    }
+}
+
 impl<'a> Parser<'a> for Character {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
