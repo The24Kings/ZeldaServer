@@ -37,11 +37,11 @@ impl Map {
         self.rooms.iter().find(|room| room.room_number == id)
     }
 
-    pub fn find_player(&mut self, name: String) -> Option<&mut Character> {
-        self.players.iter_mut().find(|player| player.name == name)
+    pub fn find_player(&mut self, name: &String) -> Option<&mut Character> {
+        self.players.iter_mut().find(|player| player.name == *name)
     }
 
-    pub fn find_player_conn(&mut self, conn: Option<Arc<TcpStream>>) -> Option<&mut Character> {
+    pub fn find_player_conn(&mut self, conn: &Option<Arc<TcpStream>>) -> Option<&mut Character> {
         let conn = match conn {
             Some(c) => c,
             None => return None,

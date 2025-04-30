@@ -164,6 +164,8 @@ macro_rules! debug_packet {
             print!("[DEBUG] Serialized packet: ");
         
             print!("{}", $packet.iter().map(|b| format!("0x{:02x}", b)).collect::<Vec<String>>().join(" "));
+
+            println!();
         }
     };
 }

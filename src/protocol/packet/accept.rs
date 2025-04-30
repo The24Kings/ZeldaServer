@@ -1,7 +1,7 @@
 use std::io::Write;
 use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Accept {
     pub message_type: u8,
     pub accept_type: u8,
@@ -12,6 +12,15 @@ impl Accept {
         Accept {
             message_type: 8,
             accept_type,
+        }
+    }
+}
+
+impl Default for Accept {
+    fn default() -> Self {
+        Accept {
+            message_type: 8,
+            accept_type: 0,
         }
     }
 }
