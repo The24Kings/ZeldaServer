@@ -148,9 +148,9 @@ impl<'a> std::fmt::Display for Packet<'a> {
             self.message_type,
             self.body
                 .iter()
-                .map(|b| format!("0x{:02x}", b))
+                .map(|b| format!("\\x{:02x}", b))
                 .collect::<Vec<String>>()
-                .join(" ")
+                .join("")
         )
     }
 }
@@ -163,7 +163,7 @@ macro_rules! debug_packet {
         {
             print!("[DEBUG] Serialized packet: ");
         
-            print!("{}", $packet.iter().map(|b| format!("0x{:02x}", b)).collect::<Vec<String>>().join(" "));
+            print!("{}", $packet.iter().map(|b| format!("\\x{:02x}", b)).collect::<Vec<String>>().join(""));
 
             println!();
         }
