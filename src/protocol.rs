@@ -17,20 +17,20 @@ pub mod map;
 
 #[derive(Debug, Clone)]
 pub enum Type {
-    Message(Option<Arc<TcpStream>>, Message),
-    ChangeRoom(Option<Arc<TcpStream>>, ChangeRoom),
-    Fight(Option<Arc<TcpStream>>, Fight),
-    PVPFight(Option<Arc<TcpStream>>, PVPFight),
-    Loot(Option<Arc<TcpStream>>, Loot),
-    Start(Option<Arc<TcpStream>>, Start),
-    Error(Option<Arc<TcpStream>>, Error),
-    Accept(Option<Arc<TcpStream>>, Accept),
-    Room(Option<Arc<TcpStream>>, Room),
-    Character(Option<Arc<TcpStream>>, Character),
-    Game(Option<Arc<TcpStream>>, Game),
-    Leave(Option<Arc<TcpStream>>, Leave),
-    Connection(Option<Arc<TcpStream>>, Connection),
-    Version(Option<Arc<TcpStream>>, Version),
+    Message(Arc<TcpStream>, Message),
+    ChangeRoom(Arc<TcpStream>, ChangeRoom),
+    Fight(Arc<TcpStream>, Fight),
+    PVPFight(Arc<TcpStream>, PVPFight),
+    Loot(Arc<TcpStream>, Loot),
+    Start(Arc<TcpStream>, Start),
+    Error(Arc<TcpStream>, Error),
+    Accept(Arc<TcpStream>, Accept),
+    Room(Arc<TcpStream>, Room),
+    Character(Arc<TcpStream>, Character),
+    Game(Arc<TcpStream>, Game),
+    Leave(Arc<TcpStream>, Leave),
+    Connection(Arc<TcpStream>, Connection),
+    Version(Arc<TcpStream>, Version),
 }
 
 impl std::fmt::Display for Type {
@@ -119,16 +119,12 @@ pub fn send(packed: Type) -> Result<(), std::io::Error> {
         }
     };
 
-    match author {
-        Some(author) => author.as_ref().write_all(&byte_stream)?,
-        None => { 
-            println!("[SEND] No author, not sending packet.");
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "No author provided",
-            ));
-        },
-    }
+    author.as_ref().write_all(&byte_stream).map_err(|e| {
+        std::io::Error::new(
+            std::io::ErrorKind::WriteZero,
+            format!("Failed to write to stream: {}", e),
+        )
+    })?;
 
     Ok(())
 }

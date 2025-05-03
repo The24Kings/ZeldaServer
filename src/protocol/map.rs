@@ -41,16 +41,11 @@ impl Map {
         self.players.iter_mut().find(|player| player.name == *name)
     }
 
-    pub fn find_player_conn(&mut self, conn: &Option<Arc<TcpStream>>) -> Option<&mut Character> {
-        let conn = match conn {
-            Some(c) => c,
-            None => return None,
-        };
-
+    pub fn find_player_conn(&mut self, conn: &Arc<TcpStream>) -> Option<&mut Character> {
         // Find the player with the same connection
         self.players.iter_mut().find(|player| {
             if let Some(author) = &player.author {
-                Arc::ptr_eq(author, &conn)
+                Arc::ptr_eq(author, conn)
             } else {
                 false
             }
@@ -87,8 +82,16 @@ impl Map {
 
         // Send the packet to the server
         for player in &self.players {
+            let author = match &player.author {
+                Some(author) => author,
+                None => {
+                    eprintln!("[BROADCAST] Player {} has no author!", player.name);
+                    continue;
+                }
+            };
+
             send(Type::Message(
-                player.author.clone(),
+                author.clone(),
                 Message {
                     message_type: 1,
                     message_len: message.len() as u16,
@@ -114,11 +117,19 @@ impl Map {
     pub fn alert(&self, id: u16, plyr: &Character) -> Result<(), std::io::Error> {
         println!("[ALERT] Alerting players about: {}", plyr.name);
 
+        let author = match &plyr.author {
+            Some(author) => author,
+            None => {
+                eprintln!("[ALERT] Player {} has no author!", plyr.name);
+                return Ok(());
+            }
+        };
+
         if let Some(room) = self.find_room(id) {
             room.players.iter().flatten().for_each(|&player_index| {
                 match self.players.get(player_index) {
                     Some(to_alert) => {
-                        if let Err(e) = send(Type::Character(plyr.author.clone(), plyr.clone())) {
+                        if let Err(e) = send(Type::Character(author.clone(), plyr.clone())) {
                             eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                         }
                     }

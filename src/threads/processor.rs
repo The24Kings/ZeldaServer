@@ -14,7 +14,7 @@ pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, 
 
     // Send the initial game info to the client
     send(Type::Version(
-        Some(stream.clone()),
+        stream.clone(),
         Version {
             message_type: 14,
             major_rev: 2,
@@ -29,7 +29,7 @@ pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, 
     });
 
     send(Type::Game(
-        Some(stream.clone()),
+        stream.clone(),
         Game {
             message_type: 11,
             initial_points,
@@ -79,7 +79,7 @@ pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, 
                 // Ensure the server thread is notified of the disconnection
                 client
                     .sender
-                    .send(Type::Leave(Some(stream.clone()), Leave::default()))
+                    .send(Type::Leave(stream.clone(), Leave::default()))
                     .unwrap_or_else(|_| {
                         eprintln!("[CONNECTION] Failed to send leave packet");
                     });

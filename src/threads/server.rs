@@ -181,7 +181,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                         player.flags = CharacterFlags::activate(false);
 
                         // Update with new connection data
-                        player.author = author.clone();
+                        player.author = Some(author.clone());
 
                         println!("[SERVER] Found character in map, resetting flags.");
                     }
