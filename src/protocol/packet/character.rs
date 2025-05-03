@@ -183,7 +183,7 @@ impl<'a> Parser<'a> for Character {
         }; // Other bits are reserved for future use
 
         Ok(Character {
-            author: packet.stream,
+            author: Some(packet.stream.clone()),
             message_type: packet.message_type,
             name,
             flags,
