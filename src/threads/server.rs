@@ -28,10 +28,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
         match packet {
             Type::Message(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
-                // Find the recipient in the map and send the message to them
-                // If the recipient is not found, send an error packet back to the sender
 
-                let player = match map.find_player(&content.recipient) {
+                // Check to see if the recipient is a player in the map
+                let player = match map.players.iter_mut().find(|player| player.name == content.recipient) {
                     Some(player) => player,
                     None => {
                         eprintln!("[SERVER] Unable to find player in map");
@@ -48,6 +47,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                     }
                 };
 
+                // Check if the recipient has an active connection
                 let author = match &player.author {
                     Some(author) => author,
                     None => {
@@ -55,7 +55,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                         send(Type::Error(
                             author.clone(),
-                            Error::new(ErrorCode::Other, "Character does not have an active connection"),
+                            Error::new(
+                                ErrorCode::Other,
+                                "Character does not have an active connection",
+                            ),
                         ))
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
@@ -111,7 +114,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
             Type::Start(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
 
-                let player = match map.find_player_conn(&author) {
+                let player = match map.players.iter_mut().find(|player| {
+                    player.author.as_ref().map_or(false, |a| Arc::ptr_eq(a, &author))
+                }) {
                     Some(player) => player,
                     None => {
                         eprintln!("[SERVER] Unable to find player in map");
@@ -128,7 +133,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 });
 
                 // Send Starting room to the client
-                let room = match map.find_room(0) {
+                let room = match map.rooms.iter().find(|room| room.room_number == 0) {
                     Some(room) => room,
                     None => {
                         eprintln!("[SERVER] Unable to find room in map");
@@ -200,7 +205,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 }
 
                 // Check if the player is already in the map
-                match map.find_player(&content.name) {
+                match map.players.iter_mut().find(|player| player.name == content.name) {
                     Some(player) => {
                         if player.flags.started {
                             eprintln!("[SERVER] Player is already in the game");
@@ -239,7 +244,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                 // Send the character back to the client (we changed the flags and junk)
                 // We just added the player to the map, so we need to send the updated character
-                let player = match map.find_player(&content.name) {
+                let player = match map.players.iter().find(|player| player.name == content.name) {
                     Some(player) => player,
                     None => &mut Character::default(),
                 };
@@ -251,7 +256,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
             Type::Leave(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
 
-                let player = match map.find_player_conn(&author) {
+                let player = match map.players.iter_mut().find(|player| {
+                    player.author.as_ref().map_or(false, |a| Arc::ptr_eq(a, &author))
+                }) {
                     Some(player) => player,
                     None => {
                         eprintln!("[SERVER] Unable to find player in map");

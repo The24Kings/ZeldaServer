@@ -1,5 +1,5 @@
 use serde_json::Value;
-use std::{fs::File, net::TcpStream, sync::Arc};
+use std::fs::File;
 
 use crate::protocol::packet::message::Message;
 
@@ -31,29 +31,6 @@ impl Map {
             desc_len: 0,
             desc: String::new(),
         }
-    }
-
-    pub fn find_room(&self, id: u16) -> Option<&Room> {
-        self.rooms.iter().find(|room| room.room_number == id)
-    }
-
-    pub fn find_player(&mut self, name: &String) -> Option<&mut Character> {
-        self.players.iter_mut().find(|player| player.name == *name)
-    }
-
-    pub fn find_player_conn(&mut self, conn: &Arc<TcpStream>) -> Option<&mut Character> {
-        // Find the player with the same connection
-        self.players.iter_mut().find(|player| {
-            if let Some(author) = &player.author {
-                Arc::ptr_eq(author, conn)
-            } else {
-                false
-            }
-        })
-    }
-
-    pub fn find_monster(&mut self, name: String) -> Option<&mut Character> {
-        self.monsters.iter_mut().find(|monster| monster.name == name)
     }
 
     pub fn add_player(&mut self, player: Character) {
@@ -125,7 +102,7 @@ impl Map {
             }
         };
 
-        if let Some(room) = self.find_room(id) {
+        if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
             room.players.iter().flatten().for_each(|&player_index| {
                 match self.players.get(player_index) {
                     Some(to_alert) => {
@@ -144,12 +121,12 @@ impl Map {
     }
 
     pub fn get_exits(&self, id: u16) -> Option<Vec<&Room>> {
-        if let Some(room) = self.find_room(id) {
+        if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
             let mut exits = Vec::new();
 
             if let Some(connections) = &room.connections {
                 for exit in connections {
-                    if let Some(exit_room) = self.find_room(*exit) {
+                    if let Some(exit_room) = self.rooms.iter().find(|r| r.room_number == *exit) {
                         exits.push(exit_room);
                     }
                 }
