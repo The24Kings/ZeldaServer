@@ -26,10 +26,49 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
         // Match the type of the packet to the enum Type
         match packet {
-            Type::Message(_author, content) => {
+            Type::Message(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
                 // Find the recipient in the map and send the message to them
                 // If the recipient is not found, send an error packet back to the sender
+
+                let player = match map.find_player(&content.recipient) {
+                    Some(player) => player,
+                    None => {
+                        eprintln!("[SERVER] Unable to find player in map");
+
+                        send(Type::Error(
+                            author.clone(),
+                            Error::new(ErrorCode::Other, "Player not found"),
+                        ))
+                        .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+                };
+
+                let author = match &player.author {
+                    Some(author) => author,
+                    None => {
+                        eprintln!("[SERVER] Character does not have an active connection");
+
+                        send(Type::Error(
+                            author.clone(),
+                            Error::new(ErrorCode::Other, "Character does not have an active connection"),
+                        ))
+                        .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+                };
+
+                // Send the message to the recipient
+                send(Type::Message(author.clone(), content.clone())).unwrap_or_else(|e| {
+                    eprintln!("[SERVER] Failed to send message packet: {}", e);
+                });
             }
             Type::ChangeRoom(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
@@ -177,13 +216,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                             continue; // Skip this iteration
                         }
 
-                        // Reset the player's flags safely
+                        // Reset the player's flags safely and update the author
                         player.flags = CharacterFlags::activate(false);
-
-                        // Update with new connection data
                         player.author = Some(author.clone());
 
-                        println!("[SERVER] Found character in map, resetting flags.");
+                        println!("[SERVER] Found character in map, reactivating character.");
                     }
                     None => {
                         let mut new_player = content.clone();
@@ -224,8 +261,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                 // Reset the player's flags safely
                 player.flags = CharacterFlags::deactivate(false);
+                player.author = None;
 
-                println!("[SERVER] Found character in map, resetting flags.");
+                println!("[SERVER] Found character in map, resetting flags and disabling connection.");
             }
             Type::Error(_, _) => {}
             Type::Accept(_, _) => {}
