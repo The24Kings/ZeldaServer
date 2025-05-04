@@ -183,7 +183,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
             }
             Type::Fight(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
-                // TODO: Fight logic
+                //TODO: Fight logic
 
                 /*
                     Find the character in the map
@@ -210,6 +210,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
             }
             Type::Loot(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
+                //TODO: Loot logic
                 // Find the character in the map and the thing being looted
                 // Loot the thing and send both the updated character and the looted thing back to the client
             }
