@@ -376,6 +376,16 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 player.author = None;
 
                 println!("[SERVER] Found character in map, resetting flags and disabling connection.");
+
+                // Attmept to shutdown the connection
+                match author.shutdown(std::net::Shutdown::Both) {
+                    Ok(_) => {
+                        println!("[SERVER] Connection shutdown successfully");
+                    }
+                    Err(e) => {
+                        eprintln!("[SERVER] Failed to shutdown connection: {}", e);
+                    }
+                }
             }
             Type::Error(_, _) => {}
             Type::Accept(_, _) => {}
