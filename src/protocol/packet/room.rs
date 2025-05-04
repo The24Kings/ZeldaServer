@@ -7,9 +7,9 @@ pub struct Room {
     pub message_type: u8,
     pub room_number: u16,                   // Same as room_number in ChangeRoom
     pub room_name: String,
-    pub connections: Option<Vec<u16>>,    // Used for the game map
-    pub players: Option<Vec<usize>>,        // Used for the game map
-    pub monsters: Option<Vec<usize>>,       // Used for the game map
+    pub connections: Vec<u16>,      // Used for the game map
+    pub players: Vec<usize>,        // Used for the game map
+    pub monsters: Vec<usize>,       // Used for the game map
     pub description_len: u16,
     pub description: String,
 }
@@ -21,9 +21,9 @@ impl Room {
             message_type: 9,
             room_number: room,
             room_name: title,
-            connections: Some(conns),
-            players: Some(Vec::new()), // Players are empty at the start
-            monsters: Some(mnstrs),
+            connections: conns,
+            players: Vec::new(), // Players are empty at the start
+            monsters: mnstrs,
             description_len: desc.len() as u16,
             description: desc
         }
@@ -71,9 +71,9 @@ impl<'a> Parser<'a> for Room {
             message_type,
             room_number,
             room_name,
-            connections: None,
-            players: None,
-            monsters: None,
+            connections: Vec::new(),
+            players: Vec::new(),
+            monsters: Vec::new(),
             description_len,
             description,
         })

@@ -103,7 +103,7 @@ impl Map {
         };
 
         if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
-            room.players.iter().flatten().for_each(|&player_index| {
+            room.players.iter().for_each(|&player_index| {
                 match self.players.get(player_index) {
                     Some(to_alert) => {
                         if let Err(e) = send(Type::Character(author.clone(), plyr.clone())) {
@@ -124,11 +124,9 @@ impl Map {
         if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
             let mut exits = Vec::new();
 
-            if let Some(connections) = &room.connections {
-                for exit in connections {
-                    if let Some(exit_room) = self.rooms.iter().find(|r| r.room_number == *exit) {
-                        exits.push(exit_room);
-                    }
+            for exit in &room.connections {
+                if let Some(exit_room) = self.rooms.iter().find(|r| r.room_number == *exit) {
+                    exits.push(exit_room);
                 }
             }
 
