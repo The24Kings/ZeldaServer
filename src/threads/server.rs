@@ -73,11 +73,117 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                     eprintln!("[SERVER] Failed to send message packet: {}", e);
                 });
             }
-            Type::ChangeRoom(_author, content) => {
+            Type::ChangeRoom(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
-                // Find the character in the map, move it to the new room if possible
-                // and send the updated character back to the client
-                // Alert the other players in the room about the change and alert all players in the new room
+
+                // Find the player in the map and change their room
+                let player = match map.players.iter_mut().find(|player| {
+                    player.author.as_ref().map_or(false, |a| Arc::ptr_eq(a, &author))
+                }) {
+                    Some(player) => player,
+                    None => {
+                        eprintln!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
+
+                // Check if the player is already in the room
+                if player.current_room == content.room_number {
+                    eprintln!("[SERVER] Player is already in the room");
+
+                    send(Type::Error(
+                        author.clone(),
+                        Error::new(ErrorCode::BadRoom, "Player is already in the room"),
+                    ))
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue; // Skip this iteration and wait for the next packet
+                }
+
+                // Find the room in the map
+                let room = match map.rooms.iter().find(|room| room.room_number == content.room_number) {
+                    Some(room) => room,
+                    None => {
+                        eprintln!("[SERVER] Unable to find room in map");
+
+                        send(Type::Error(
+                            author.clone(),
+                            Error::new(ErrorCode::BadRoom, "Room not found!"),
+                        ))
+                        .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        });
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+                };
+
+                // Check that the room has connections
+                let connection_ids = match &room.connections {
+                    Some(ids) => ids,
+                    None => {
+                        eprintln!("[SERVER] Room has no connections");
+
+                        send(Type::Error(
+                            author.clone(),
+                            Error::new(ErrorCode::BadRoom, "Room has no connections!"),
+                        ))
+                        .unwrap_or_else(|e| {
+                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+                };
+
+                // Check if the room is a valid connection
+                if !connection_ids.contains(&player.current_room) {
+                    eprintln!("[SERVER] Invalid connection");
+
+                    send(Type::Error(
+                        author.clone(),
+                        Error::new(ErrorCode::BadRoom, "Invalid connection!"),
+                    ))
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue; // Skip this iteration and wait for the next packet
+                }
+
+                // Update the player's current room
+                player.current_room = content.room_number;
+
+                // Send the updated character back to the client
+                send(Type::Character(author.clone(), player.clone())).unwrap_or_else(|e| {
+                    eprintln!("[SERVER] Failed to send character packet: {}", e);
+                });
+
+                //TODO: Send all players and monsters in the room
+                //TODO: Alert all players in the room that a new player has joined
+
+                // Send the room to the client
+                send(Type::Room(author.clone(), room.clone())).unwrap_or_else(|e| {
+                    eprintln!("[SERVER] Failed to send room packet: {}", e);
+                });
+
+                // Send all connections to the client
+                let connections = match map.get_exits(content.room_number) {
+                    Some(exits) => exits,
+                    None => {
+                        eprintln!("[SERVER] Unable to find room in map");
+                        continue; // Skip this iteration and wait for the next packet
+                    }
+                };
+
+                for room in connections {
+                    send(Type::Connection(author.clone(), Connection::from(&room))).unwrap_or_else(
+                        |e| {
+                            eprintln!("[SERVER] Failed to send connection packet: {}", e);
+                        },
+                    );
+                }
             }
             Type::Fight(_author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);
@@ -236,6 +342,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                         println!("[SERVER] Added character to map.");
                     }
                 };
+
+                //TODO: Alert all players in the room that a new player has joined
 
                 // Send the accept packet to the client
                 send(Type::Accept(author.clone(), Accept::new(10))).unwrap_or_else(|e| {
