@@ -56,9 +56,9 @@ impl<'a> Packet<'a> {
             "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .map(|b| format!("\\x{:02x}", b))
+                .map(|b| format!("{:02x}", b))
                 .collect::<Vec<String>>()
-                .join("")
+                .join(" ")
         );
         // Create a new packet with the read bytes
         let packet = Packet::new(stream, id, buffer);
@@ -86,9 +86,9 @@ impl<'a> Packet<'a> {
             "[PACKET] Read packet body: {}",
             buffer
                 .iter()
-                .map(|b| format!("\\x{:02x}", b))
+                .map(|b| format!("{:02x}", b))
                 .collect::<Vec<String>>()
-                .join("")
+                .join(" ")
         );
 
         // Get the description length from the buffer
@@ -148,9 +148,9 @@ impl<'a> std::fmt::Display for Packet<'a> {
             self.message_type,
             self.body
                 .iter()
-                .map(|b| format!("\\x{:02x}", b))
+                .map(|b| format!("{:02x}", b))
                 .collect::<Vec<String>>()
-                .join("")
+                .join(" ")
         )
     }
 }
@@ -161,7 +161,7 @@ impl<'a> std::fmt::Display for Packet<'a> {
 macro_rules! debug_packet {
     ($packet:expr) => {
         {
-            println!("[DEBUG] Serialized packet: {}", $packet.iter().map(|b| format!("\\x{:02x}", b)).collect::<Vec<String>>().join("")); // TODO: Add another field for the message; (message, packet)
+            println!("[DEBUG] Serialized packet: {}", $packet.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ")); // TODO: Add another field for the message; (message, packet)
         }
     };
 }
