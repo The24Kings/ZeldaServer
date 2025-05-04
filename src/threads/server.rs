@@ -334,10 +334,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                         println!("[SERVER] Found character in map, reactivating character.");
                     }
                     None => {
-                        let mut new_player = content.clone();
-
-                        new_player.flags = CharacterFlags::default();
-                        map.add_player(new_player);
+                        map.add_player(Character::from(Some(author.clone()), &content));
 
                         println!("[SERVER] Added character to map.");
                     }
