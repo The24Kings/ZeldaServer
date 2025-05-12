@@ -1,6 +1,7 @@
+use clap::Parser;
 use std::fs::File;
-use std::sync::{Arc, Mutex, mpsc};
 use std::net::TcpListener;
+use std::sync::{Arc, Mutex, mpsc};
 
 use protocol::map::Map;
 
@@ -9,9 +10,19 @@ use crate::threads::{processor::connection, server::server};
 pub mod protocol;
 pub mod threads;
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Port to bind the TCP Connection
+    #[arg(short, long, default_value_t = 5051)]
+    port: u16,
+}
+
 fn main() {
-    let address = "0.0.0.0:5051";
-    let listener = TcpListener::bind(address).expect("[MAIN] Failed to bind to address");
+    let args = Args::parse();
+
+    let address = format!("0.0.0.0:{}", args.port);
+    let listener = TcpListener::bind(&address).expect("[MAIN] Failed to bind to address");
 
     println!("Listening on {address}");
 
@@ -31,7 +42,7 @@ fn main() {
     match map {
         Ok(mut map) => {
             println!("[MAIN] Parsed map successfully");
-            
+
             std::thread::spawn(move || {
                 server(receiver, &mut map);
             });
