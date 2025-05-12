@@ -20,8 +20,8 @@ impl Connection {
             message_type: 13,
             room_number: room.room_number,
             room_name: room.room_name.clone(),
-            description_len: room.description_len,
-            description: room.description.clone()
+            description_len: room.desc_short.len() as u16,
+            description: room.desc_short.clone()
         }
     }
 }

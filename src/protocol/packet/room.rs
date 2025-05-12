@@ -5,18 +5,19 @@ use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 #[derive(Default, Debug, Clone)]
 pub struct Room {
     pub message_type: u8,
-    pub room_number: u16,                   // Same as room_number in ChangeRoom
+    pub room_number: u16,           // Same as room_number in ChangeRoom
     pub room_name: String,
     pub connections: Vec<u16>,      // Used for the game map
     pub players: Vec<usize>,        // Used for the game map
     pub monsters: Vec<usize>,       // Used for the game map
     pub description_len: u16,
+    pub desc_short: String,         // Used for connection desc
     pub description: String,
 }
 
 impl Room {
     /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
-    pub fn new(room: u16, title: String, conns: Vec<u16>, mnstrs: Vec<usize>, desc: String) -> Self {
+    pub fn new(room: u16, title: String, conns: Vec<u16>, mnstrs: Vec<usize>, desc_short: String, desc: String) -> Self {
         Room {
             message_type: 9,
             room_number: room,
@@ -25,6 +26,7 @@ impl Room {
             players: Vec::new(), // Players are empty at the start
             monsters: mnstrs,
             description_len: desc.len() as u16,
+            desc_short,
             description: desc
         }
     }
@@ -75,6 +77,7 @@ impl<'a> Parser<'a> for Room {
             players: Vec::new(),
             monsters: Vec::new(),
             description_len,
+            desc_short: String::new(),
             description,
         })
     }
