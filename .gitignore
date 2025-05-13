@@ -1,3 +1,5 @@
 /target
 /logs
+.env
+
 start.sh

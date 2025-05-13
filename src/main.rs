@@ -1,5 +1,7 @@
+use std::env;
 use clap::Parser;
 use std::fs::File;
+use dotenv::dotenv;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
 
@@ -19,6 +21,8 @@ struct Args {
 }
 
 fn main() {
+    dotenv().ok();
+
     let args = Args::parse();
 
     let address = format!("0.0.0.0:{}", args.port);
@@ -32,7 +36,8 @@ fn main() {
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let file = File::open("src/content/game.json").expect("[MAIN] Failed to open map file!");
+    let path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
+    let file = File::open(path).expect("[MAIN] Failed to open map file!");
     let map = Map::build(file);
 
     let initial_points = map.as_ref().map(|m| m.init_points).unwrap_or(100);
