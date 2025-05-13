@@ -358,6 +358,17 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                         player.flags = CharacterFlags::activate(false);
                         player.author = Some(author.clone());
 
+                        // Remove the player from the room they left off in
+                        match map.rooms.iter_mut().enumerate().find(|(_, room)| room.room_number == player.current_room) {
+                            Some((index, room)) => {
+                                println!("[SERVER] Removing player from old room");
+                                room.players.retain(|&player_index| player_index != index);
+                            },
+                            None => {
+                                eprintln!("[SERVER] Unable to find where teh player left off in the map");
+                            }
+                        }
+
                         println!("[SERVER] Found character in map, reactivating character.");
                     }
                     None => {
