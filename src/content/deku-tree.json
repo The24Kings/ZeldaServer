@@ -1,0 +1,325 @@
+{
+    "tiles": [
+        {
+            "id": 0,
+            "title": "Outside the Great Deku Tree",
+            "connections": [1],
+            "desc": "The dense forest clears just enough to reveal a towering presence nestled among the ancient woods—the Great Deku Tree, guardian spirit of the forest. Its colossal trunk rises like a fortress of living wood, bark gnarled with age and wisdom beyond imagining. Broad roots snake across the ground like the limbs of slumbering giants, parting gently around a hollow arch that serves as its mouth-like entrance. A faint, warm glow pulses from within, as if the tree’s heart beats just beyond the threshold. The canopy above filters sunlight into dappled emerald patterns that dance on the forest floor, and the air is thick with the scent of wild herbs and old magic. As you approach, the wind carries a soft whisper—whether from the tree itself or the spirits it shelters, you cannot tell. The path forward narrows, inviting only those with purpose... and courage.",
+            "desc_short": "A clearing in the Kokiri Forest where the Great Deku Tree resides.",
+            "monsters": [1]
+        },
+        {
+            "id": 1,
+            "title": "F1 - Main Hall",
+            "connections": [0, 2],
+            "desc": "You step into the heartwood chamber of the ancient Great Deku Tree, where the air is thick with the scent of moss and damp bark. The room opens into a massive vertical hollow, its walls curving upward like the inside of a colossal oak, disappearing into shadowed heights above. Shafts of golden light pierce through cracks in the bark high above, casting shifting patterns on the moss-laden floor. Thick roots twist through the walls like frozen serpents, and narrow wooden platforms cling precariously to the inner curve of the trunk, forming a spiraling path toward unseen levels above. The soft skittering of insect legs echoes from the darkness, and the glint of many-eyed Skulltulas clinging to web-choked passages sends a chill down your spine. in the center of the room lays an unusually large spider web that you can't seem to break, but you can see light on the other side.",
+            "desc_short": "You cannot see what lies beyond the darkness of the Deku Tree's maw, but his pleas for help must not go unanswered!",
+            "monsters": [1, 1, 1]
+        },
+        {
+            "id": 2, 
+            "title": "F1 - Spiral Staircase",
+            "connections": [1, 3],
+            "desc": "A narrow, moss-covered ledge high above the main hall, reached by climbing thick, winding vines. From here, the vast chamber stretches below—roots twist around the walls, and faint light filters in from cracks above. As you look up you see a small staircase that winds upwards into the darkness above.",
+            "desc_short": "A set of vines lead up towards a moss-covered wooden boardwalk that winds up to Deku Tree.",
+            "monsters": []
+        },
+        {
+            "id": 3,
+            "title": "F2 - Spiral Staircase Lower",
+            "connections": [2, 4, 5],
+            "desc": "A moss-covered boardwalk winds upwards towards the canopy. Midway up, a narrow gap breaks the path, the wall is covered in vines that may bring you higher, but some enemies may block your path.",
+            "desc_short": "A moss-covered boardwalk that winds upwards towards the tree's canopy.",
+            "monsters": [4, 4, 4]
+        },
+        {
+            "id": 4,
+            "title": "F2 - Spiral Staircase Upper",
+            "connections": [3, 7],
+            "desc": "Beyond the gap, the spiral narrows, the bark slick with moisture. Along the left wall, partially hidden by hanging roots, a small wooden doorway is set into the trunk. Just beyond, the path curves upward toward a ledge, where the sounds of hostile creatures stir.",
+            "desc_short": "Beyond the gap, the stairs narrow, a door way lays ahead.",
+            "monsters": [1, 2]
+        },
+        {
+            "id": 5,
+            "title": "3F - Upper Boardwalk",
+            "connections": [4, 6, 9],
+            "desc": "Climbing the thick vines, you emerge onto a narrow, circular boardwalk that wraps around the upper trunk. The tree is covered head to toe in spider webs. The center is open, revealing the vast hall below... Maybe you could jump and break the web below? Three Skulltulas hang from wooden ledges protruding through the webs, their eyes tracking your every movement. A doorway is visible on the far side, leading further into the tree, its frame partially obscured by tangled vines.",
+            "desc_short": "A narrow, circular boardwalk that wraps around the upper trunk.",
+            "monsters": [0, 0, 0]
+        },
+        {
+            "id": 6,
+            "title": "B1 - Depths",
+            "connections": [1, 13],
+            "desc": "As the web gives way beneath your weight, you plunge into the damp darkness below. A splash echoes through the chamber as you land in a shallow pool, its water cool and murky. The air here is thick with moisture and decay, heavy with the scent of moss and rot. Torches lining the walls, casting a ghostly glow that dances across twisted roots and crumbling bark. Strange skittering noises echo from the shadows, and the rhythmic dripping of water adds to the eerie ambiance. You sense the heart of the corruption lurking deeper within—something ancient, watching, waiting.",
+            "desc_short": "A large spider web blocks the way down, maybe jumping from way up here will break your fall and make it give way?",
+            "monsters": [1, 1]
+        },
+        {
+            "id": 7,
+            "title": "F2 - Deku Scrub Guard",
+            "connections": [4, 8],
+            "desc": "A semi-large room with a Deku Scrub in the center, periodically shooting Deku Seeds at you. Defeating it may provide more valuable than it may seem...",
+            "desc_short": "A small opening, chirping can be heard from inside.",
+            "monsters": [3]
+        },
+        {
+            "id": 8,
+            "title": "F2 - Treasure Room",
+            "connections": [7],
+            "desc": "After defeating the guard you reach another ledge, atop you see a large chest. The air is thick with the smell of moss and wood, and soft light emits from nearby torches.",
+            "desc_short": "A small room with a high ledge, you can barely make out the room's contents.",
+            "monsters": [10]
+        },
+        {
+            "id": 9,
+            "title": "F3 - Pillar Room Start",
+            "connections": [5, 10],
+            "desc": "You step cautiously into a quiet chamber perched high within the Great Deku Tree. The bark creaks beneath your feet, and immediately, your eyes are drawn to a stone button embedded off to the side. An unlit torch stand sentinel near the wall, its sconces cold and unused. In front of you, across a small gap, a treasure chest rests atop a raised platform—tempting, but just out of reach. Pillars of stone protrude from the ground at uneven heights, clearly designed to shift or rise with some mechanism. Off to the right, a shadowy alcove breaks the symmetry of the room, its purpose unclear but suspiciously placed.",
+            "desc_short": "A quiet chamber full of secrets.",
+            "monsters": []
+        },
+        {
+            "id": 10,
+            "title": "F3 - Pillars",
+            "connections": [9, 11, 12],
+            "desc": "You carefully step one-by-one onto the stone pillars, the sound of clicking fills the room as if a timer is about to go off. You can hear faint clicking noises coming from somewhere in the room. The alcove just to the side beckons you to explore.",
+            "desc_short": "A set of 3 stone pillars portruding from the floor.",
+            "monsters": []
+        },
+        {
+            "id": 11,
+            "title": "F3 - Hidden Alcove",
+            "connections": [10],
+            "desc": "Tucked into the side wall, the alcove is partially hidden in shadow, as though the tree itself is trying to keep it secret. The space is small—just large enough for a person to step into—but its walls curve gently inward, carved naturally from the wood of the Great Deku Tree. Faint scratch marks line the entrance, as if something once tried to claw its way out… or in. A small chest is perched in the center.",
+            "desc_short": "A small opening slighlty covered in vines.",
+            "monsters": [3, 11]
+        },
+        {
+            "id": 12,
+            "title": "F3 - Pillar's Treasure",
+            "connections": [10],
+            "desc": "After jumping from the last pillar you can see a treasure chest on the back wall. Some bushes are growing in the moss nearby.",
+            "desc_short": "You better hurry, your reward lay just ahead!",
+            "monsters": [10]
+        },
+        {
+            "id": 13,
+            "title": "B1 - Spider's Den",
+            "connections": [6, 14],
+            "desc": "A small room covered completely in spiderwebs. The exit lays just beyond a handfull of spiders.",
+            "desc_short": "The only way forward.",
+            "monsters": []
+        },
+        {
+            "id": 14,
+            "title": "B1 - Flooded Cave",
+            "connections": [13, 15, 16],
+            "desc": "You descend deeper into the tree’s heart and find yourself in a wide, flooded chamber where time feels slow and uncertain. The murky water laps quietly at the base of the walls, rippling with the soft motion of a wooden platform that glides steadily across the surface. It moves back and forth, almost lazily, as if rocked by the tree’s breath. Just overhead, a massive spiked pillar sweeps horizontally in a deadly rhythm, its rusted iron head groaning with every pass—timing is everything.",
+            "desc_short": "A small flooded chamber full of danger.",
+            "monsters": [0]
+        },
+        {
+            "id": 15,
+            "title": "B1 - Water",
+            "connections": [14],
+            "desc": "You fall into the dark and opaque water below, swirling with silt and bits of decaying bark. It clings to you with a sluggish resistance, cool and foul-smelling, as though it hasn’t been disturbed in ages. Beneath the surface, shifting shapes flicker just out of sight—whether drifting debris or something alive, it’s hard to tell. Every movement sends soft ripples across the pool, distorting reflections and masking the true depth. The water doesn’t just fill the room—it feels like it soaks into it, seeping into every crevice of the ancient wood like a slow, creeping rot.",
+            "desc_short": "It stinks...",
+            "monsters": []
+        },
+        {
+            "id": 16,
+            "title": "B1 - Torch Room",
+            "connections": [14, 17],
+            "desc": "Beyond the dripping exit lies a smaller chamber, dimly lit and heavy with tension. Three torches stand in a rough triangle at the center of the room—two cold and dark, one already flickering with an unsteady flame. Their glow casts warped shadows that dance across the bark-lined walls. Against one side, a pair of Deku Babas stand rooted, their twisted stalks swaying as they sense movement. A third lurks nearer the center, its snapping jaws inches from the unlit torches, as if guarding something. Overhead, a lone Keese circles slowly, its wings rustling softly in the stale air. The room feels like a trial—solve the flame, survive the guardians, and move forward.",
+            "desc_short": "A faint glow can be seen beneath the doorway, snapping can be heard from within.",
+            "monsters": [1, 1, 1, 6]
+        },
+        {
+            "id": 17,
+            "title": "B1 - Suspiciously Empty Room",
+            "connections": [16, 18, 19],
+            "desc": "Once you lit the torches the way forward opened up. A couple torches are dotted along the wall. As you enter a Skulltula blocks your path. Ahead of you, on the ceiling you can just barely make out 3 rather large pulsating bulbs...",
+            "desc_short": "A large room coated in webs.",
+            "monsters": [0, 1, 8, 8, 8]
+        },
+        {
+            "id": 18,
+            "title": "B1 - Small Opening",
+            "connections": [17],
+            "desc": "You found a secret room hidden beyond the opening! A skulltula circles back and forth at the rear wall and a golden skulltula clings the the wall.",
+            "desc_short": "Why is there a random doorway here?",
+            "monsters": [0, 3]
+        },
+        {
+            "id": 19,
+            "title": "B1 - Crawlspace",
+            "connections": [],
+            "desc": "Slowly crawling to the other side you can see the glowing light of torches at the end of the tunnel. Water drips on your face as a handful of insects scurry behind you.",
+            "desc_short": "A small opening just big enough for you to crawl through",
+            "monsters": [17, 20]
+        },
+        {
+            "id": 20,
+            "title": "B1 - Upper Depths",
+            "connections": [6, 19, 21],
+            "desc": "A previously unreachable section of the Depths. Another large web covers the opening that leads deeper into the Deku Tree's roots. Off to the side of the hole a pair of Deku Babas snap at your feet.",
+            "desc_short": "The light at the end of the tunnel.",
+            "monsters": [1, 1, 5]
+        },
+        {
+            "id": 21,
+            "title": "B2 - Deku Tree Roots",
+            "connections": [20, 22],
+            "desc": "After buring away the webs you fall for what feels like moments, the world blurring past in streaks of bark and shadow—then, suddenly, you crash into a deep pool far below. The water is cold and strangely still, muffling the sounds of the ancient tree's creaks and groans. As you surface, the chamber around you reveals itself: vast, round, and alive with the quiet hum of age and mystery. Ahead, the pool tapers into a mossy landing where three Deku Scrubs stand along the back wall. They eye you warily, retreating into their hiding spots when threatened, only to pop back up at shoot deku seeds at you. Off to the side stands a thick wooden door bound in iron—locked tight. The path forward is sealed not by strength, but by memory and wit. The tree’s final challenge lies before you.",
+            "desc_short": "A deep openig the leads to the root of the Great Deku Tree. An aminous aura leaks betwixt the gaps in the web. A sense of greast evil beneath.",
+            "monsters": [12, 13, 14]
+        },
+        {
+            "id": 22,
+            "title": "B2 - Queen Gohma's Chamber",
+            "connections": [21],
+            "desc": "You step into a vast, ominous chamber, the air thick with the scent of decay and ancient dread. The room feels cavernous, its walls stretching up and out, where the faintest echoes of your footsteps linger like whispers. In the center of the room, four stone pillars rise, weathered and cracked, standing like sentinels around an eerie stillness. Above you, the ceiling is dark and cavernous, with twisted roots hanging like curtains, obscuring what lies hidden. As you move further into the chamber, you feel an unsettling chill creeping down your spine. For a moment, there is nothing. But then, from the shadows above, you see her gleaming, unblinking eye as she stares down at you. The ceiling begins to tremble, and Queen Gohma’s massive, arachnid form unfurls from her dormant state, her red eye glowing with malicious intent.",
+            "desc_short": "Ganon's darkness oozes from cracks in the door, you must get to the other side!",
+            "monsters": [9, 8, 8, 8, 8, 8, 8]
+        }
+    ],
+    "monsters": [
+        {
+            "id": 0,
+            "name": "Skulltula",
+            "health": 30,
+            "attack": 2,
+            "defense": 20,
+            "gold": 8,
+            "desc": "A giant spider with a skull-like shell. Drops down from ceilings to block paths."
+        },
+        {
+            "id": 1,
+            "name": "Deku Baba",
+            "health": 8,
+            "attack": 3,
+            "defense": 1,
+            "gold": 2,
+            "desc": "A snapping plant that lunges when approached. Can drop Deku sticks or nuts when defeated."
+        },
+        {
+            "id": 2,
+            "name": "Deku Scrub",
+            "health": 15,
+            "attack": 5,
+            "defense": 20,
+            "gold": 10,
+            "desc": "A small forest creature that spits Deku Nuts from afar, then hides when hit."
+        },
+        {
+            "id": 3,
+            "name": "Gold Skulltula",
+            "health": 1,
+            "attack": 1,
+            "defense": 0,
+            "gold": 50,
+            "desc": "A rare variant of the Skulltula, often hidden. Defeating one earns you some gold."
+        },
+        {
+            "id": 4,
+            "name": "Skullwalltula",
+            "health": 2,
+            "attack": 1,
+            "defense": 0,
+            "gold": 1,
+            "desc": "A spider that crawls on walls. Times its movement to ambush climbing players."
+        },
+        {
+            "id": 5,
+            "name": "Keese",
+            "health": 10,
+            "attack": 5,
+            "defense": 2,
+            "gold": 3,
+            "desc": "A bat-like creature that swoops down to attack. Common in dark or cavernous areas."
+        },
+        {
+            "id": 6,
+            "name": "Fire Keese",
+            "health": 10,
+            "attack": 20,
+            "defense": 2,
+            "gold": 5,
+            "desc": "A flaming version of the Keese. Does extra damage to the player when attacked."
+        },
+        {
+            "id": 7,
+            "name": "Mad Scrub",
+            "health": 18,
+            "attack": 6,
+            "defense": 4,
+            "gold": 10,
+            "desc": "An aggressive Deku Scrub that moves around after being hit, tougher than its kin."
+        },
+        {
+            "id": 8,
+            "name": "Gohma Larva",
+            "health": 20,
+            "attack": 5,
+            "defense": 1,
+            "gold": 2,
+            "desc": "Small, one-eyed insect minions of Queen Gohma. Hatch and attack in groups."
+        },
+        {
+            "id": 9,
+            "name": "Gohma",
+            "health": 100,
+            "attack": 25,
+            "defense": 15,
+            "gold": 1000,
+            "desc": "Queen of the parasitic arachnids. A giant, one-eyed beast infecting the Deku Tree."
+        },
+        {
+            "id": 10,
+            "name": "Treasure Chest",
+            "health": 0,
+            "attack": 0,
+            "defense": 999,
+            "gold": 50,
+            "desc": "A large chest, a soft light can be seen glinting from the crack in the lid."
+        },
+        {
+            "id": 11,
+            "name": "Small Treasure Chest",
+            "health": 0,
+            "attack": 0,
+            "defense": 999,
+            "gold": 15,
+            "desc": "A chest, a soft light can be seen glinting from the crack in the lid."
+        },
+        {
+            "id": 12,
+            "name": "Scrub 1",
+            "health": 0,
+            "attack": 0,
+            "defense": 999,
+            "gold": 15,
+            "desc": "A chest, a soft light can be seen glinting from the crack in the lid."
+        },
+        {
+            "id": 13,
+            "name": "Scrub 2",
+            "health": 0,
+            "attack": 0,
+            "defense": 999,
+            "gold": 15,
+            "desc": "A chest, a soft light can be seen glinting from the crack in the lid."
+        },
+        {
+            "id": 14,
+            "name": "Scrub 3",
+            "health": 0,
+            "attack": 0,
+            "defense": 999,
+            "gold": 15,
+            "desc": "A chest, a soft light can be seen glinting from the crack in the lid."
+        }
+    ]
+}
