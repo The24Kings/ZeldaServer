@@ -149,8 +149,8 @@ impl Map {
                     for tile in tiles {
                         let id = tile["id"].as_u64().unwrap_or(99) as u16;
                         let title = tile["title"].as_str().unwrap_or("ERROR").to_string();
-                        let desc = tile["desc"].as_str().unwrap_or("ERROR").to_string();
-                        let desc_short = tile["desc_short"].as_str().unwrap_or("ERROR").to_string();
+                        let desc = tile["desc"].as_str().unwrap_or("No Description.").to_string();
+                        let desc_short = tile["desc_short"].as_str().unwrap_or("No Description.").to_string();
                         let exits = tile["connections"]
                             .as_array()
                             .unwrap_or(&vec![])
