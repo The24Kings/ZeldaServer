@@ -21,8 +21,14 @@ pub struct Map {
 impl Map {
     pub fn new() -> Self {
         Map {
-            init_points: 100,
-            stat_limit: 65525,
+            init_points: env::var("INITIAL_POINTS")
+                .expect("[MAP] INITIAL_POINTS must be set.")
+                .parse()
+                .expect("[MAP] Failed to parse INITIAL_POINTS"),
+            stat_limit: env::var("STAT_LIMIT")
+                .expect("[MAP] STAT_LIMIT must be set.")
+                .parse()
+                .expect("[MAP] Failed to parse STAT_LIMIT"),
             rooms: Vec::new(),
             players: Vec::new(),
             monsters: Vec::new(),
