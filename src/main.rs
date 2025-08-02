@@ -1,7 +1,7 @@
-use std::env;
 use clap::Parser;
-use std::fs::File;
 use dotenv::dotenv;
+use std::env;
+use std::fs::File;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
 
@@ -32,30 +32,22 @@ fn main() {
 
     // Create a channel for communication between threads
     let (tx, rx) = mpsc::channel();
-
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
     let path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
     let file = File::open(path).expect("[MAIN] Failed to open map file!");
-    let map = Map::build(file);
+    let mut map = Map::build(file).expect("[MAIN] Failed to build map from file");
 
-    let initial_points = map.as_ref().map(|m| m.init_points).unwrap_or(100);
-    let stat_limit = map.as_ref().map(|m| m.stat_limit).unwrap_or(65525);
+    let initial_points = map.init_points;
+    let stat_limit = map.stat_limit;
 
     // Start the server thread with the map
-    match map {
-        Ok(mut map) => {
-            println!("[MAIN] Parsed map successfully");
+    println!("[MAIN] Parsed map successfully");
 
-            std::thread::spawn(move || {
-                server(receiver, &mut map);
-            });
-        }
-        Err(e) => {
-            eprintln!("[MAIN] Error parsing map: {}", e);
-        }
-    }
+    std::thread::spawn(move || {
+        server(receiver, &mut map);
+    });
 
     // Listen for incoming connections
     for stream in listener.incoming() {
