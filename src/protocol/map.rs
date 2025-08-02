@@ -1,11 +1,9 @@
 use serde_json::Value;
 use std::fs::File;
 
-use crate::protocol::packet::message::Message;
-
 use super::{
     Type,
-    packet::{character::Character, room::Room},
+    packet::{pkt_character::Character, pkt_message::Message, pkt_room::Room},
     send,
 };
 
@@ -76,7 +74,7 @@ impl Map {
                     sender: "Server".to_string(),
                     narration: false,
                     message: message.clone(),
-                }
+                },
             ))
             .unwrap_or_else(|e| {
                 eprintln!(
@@ -103,8 +101,9 @@ impl Map {
         };
 
         if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
-            room.players.iter().for_each(|&player_index| {
-                match self.players.get(player_index) {
+            room.players
+                .iter()
+                .for_each(|&player_index| match self.players.get(player_index) {
                     Some(to_alert) => {
                         if let Err(e) = send(Type::Character(author.clone(), plyr.clone())) {
                             eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
@@ -113,8 +112,7 @@ impl Map {
                     None => {
                         eprintln!("[ALERT] Invalid player index: {}", player_index);
                     }
-                }
-            });
+                });
         }
 
         Ok(())
@@ -149,8 +147,14 @@ impl Map {
                     for tile in tiles {
                         let id = tile["id"].as_u64().unwrap_or(99) as u16;
                         let title = tile["title"].as_str().unwrap_or("ERROR").to_string();
-                        let desc = tile["desc"].as_str().unwrap_or("No Description.").to_string();
-                        let desc_short = tile["desc_short"].as_str().unwrap_or("No Description.").to_string();
+                        let desc = tile["desc"]
+                            .as_str()
+                            .unwrap_or("No Description.")
+                            .to_string();
+                        let desc_short = tile["desc_short"]
+                            .as_str()
+                            .unwrap_or("No Description.")
+                            .to_string();
                         let exits = tile["connections"]
                             .as_array()
                             .unwrap_or(&vec![])

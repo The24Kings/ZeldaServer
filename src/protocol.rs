@@ -5,15 +5,16 @@ use std::sync::Arc;
 use crate::protocol::packet::Parser;
 
 use crate::protocol::packet::{
-    accept::Accept, change_room::ChangeRoom, character::Character, connection::Connection,
-    error::Error, fight::Fight, game::Game, leave::Leave, loot::Loot, message::Message,
-    pvp_fight::PVPFight, room::Room, start::Start, version::Version,
+    pkt_accept::Accept, pkt_change_room::ChangeRoom, pkt_character::Character,
+    pkt_connection::Connection, pkt_error::Error, pkt_fight::Fight, pkt_game::Game,
+    pkt_leave::Leave, pkt_loot::Loot, pkt_message::Message, pkt_pvp_fight::PVPFight,
+    pkt_room::Room, pkt_start::Start, pkt_version::Version,
 };
 
 pub mod client;
 pub mod error;
-pub mod packet;
 pub mod map;
+pub mod packet;
 
 #[derive(Debug, Clone)]
 pub enum Type {
