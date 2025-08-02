@@ -1,16 +1,14 @@
 use std::env;
-use std::net::TcpStream;
-use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-use crate::protocol::packet::{pkt_game::Game, pkt_leave::Leave, pkt_version::Version};
-use crate::protocol::{Type, client::Client, send};
+use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
+use crate::protocol::{ServerMessage, Stream, client::Client, send};
 
 pub fn connection(
-    stream: Arc<TcpStream>,
+    stream: Stream,
     initial_points: u16,
     stat_limit: u16,
-    sender: Sender<Type>,
+    sender: Sender<ServerMessage>,
 ) {
     let client = Client::new(stream.clone(), sender);
 
@@ -19,9 +17,9 @@ pub fn connection(
         std::fs::read_to_string(filepath).expect("[CONNECTION] Failed to read description file!");
 
     // Send the initial game info to the client
-    send(Type::Version(
+    send(ServerMessage::Version(
         stream.clone(),
-        Version {
+        pkt_version::Version {
             message_type: 14,
             major_rev: 2,
             minor_rev: 3,
@@ -34,9 +32,9 @@ pub fn connection(
         return; // This is a critical error, so we return
     });
 
-    send(Type::Game(
+    send(ServerMessage::Game(
         stream.clone(),
-        Game {
+        pkt_game::Game {
             message_type: 11,
             initial_points,
             stat_limit,
@@ -85,7 +83,10 @@ pub fn connection(
                 // Ensure the server thread is notified of the disconnection
                 client
                     .sender
-                    .send(Type::Leave(stream.clone(), Leave::default()))
+                    .send(ServerMessage::Leave(
+                        stream.clone(),
+                        pkt_leave::Leave::default(),
+                    ))
                     .unwrap_or_else(|_| {
                         eprintln!("[CONNECTION] Failed to send leave packet");
                     });

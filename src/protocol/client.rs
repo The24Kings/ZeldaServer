@@ -1,23 +1,21 @@
 use std::io::Read;
-use std::net::TcpStream;
-use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-use super::Type;
-use super::packet::{Packet, Parser, pkt_fight::Fight, pkt_leave::Leave, pkt_start::Start};
+use super::packet::{Packet, Parser, pkt_fight, pkt_leave, pkt_start};
+use super::{ServerMessage, Stream};
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    pub stream: Arc<TcpStream>,
-    pub sender: Sender<Type>,
+    pub stream: Stream,
+    pub sender: Sender<ServerMessage>,
 }
 
 impl Client {
-    pub fn new(stream: Arc<TcpStream>, sender: Sender<Type>) -> Self {
+    pub fn new(stream: Stream, sender: Sender<ServerMessage>) -> Self {
         Client { stream, sender }
     }
 
-    pub fn read(&self) -> Result<Type, std::io::Error> {
+    pub fn read(&self) -> Result<(), std::io::Error> {
         let mut packet_type = [0; 1];
 
         let bytes_read = self.stream.as_ref().read(&mut packet_type)?;
@@ -33,7 +31,7 @@ impl Client {
         println!("[CLIENT] Read packet type: {}", packet_type[0]);
 
         // Match the type of the packet to the enum Type
-        let packet: Option<Type> = match packet_type[0] {
+        let packet: Option<ServerMessage> = match packet_type[0] {
             1 => {
                 // MESSAGE
                 let mut buffer = vec![0; 66];
@@ -42,7 +40,7 @@ impl Client {
                     Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (0, 1))?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Message(self.stream.clone(), deserialized),
+                    Ok(deserialized) => ServerMessage::Message(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -61,7 +59,9 @@ impl Client {
                 let packet = Packet::read_into(&self.stream, packet_type[0], &mut buffer)?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::ChangeRoom(self.stream.clone(), deserialized),
+                    Ok(deserialized) => {
+                        ServerMessage::ChangeRoom(self.stream.clone(), deserialized)
+                    }
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -75,7 +75,10 @@ impl Client {
             }
             3 => {
                 // FIGHT
-                Some(Type::Fight(self.stream.clone(), Fight::default()))
+                Some(ServerMessage::Fight(
+                    self.stream.clone(),
+                    pkt_fight::Fight::default(),
+                ))
             }
             4 => {
                 // PVPFIGHT
@@ -84,7 +87,7 @@ impl Client {
                 let packet = Packet::read_into(&self.stream, packet_type[0], &mut buffer)?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::PVPFight(self.stream.clone(), deserialized),
+                    Ok(deserialized) => ServerMessage::PVPFight(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -103,7 +106,7 @@ impl Client {
                 let packet = Packet::read_into(&self.stream, packet_type[0], &mut buffer)?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Loot(self.stream.clone(), deserialized),
+                    Ok(deserialized) => ServerMessage::Loot(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -117,7 +120,10 @@ impl Client {
             }
             6 => {
                 // START
-                Some(Type::Start(self.stream.clone(), Start::default()))
+                Some(ServerMessage::Start(
+                    self.stream.clone(),
+                    pkt_start::Start::default(),
+                ))
             }
             7 => {
                 // ERROR
@@ -154,7 +160,7 @@ impl Client {
                     Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (45, 46))?;
 
                 let object = match Parser::deserialize(packet) {
-                    Ok(deserialized) => Type::Character(self.stream.clone(), deserialized),
+                    Ok(deserialized) => ServerMessage::Character(self.stream.clone(), deserialized),
                     Err(e) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
@@ -177,7 +183,10 @@ impl Client {
             }
             12 => {
                 // LEAVE
-                Some(Type::Leave(self.stream.clone(), Leave::default()))
+                Some(ServerMessage::Leave(
+                    self.stream.clone(),
+                    pkt_leave::Leave::default(),
+                ))
             }
             13 => {
                 // CONNECTION
@@ -209,7 +218,7 @@ impl Client {
         // Send the packet to the server thread
         match packet {
             Some(pkt) => {
-                self.sender.send(pkt.clone()).map_err(|e| {
+                self.sender.send(pkt).map_err(|e| {
                     // If the send fails with SendError, it means the server thread has closed
                     std::io::Error::new(
                         std::io::ErrorKind::BrokenPipe,
@@ -217,7 +226,7 @@ impl Client {
                     )
                 })?;
 
-                Ok(pkt)
+                Ok(())
             }
             None => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,

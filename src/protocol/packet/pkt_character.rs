@@ -1,11 +1,11 @@
-use crate::{
-    debug_packet,
-    protocol::packet::{Packet, Parser},
-};
-use std::{io::Write, net::TcpStream, sync::Arc};
+use crate::debug_packet;
+use crate::protocol::Stream;
+use crate::protocol::packet::{Packet, Parser};
+use std::io::Write;
+
 #[derive(Debug, Clone)]
 pub struct Character {
-    pub author: Option<Arc<TcpStream>>,
+    pub author: Option<Stream>,
     pub message_type: u8,
     pub name: String,
     pub flags: CharacterFlags,
@@ -20,7 +20,7 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn from(author: Option<Arc<TcpStream>>, incoming: &Character) -> Self {
+    pub fn from(author: Option<Stream>, incoming: &Character) -> Self {
         Character {
             author,
             message_type: incoming.message_type,
@@ -89,7 +89,7 @@ impl CharacterFlags {
         }
     }
 
-    pub fn activate(monster: bool) -> Self{
+    pub fn activate(monster: bool) -> Self {
         CharacterFlags {
             alive: true,
             join_battle: true,
@@ -127,7 +127,11 @@ impl<'a> Parser<'a> for Character {
         let mut flags: u8 = 0x00;
 
         flags |= if self.flags.alive { 0b10000000 } else { 0x00 };
-        flags |= if self.flags.join_battle { 0b01000000 } else { 0x00 };
+        flags |= if self.flags.join_battle {
+            0b01000000
+        } else {
+            0x00
+        };
         flags |= if self.flags.monster { 0b00100000 } else { 0x00 };
         flags |= if self.flags.started { 0b00010000 } else { 0x00 };
         flags |= if self.flags.ready { 0b00001000 } else { 0x00 };
