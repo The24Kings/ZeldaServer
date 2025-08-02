@@ -1,9 +1,9 @@
 use serde_json::Value;
-use std::fs::File;
+use std::{env, fs::File};
 
 use super::{
-    Type,
-    packet::{pkt_character::Character, pkt_message::Message, pkt_room::Room},
+    ServerMessage,
+    packet::{pkt_character, pkt_message, pkt_room},
     send,
 };
 
@@ -11,9 +11,9 @@ use super::{
 pub struct Map {
     pub init_points: u16,
     pub stat_limit: u16,
-    pub rooms: Vec<Room>,
-    pub players: Vec<Character>,
-    pub monsters: Vec<Character>,
+    pub rooms: Vec<pkt_room::Room>,
+    pub players: Vec<pkt_character::Character>,
+    pub monsters: Vec<pkt_character::Character>,
     pub desc_len: u16,
     pub desc: String,
 }
@@ -31,11 +31,11 @@ impl Map {
         }
     }
 
-    pub fn add_player(&mut self, player: Character) {
+    pub fn add_player(&mut self, player: pkt_character::Character) {
         self.players.push(player);
     }
 
-    pub fn add_monster(&mut self, monster: Character) {
+    pub fn add_monster(&mut self, monster: pkt_character::Character) {
         self.monsters.push(monster);
     }
 
@@ -65,9 +65,9 @@ impl Map {
                 }
             };
 
-            send(Type::Message(
+            send(ServerMessage::Message(
                 author.clone(),
-                Message {
+                pkt_message::Message {
                     message_type: 1,
                     message_len: message.len() as u16,
                     recipient: player.name.clone(),
@@ -89,7 +89,7 @@ impl Map {
 
     //TODO: Test this
     /// Alert all players in the current room of a character change
-    pub fn alert(&self, id: u16, plyr: &Character) -> Result<(), std::io::Error> {
+    pub fn alert(&self, id: u16, plyr: &pkt_character::Character) -> Result<(), std::io::Error> {
         println!("[ALERT] Alerting players about: {}", plyr.name);
 
         let author = match &plyr.author {
@@ -105,7 +105,8 @@ impl Map {
                 .iter()
                 .for_each(|&player_index| match self.players.get(player_index) {
                     Some(to_alert) => {
-                        if let Err(e) = send(Type::Character(author.clone(), plyr.clone())) {
+                        if let Err(e) = send(ServerMessage::Character(author.clone(), plyr.clone()))
+                        {
                             eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                         }
                     }
@@ -118,7 +119,7 @@ impl Map {
         Ok(())
     }
 
-    pub fn get_exits(&self, id: u16) -> Option<Vec<&Room>> {
+    pub fn get_exits(&self, id: u16) -> Option<Vec<&pkt_room::Room>> {
         if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
             let mut exits = Vec::new();
 
@@ -172,7 +173,7 @@ impl Map {
                             .collect::<Vec<_>>();
 
                         // Create a new room and add it to the map
-                        let room = Room::new(
+                        let room = pkt_room::Room::new(
                             id,
                             title.clone(),
                             exits.clone(),

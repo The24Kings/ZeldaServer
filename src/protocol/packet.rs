@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
-use std::net::TcpStream;
-use std::sync::Arc;
+
+use crate::protocol::Stream;
 
 pub mod pkt_accept;
 pub mod pkt_change_room;
@@ -24,13 +24,13 @@ pub mod pkt_version;
  */
 #[derive(Debug, Clone)]
 pub struct Packet<'a> {
-    pub stream: &'a Arc<TcpStream>,
+    pub stream: &'a Stream,
     pub message_type: u8,
     pub body: &'a [u8],
 }
 
 impl<'a> Packet<'a> {
-    pub fn new(stream: &'a Arc<TcpStream>, id: u8, bytes: &'a [u8]) -> Self {
+    pub fn new(stream: &'a Stream, id: u8, bytes: &'a [u8]) -> Self {
         Packet {
             stream,
             message_type: id,
@@ -40,7 +40,7 @@ impl<'a> Packet<'a> {
 
     /// Read the stream into a packet
     pub fn read_into<'b>(
-        stream: &'b Arc<TcpStream>,
+        stream: &'b Stream,
         id: u8,
         buffer: &'b mut Vec<u8>,
     ) -> Result<Packet<'b>, std::io::Error> {
@@ -70,7 +70,7 @@ impl<'a> Packet<'a> {
     /// This function reads the packet body and then reads the extended description or data
     /// based on the provided index.
     pub fn read_extended<'b>(
-        stream: &'b Arc<TcpStream>,
+        stream: &'b Stream,
         id: u8,
         buffer: &'b mut Vec<u8>,
         index: (usize, usize),
