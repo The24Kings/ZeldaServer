@@ -4,6 +4,7 @@ use std::{env, fs::File};
 use super::{
     ServerMessage,
     packet::{pkt_character, pkt_message, pkt_room},
+    pkt_type::PktType,
     send,
 };
 
@@ -74,7 +75,7 @@ impl Map {
             send(ServerMessage::Message(
                 author.clone(),
                 pkt_message::Message {
-                    message_type: 1,
+                    message_type: PktType::Message,
                     message_len: message.len() as u16,
                     recipient: player.name.clone(),
                     sender: "Server".to_string(),

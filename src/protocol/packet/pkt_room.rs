@@ -1,25 +1,38 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct Room {
-    pub message_type: u8,
-    pub room_number: u16,           // Same as room_number in ChangeRoom
+    pub message_type: PktType,
+    pub room_number: u16, // Same as room_number in ChangeRoom
     pub room_name: String,
-    pub connections: Vec<u16>,      // Used for the game map
-    pub players: Vec<usize>,        // Used for the game map
-    pub monsters: Vec<usize>,       // Used for the game map
+    pub connections: Vec<u16>, // Used for the game map
+    pub players: Vec<usize>,   // Used for the game map
+    pub monsters: Vec<usize>,  // Used for the game map
     pub description_len: u16,
-    pub desc_short: String,         // Used for connection desc
+    pub desc_short: String, // Used for connection desc
     pub description: String,
 }
 
 impl Room {
     /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
-    pub fn new(room: u16, title: String, conns: Vec<u16>, mnstrs: Vec<usize>, desc_short: String, desc: String) -> Self {
+    pub fn new(
+        room: u16,
+        title: String,
+        conns: Vec<u16>,
+        mnstrs: Vec<usize>,
+        desc_short: String,
+        desc: String,
+    ) -> Self {
         Room {
-            message_type: 9,
+            message_type: PktType::Room,
             room_number: room,
             room_name: title,
             connections: conns,
@@ -27,7 +40,7 @@ impl Room {
             monsters: mnstrs,
             description_len: desc.len() as u16,
             desc_short,
-            description: desc
+            description: desc,
         }
     }
 }
@@ -37,7 +50,7 @@ impl<'a> Parser<'a> for Room {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.extend(self.room_number.to_le_bytes());
 
         let mut room_name_bytes = self.room_name.as_bytes().to_vec();
@@ -56,7 +69,7 @@ impl<'a> Parser<'a> for Room {
         })?;
 
         debug_packet!(&packet);
-        
+
         Ok(())
     }
 
@@ -68,7 +81,7 @@ impl<'a> Parser<'a> for Room {
             .to_string();
         let description_len = u16::from_le_bytes([packet.body[34], packet.body[35]]);
         let description = String::from_utf8_lossy(&packet.body[36..]).to_string();
-        
+
         Ok(Room {
             message_type,
             room_number,

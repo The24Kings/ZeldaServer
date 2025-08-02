@@ -1,10 +1,16 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct Message {
-    pub message_type: u8,
+    pub message_type: PktType,
     pub message_len: u16,
     pub recipient: String,
     pub sender: String,
@@ -17,7 +23,7 @@ impl<'a> Parser<'a> for Message {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.extend(self.message_len.to_le_bytes());
 
         let mut r_bytes = self.recipient.as_bytes().to_vec();

@@ -2,7 +2,7 @@ use std::env;
 use std::sync::mpsc::Sender;
 
 use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
-use crate::protocol::{ServerMessage, Stream, client::Client, send};
+use crate::protocol::{ServerMessage, Stream, client::Client, pkt_type::PktType, send};
 
 pub fn connection(
     stream: Stream,
@@ -20,7 +20,7 @@ pub fn connection(
     send(ServerMessage::Version(
         stream.clone(),
         pkt_version::Version {
-            message_type: 14,
+            message_type: PktType::Version,
             major_rev: env::var("MAJOR_REV")
                 .expect("[CONNECTION] MAJOR_REV must be set.")
                 .parse()
@@ -41,7 +41,7 @@ pub fn connection(
     send(ServerMessage::Game(
         stream.clone(),
         pkt_game::Game {
-            message_type: 11,
+            message_type: PktType::Game,
             initial_points,
             stat_limit,
             description_len: description.len() as u16,

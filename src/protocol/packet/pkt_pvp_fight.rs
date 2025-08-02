@@ -1,9 +1,15 @@
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 use std::io::Write;
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
 
 #[derive(Default, Debug, Clone)]
 pub struct PVPFight {
-    pub message_type: u8,
+    pub message_type: PktType,
     pub target_name: String,
 }
 
@@ -12,7 +18,7 @@ impl<'a> Parser<'a> for PVPFight {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
 
         let mut target_name_bytes = self.target_name.as_bytes().to_vec();
         target_name_bytes.resize(32, 0x00); // Pad the name to 32 bytes
@@ -32,8 +38,10 @@ impl<'a> Parser<'a> for PVPFight {
     }
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         let message_type = packet.message_type;
-        let target_name = String::from_utf8_lossy(&packet.body[0..32]).trim_end_matches('\0').to_string();
-        
+        let target_name = String::from_utf8_lossy(&packet.body[0..32])
+            .trim_end_matches('\0')
+            .to_string();
+
         Ok(PVPFight {
             message_type,
             target_name,

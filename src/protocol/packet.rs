@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
 
-use crate::protocol::Stream;
+use crate::protocol::{Stream, pkt_type::PktType};
 
 pub mod pkt_accept;
 pub mod pkt_change_room;
@@ -25,15 +25,15 @@ pub mod pkt_version;
 #[derive(Debug, Clone)]
 pub struct Packet<'a> {
     pub stream: &'a Stream,
-    pub message_type: u8,
+    pub message_type: PktType,
     pub body: &'a [u8],
 }
 
 impl<'a> Packet<'a> {
-    pub fn new(stream: &'a Stream, id: u8, bytes: &'a [u8]) -> Self {
+    pub fn new(stream: &'a Stream, message_type: PktType, bytes: &'a [u8]) -> Self {
         Packet {
             stream,
-            message_type: id,
+            message_type,
             body: &bytes[0..],
         }
     }
@@ -41,7 +41,7 @@ impl<'a> Packet<'a> {
     /// Read the stream into a packet
     pub fn read_into<'b>(
         stream: &'b Stream,
-        id: u8,
+        message_type: PktType,
         buffer: &'b mut Vec<u8>,
     ) -> Result<Packet<'b>, std::io::Error> {
         // Read the remaining bytes for the packet
@@ -61,7 +61,7 @@ impl<'a> Packet<'a> {
                 .join(" ")
         );
         // Create a new packet with the read bytes
-        let packet = Packet::new(stream, id, buffer);
+        let packet = Packet::new(stream, message_type, buffer);
 
         Ok(packet)
     }
@@ -71,7 +71,7 @@ impl<'a> Packet<'a> {
     /// based on the provided index.
     pub fn read_extended<'b>(
         stream: &'b Stream,
-        id: u8,
+        message_type: PktType,
         buffer: &'b mut Vec<u8>,
         index: (usize, usize),
     ) -> Result<Packet<'b>, std::io::Error> {
@@ -123,7 +123,7 @@ impl<'a> Packet<'a> {
         // Extend the buffer with the description
         buffer.extend_from_slice(&desc);
 
-        let packet = Packet::new(stream, id, buffer);
+        let packet = Packet::new(stream, message_type, buffer);
 
         Ok(packet)
     }
