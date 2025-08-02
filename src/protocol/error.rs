@@ -1,15 +1,16 @@
 #[derive(Default, Debug, Clone)]
+#[repr(u8)]
 pub enum ErrorCode {
     #[default]
-    Other,          // 0
-    BadRoom,        // 1
-    PlayerExists,   // 2
-    BadMonster,     // 3
-    StatError,      // 4
-    NotReady,       // 5
-    NoTarget,       // 6
-    NoFight,        // 7
-    NoPlayerCombat, // 8
+    Other,
+    BadRoom,
+    PlayerExists,
+    BadMonster,
+    StatError,
+    NotReady,
+    NoTarget,
+    NoFight,
+    NoPlayerCombat,
 }
 
 impl Into<u8> for ErrorCode {
