@@ -35,7 +35,7 @@ fn main() {
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
+    let path = env::var("MAP_FILEPATH").expect("[MAIN] MAP_FILEPATH must be set.");
     let file = File::open(path).expect("[MAIN] Failed to open map file!");
     let mut map = Map::build(file).expect("[MAIN] Failed to build map from file");
 

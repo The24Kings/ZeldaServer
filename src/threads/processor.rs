@@ -14,8 +14,7 @@ pub fn connection(
 ) {
     let client = Client::new(stream.clone(), sender);
 
-    let filepath =
-        env::var("DESC_FILEPATH").expect("[CONNECTION] Failed to read description file!");
+    let filepath = env::var("DESC_FILEPATH").expect("[CONNECTION] DESC_FILEPATH must be set.");
     let description =
         std::fs::read_to_string(filepath).expect("[CONNECTION] Failed to read description file!");
 
