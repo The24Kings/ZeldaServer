@@ -1,10 +1,16 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct Game {
-    pub message_type: u8,
+    pub message_type: PktType,
     pub initial_points: u16,
     pub stat_limit: u16,
     pub description_len: u16,
@@ -16,7 +22,7 @@ impl<'a> Parser<'a> for Game {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.extend(self.initial_points.to_le_bytes());
         packet.extend(self.stat_limit.to_le_bytes());
         packet.extend(self.description_len.to_le_bytes());

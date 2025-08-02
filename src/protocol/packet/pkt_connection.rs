@@ -2,14 +2,17 @@ use std::io::Write;
 
 use crate::{
     debug_packet,
-    protocol::packet::{Packet, Parser},
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
 };
 
 use super::pkt_room::Room;
 
 #[derive(Default, Debug, Clone)]
 pub struct Connection {
-    pub message_type: u8,
+    pub message_type: PktType,
     pub room_number: u16,
     pub room_name: String,
     pub description_len: u16,
@@ -20,7 +23,7 @@ impl Connection {
     /// Create a new connection from the game map to send to the client
     pub fn from(room: &Room) -> Self {
         Connection {
-            message_type: 13,
+            message_type: PktType::Connection,
             room_number: room.room_number,
             room_name: room.room_name.clone(),
             description_len: room.desc_short.len() as u16,
@@ -34,7 +37,7 @@ impl<'a> Parser<'a> for Connection {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.extend(self.room_number.to_le_bytes());
 
         let mut room_name_bytes = self.room_name.as_bytes().to_vec();

@@ -1,16 +1,22 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Debug, Clone)]
 pub struct Leave {
-    pub message_type: u8,
+    pub message_type: PktType,
 }
 
 impl Default for Leave {
     fn default() -> Self {
         Leave {
-            message_type: 12
+            message_type: PktType::Leave,
         }
     }
 }
@@ -20,7 +26,7 @@ impl<'a> Parser<'a> for Leave {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
 
         // Write the packet to the buffer
         writer.write_all(&packet).map_err(|_| {
@@ -31,7 +37,7 @@ impl<'a> Parser<'a> for Leave {
         })?;
 
         debug_packet!(&packet);
-        
+
         Ok(())
     }
 

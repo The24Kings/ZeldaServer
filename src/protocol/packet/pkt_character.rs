@@ -1,12 +1,13 @@
 use crate::debug_packet;
 use crate::protocol::Stream;
 use crate::protocol::packet::{Packet, Parser};
+use crate::protocol::pkt_type::PktType;
 use std::io::Write;
 
 #[derive(Debug, Clone)]
 pub struct Character {
     pub author: Option<Stream>,
-    pub message_type: u8,
+    pub message_type: PktType,
     pub name: String,
     pub flags: CharacterFlags,
     pub attack: u16,
@@ -42,7 +43,7 @@ impl Default for Character {
     fn default() -> Self {
         Character {
             author: None,
-            message_type: 10,
+            message_type: PktType::Character,
             name: "Error".to_string(),
             flags: CharacterFlags::default(),
             attack: 0,
@@ -115,7 +116,7 @@ impl<'a> Parser<'a> for Character {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
 
         // Serialize the character name
         let mut name_bytes = self.name.as_bytes().to_vec();

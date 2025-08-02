@@ -1,11 +1,17 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct ChangeRoom {
-    pub message_type: u8,
-    pub room_number: u16
+    pub message_type: PktType,
+    pub room_number: u16,
 }
 
 impl<'a> Parser<'a> for ChangeRoom {
@@ -13,7 +19,7 @@ impl<'a> Parser<'a> for ChangeRoom {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.extend(self.room_number.to_le_bytes());
 
         // Write the packet to the buffer
@@ -25,7 +31,7 @@ impl<'a> Parser<'a> for ChangeRoom {
         })?;
 
         debug_packet!(&packet);
-        
+
         Ok(())
     }
 
@@ -37,7 +43,7 @@ impl<'a> Parser<'a> for ChangeRoom {
         // Implement deserialization logic here
         Ok(ChangeRoom {
             message_type: packet.message_type,
-            room_number
+            room_number,
         })
     }
 }
