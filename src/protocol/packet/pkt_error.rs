@@ -3,10 +3,11 @@ use std::io::Write;
 use crate::debug_packet;
 use crate::protocol::error::ErrorCode;
 use crate::protocol::packet::{Packet, Parser};
+use crate::protocol::pkt_type::PktType;
 
 #[derive(Default, Debug, Clone)]
 pub struct Error {
-    pub message_type: u8,
+    pub message_type: PktType,
     pub error: ErrorCode,
     pub message_len: u16,
     pub message: String,
@@ -15,7 +16,7 @@ pub struct Error {
 impl Error {
     pub fn new(error: ErrorCode, message: &str) -> Self {
         Error {
-            message_type: 7,
+            message_type: PktType::Error,
             error,
             message_len: message.len() as u16,
             message: message.to_string(),
@@ -28,7 +29,7 @@ impl<'a> Parser<'a> for Error {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.push(self.error.clone().into());
         packet.extend(self.message_len.to_le_bytes());
         packet.extend(self.message.as_bytes());
@@ -53,7 +54,7 @@ impl<'a> Parser<'a> for Error {
         let message = String::from_utf8_lossy(&packet.body[3..])
             .trim_end_matches('\0')
             .to_string();
-        
+
         Ok(Error {
             message_type,
             error,
