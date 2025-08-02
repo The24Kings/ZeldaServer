@@ -1,3 +1,4 @@
+use std::env;
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
@@ -5,11 +6,18 @@ use std::sync::mpsc::Sender;
 use crate::protocol::packet::{pkt_game::Game, pkt_leave::Leave, pkt_version::Version};
 use crate::protocol::{Type, client::Client, send};
 
-pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, sender: Sender<Type>) {
+pub fn connection(
+    stream: Arc<TcpStream>,
+    initial_points: u16,
+    stat_limit: u16,
+    sender: Sender<Type>,
+) {
     let client = Client::new(stream.clone(), sender);
 
-    let description = std::fs::read_to_string("src/content/desc.txt")
-        .expect("[CONNECTION] Failed to read description file!");
+    let filepath =
+        env::var("DESC_FILEPATH").expect("[CONNECTION] Failed to read description file!");
+    let description =
+        std::fs::read_to_string(filepath).expect("[CONNECTION] Failed to read description file!");
 
     // Send the initial game info to the client
     send(Type::Version(
@@ -20,7 +28,7 @@ pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, 
             minor_rev: 3,
             extension_len: 0,
             extensions: None,
-        }
+        },
     ))
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send version packet: {}", e);
@@ -35,7 +43,7 @@ pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, 
             stat_limit,
             description_len: description.len() as u16,
             description,
-        }
+        },
     ))
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send game packet: {}", e);
