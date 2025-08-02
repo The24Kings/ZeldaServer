@@ -1,11 +1,10 @@
 use serde_json::Value;
-use std::fs::File;
-
-use crate::protocol::packet::message::Message;
+use std::{env, fs::File};
 
 use super::{
-    Type,
-    packet::{character::Character, room::Room},
+    ServerMessage,
+    packet::{pkt_character, pkt_message, pkt_room},
+    pkt_type::PktType,
     send,
 };
 
@@ -13,9 +12,9 @@ use super::{
 pub struct Map {
     pub init_points: u16,
     pub stat_limit: u16,
-    pub rooms: Vec<Room>,
-    pub players: Vec<Character>,
-    pub monsters: Vec<Character>,
+    pub rooms: Vec<pkt_room::Room>,
+    pub players: Vec<pkt_character::Character>,
+    pub monsters: Vec<pkt_character::Character>,
     pub desc_len: u16,
     pub desc: String,
 }
@@ -23,8 +22,14 @@ pub struct Map {
 impl Map {
     pub fn new() -> Self {
         Map {
-            init_points: 100,
-            stat_limit: 65525,
+            init_points: env::var("INITIAL_POINTS")
+                .expect("[MAP] INITIAL_POINTS must be set.")
+                .parse()
+                .expect("[MAP] Failed to parse INITIAL_POINTS"),
+            stat_limit: env::var("STAT_LIMIT")
+                .expect("[MAP] STAT_LIMIT must be set.")
+                .parse()
+                .expect("[MAP] Failed to parse STAT_LIMIT"),
             rooms: Vec::new(),
             players: Vec::new(),
             monsters: Vec::new(),
@@ -33,11 +38,11 @@ impl Map {
         }
     }
 
-    pub fn add_player(&mut self, player: Character) {
+    pub fn add_player(&mut self, player: pkt_character::Character) {
         self.players.push(player);
     }
 
-    pub fn add_monster(&mut self, monster: Character) {
+    pub fn add_monster(&mut self, monster: pkt_character::Character) {
         self.monsters.push(monster);
     }
 
@@ -67,16 +72,16 @@ impl Map {
                 }
             };
 
-            send(Type::Message(
+            send(ServerMessage::Message(
                 author.clone(),
-                Message {
-                    message_type: 1,
+                pkt_message::Message {
+                    message_type: PktType::Message,
                     message_len: message.len() as u16,
                     recipient: player.name.clone(),
                     sender: "Server".to_string(),
                     narration: false,
                     message: message.clone(),
-                }
+                },
             ))
             .unwrap_or_else(|e| {
                 eprintln!(
@@ -91,7 +96,7 @@ impl Map {
 
     //TODO: Test this
     /// Alert all players in the current room of a character change
-    pub fn alert(&self, id: u16, plyr: &Character) -> Result<(), std::io::Error> {
+    pub fn alert(&self, id: u16, plyr: &pkt_character::Character) -> Result<(), std::io::Error> {
         println!("[ALERT] Alerting players about: {}", plyr.name);
 
         let author = match &plyr.author {
@@ -103,24 +108,25 @@ impl Map {
         };
 
         if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
-            room.players.iter().for_each(|&player_index| {
-                match self.players.get(player_index) {
+            room.players
+                .iter()
+                .for_each(|&player_index| match self.players.get(player_index) {
                     Some(to_alert) => {
-                        if let Err(e) = send(Type::Character(author.clone(), plyr.clone())) {
+                        if let Err(e) = send(ServerMessage::Character(author.clone(), plyr.clone()))
+                        {
                             eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                         }
                     }
                     None => {
                         eprintln!("[ALERT] Invalid player index: {}", player_index);
                     }
-                }
-            });
+                });
         }
 
         Ok(())
     }
 
-    pub fn get_exits(&self, id: u16) -> Option<Vec<&Room>> {
+    pub fn get_exits(&self, id: u16) -> Option<Vec<&pkt_room::Room>> {
         if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
             let mut exits = Vec::new();
 
@@ -149,8 +155,14 @@ impl Map {
                     for tile in tiles {
                         let id = tile["id"].as_u64().unwrap_or(99) as u16;
                         let title = tile["title"].as_str().unwrap_or("ERROR").to_string();
-                        let desc = tile["desc"].as_str().unwrap_or("No Description.").to_string();
-                        let desc_short = tile["desc_short"].as_str().unwrap_or("No Description.").to_string();
+                        let desc = tile["desc"]
+                            .as_str()
+                            .unwrap_or("No Description.")
+                            .to_string();
+                        let desc_short = tile["desc_short"]
+                            .as_str()
+                            .unwrap_or("No Description.")
+                            .to_string();
                         let exits = tile["connections"]
                             .as_array()
                             .unwrap_or(&vec![])
@@ -168,7 +180,7 @@ impl Map {
                             .collect::<Vec<_>>();
 
                         // Create a new room and add it to the map
-                        let room = Room::new(
+                        let room = pkt_room::Room::new(
                             id,
                             title.clone(),
                             exits.clone(),

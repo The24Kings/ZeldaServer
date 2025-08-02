@@ -1,28 +1,34 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Debug, Clone)]
-pub struct Leave {
-    pub message_type: u8,
+pub struct Fight {
+    pub message_type: PktType,
 }
 
-impl Default for Leave {
+impl Default for Fight {
     fn default() -> Self {
-        Leave {
-            message_type: 12
+        Fight {
+            message_type: PktType::Fight,
         }
     }
 }
 
-impl<'a> Parser<'a> for Leave {
+impl<'a> Parser<'a> for Fight {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
 
-        // Write the packet to the buffer
+        // Send the packet to the author
         writer.write_all(&packet).map_err(|_| {
             std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -31,12 +37,12 @@ impl<'a> Parser<'a> for Leave {
         })?;
 
         debug_packet!(&packet);
-        
+
         Ok(())
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        Ok(Leave {
+        Ok(Fight {
             message_type: packet.message_type,
         })
     }

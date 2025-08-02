@@ -1,42 +1,52 @@
-use std::net::TcpStream;
-use std::sync::Arc;
+use std::env;
 use std::sync::mpsc::Sender;
 
-use crate::protocol::client::Client;
-use crate::protocol::packet::{game::Game, leave::Leave, version::Version};
-use crate::protocol::{Type, send};
+use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
+use crate::protocol::{ServerMessage, Stream, client::Client, pkt_type::PktType, send};
 
-pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, sender: Sender<Type>) {
+pub fn connection(
+    stream: Stream,
+    initial_points: u16,
+    stat_limit: u16,
+    sender: Sender<ServerMessage>,
+) {
     let client = Client::new(stream.clone(), sender);
 
-    let description = std::fs::read_to_string("src/content/desc.txt")
-        .expect("[CONNECTION] Failed to read description file!");
+    let filepath = env::var("DESC_FILEPATH").expect("[CONNECTION] DESC_FILEPATH must be set.");
+    let description =
+        std::fs::read_to_string(filepath).expect("[CONNECTION] Failed to read description file!");
 
     // Send the initial game info to the client
-    send(Type::Version(
+    send(ServerMessage::Version(
         stream.clone(),
-        Version {
-            message_type: 14,
-            major_rev: 2,
-            minor_rev: 3,
+        pkt_version::Version {
+            message_type: PktType::Version,
+            major_rev: env::var("MAJOR_REV")
+                .expect("[CONNECTION] MAJOR_REV must be set.")
+                .parse()
+                .expect("[CONNECTION] Failed to parse MAJOR_REV"),
+            minor_rev: env::var("MINOR_REV")
+                .expect("[CONNECTION] MINOR_REV must be set.")
+                .parse()
+                .expect("[CONNECTION] Failed to parse MINOR_REV"),
             extension_len: 0,
             extensions: None,
-        }
+        },
     ))
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send version packet: {}", e);
         return; // This is a critical error, so we return
     });
 
-    send(Type::Game(
+    send(ServerMessage::Game(
         stream.clone(),
-        Game {
-            message_type: 11,
+        pkt_game::Game {
+            message_type: PktType::Game,
             initial_points,
             stat_limit,
             description_len: description.len() as u16,
             description,
-        }
+        },
     ))
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send game packet: {}", e);
@@ -79,7 +89,10 @@ pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, 
                 // Ensure the server thread is notified of the disconnection
                 client
                     .sender
-                    .send(Type::Leave(stream.clone(), Leave::default()))
+                    .send(ServerMessage::Leave(
+                        stream.clone(),
+                        pkt_leave::Leave::default(),
+                    ))
                     .unwrap_or_else(|_| {
                         eprintln!("[CONNECTION] Failed to send leave packet");
                     });

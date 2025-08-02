@@ -1,47 +1,66 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
-
-use super::room::Room;
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Default, Debug, Clone)]
-pub struct Connection {
-    pub message_type: u8,
-    pub room_number: u16,
+pub struct Room {
+    pub message_type: PktType,
+    pub room_number: u16, // Same as room_number in ChangeRoom
     pub room_name: String,
+    pub connections: Vec<u16>, // Used for the game map
+    pub players: Vec<usize>,   // Used for the game map
+    pub monsters: Vec<usize>,  // Used for the game map
     pub description_len: u16,
+    pub desc_short: String, // Used for connection desc
     pub description: String,
 }
 
-impl Connection {
-    /// Create a new connection from the game map to send to the client
-    pub fn from(room: &Room) -> Self {
-        Connection {
-            message_type: 13,
-            room_number: room.room_number,
-            room_name: room.room_name.clone(),
-            description_len: room.desc_short.len() as u16,
-            description: room.desc_short.clone()
+impl Room {
+    /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
+    pub fn new(
+        room: u16,
+        title: String,
+        conns: Vec<u16>,
+        mnstrs: Vec<usize>,
+        desc_short: String,
+        desc: String,
+    ) -> Self {
+        Room {
+            message_type: PktType::Room,
+            room_number: room,
+            room_name: title,
+            connections: conns,
+            players: Vec::new(), // Players are empty at the start
+            monsters: mnstrs,
+            description_len: desc.len() as u16,
+            desc_short,
+            description: desc,
         }
     }
 }
 
-impl<'a> Parser<'a> for Connection {
+impl<'a> Parser<'a> for Room {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.extend(self.room_number.to_le_bytes());
 
         let mut room_name_bytes = self.room_name.as_bytes().to_vec();
-        room_name_bytes.resize(32, 0x00); // Pad the name to 32 bytes
+        room_name_bytes.resize(32, 0); // Pad with zeros to 32 bytes
         packet.extend(room_name_bytes);
 
         packet.extend(self.description_len.to_le_bytes());
         packet.extend(self.description.as_bytes());
 
-        // Send the packet to the author
+        // Write the packet to the buffer
         writer.write_all(&packet).map_err(|_| {
             std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -63,11 +82,15 @@ impl<'a> Parser<'a> for Connection {
         let description_len = u16::from_le_bytes([packet.body[34], packet.body[35]]);
         let description = String::from_utf8_lossy(&packet.body[36..]).to_string();
 
-        Ok(Connection {
+        Ok(Room {
             message_type,
             room_number,
             room_name,
+            connections: Vec::new(),
+            players: Vec::new(),
+            monsters: Vec::new(),
             description_len,
+            desc_short: String::new(),
             description,
         })
     }

@@ -1,12 +1,13 @@
-use crate::{
-    debug_packet,
-    protocol::packet::{Packet, Parser},
-};
-use std::{io::Write, net::TcpStream, sync::Arc};
+use crate::debug_packet;
+use crate::protocol::Stream;
+use crate::protocol::packet::{Packet, Parser};
+use crate::protocol::pkt_type::PktType;
+use std::io::Write;
+
 #[derive(Debug, Clone)]
 pub struct Character {
-    pub author: Option<Arc<TcpStream>>,
-    pub message_type: u8,
+    pub author: Option<Stream>,
+    pub message_type: PktType,
     pub name: String,
     pub flags: CharacterFlags,
     pub attack: u16,
@@ -20,7 +21,7 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn from(author: Option<Arc<TcpStream>>, incoming: &Character) -> Self {
+    pub fn from(author: Option<Stream>, incoming: &Character) -> Self {
         Character {
             author,
             message_type: incoming.message_type,
@@ -42,7 +43,7 @@ impl Default for Character {
     fn default() -> Self {
         Character {
             author: None,
-            message_type: 10,
+            message_type: PktType::Character,
             name: "Error".to_string(),
             flags: CharacterFlags::default(),
             attack: 0,
@@ -89,7 +90,7 @@ impl CharacterFlags {
         }
     }
 
-    pub fn activate(monster: bool) -> Self{
+    pub fn activate(monster: bool) -> Self {
         CharacterFlags {
             alive: true,
             join_battle: true,
@@ -115,7 +116,7 @@ impl<'a> Parser<'a> for Character {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
 
         // Serialize the character name
         let mut name_bytes = self.name.as_bytes().to_vec();
@@ -127,7 +128,11 @@ impl<'a> Parser<'a> for Character {
         let mut flags: u8 = 0x00;
 
         flags |= if self.flags.alive { 0b10000000 } else { 0x00 };
-        flags |= if self.flags.join_battle { 0b01000000 } else { 0x00 };
+        flags |= if self.flags.join_battle {
+            0b01000000
+        } else {
+            0x00
+        };
         flags |= if self.flags.monster { 0b00100000 } else { 0x00 };
         flags |= if self.flags.started { 0b00010000 } else { 0x00 };
         flags |= if self.flags.ready { 0b00001000 } else { 0x00 };

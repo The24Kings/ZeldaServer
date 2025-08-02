@@ -1,21 +1,21 @@
 use std::io::{Read, Write};
-use std::net::TcpStream;
-use std::sync::Arc;
 
-pub mod accept;
-pub mod change_room;
-pub mod character;
-pub mod connection;
-pub mod error;
-pub mod fight;
-pub mod game;
-pub mod leave;
-pub mod loot;
-pub mod message;
-pub mod pvp_fight;
-pub mod room;
-pub mod start;
-pub mod version;
+use crate::protocol::{Stream, pkt_type::PktType};
+
+pub mod pkt_accept;
+pub mod pkt_change_room;
+pub mod pkt_character;
+pub mod pkt_connection;
+pub mod pkt_error;
+pub mod pkt_fight;
+pub mod pkt_game;
+pub mod pkt_leave;
+pub mod pkt_loot;
+pub mod pkt_message;
+pub mod pkt_pvp_fight;
+pub mod pkt_room;
+pub mod pkt_start;
+pub mod pkt_version;
 
 /**
  * Packet structure used for passing data between the server and client at a low level
@@ -24,24 +24,24 @@ pub mod version;
  */
 #[derive(Debug, Clone)]
 pub struct Packet<'a> {
-    pub stream: &'a Arc<TcpStream>,
-    pub message_type: u8,
+    pub stream: &'a Stream,
+    pub message_type: PktType,
     pub body: &'a [u8],
 }
 
 impl<'a> Packet<'a> {
-    pub fn new(stream: &'a Arc<TcpStream>, id: u8, bytes: &'a [u8]) -> Self {
+    pub fn new(stream: &'a Stream, message_type: PktType, bytes: &'a [u8]) -> Self {
         Packet {
             stream,
-            message_type: id,
+            message_type,
             body: &bytes[0..],
         }
     }
 
     /// Read the stream into a packet
     pub fn read_into<'b>(
-        stream: &'b Arc<TcpStream>,
-        id: u8,
+        stream: &'b Stream,
+        message_type: PktType,
         buffer: &'b mut Vec<u8>,
     ) -> Result<Packet<'b>, std::io::Error> {
         // Read the remaining bytes for the packet
@@ -61,7 +61,7 @@ impl<'a> Packet<'a> {
                 .join(" ")
         );
         // Create a new packet with the read bytes
-        let packet = Packet::new(stream, id, buffer);
+        let packet = Packet::new(stream, message_type, buffer);
 
         Ok(packet)
     }
@@ -70,8 +70,8 @@ impl<'a> Packet<'a> {
     /// This function reads the packet body and then reads the extended description or data
     /// based on the provided index.
     pub fn read_extended<'b>(
-        stream: &'b Arc<TcpStream>,
-        id: u8,
+        stream: &'b Stream,
+        message_type: PktType,
         buffer: &'b mut Vec<u8>,
         index: (usize, usize),
     ) -> Result<Packet<'b>, std::io::Error> {
@@ -113,13 +113,17 @@ impl<'a> Packet<'a> {
 
         println!(
             "[PACKET] Read description: {}",
-            String::from(if desc.is_empty() { "No description provided" } else { &desc_str })
+            String::from(if desc.is_empty() {
+                "No description provided"
+            } else {
+                &desc_str
+            })
         );
 
         // Extend the buffer with the description
         buffer.extend_from_slice(&desc);
 
-        let packet = Packet::new(stream, id, buffer);
+        let packet = Packet::new(stream, message_type, buffer);
 
         Ok(packet)
     }
@@ -159,9 +163,14 @@ impl<'a> std::fmt::Display for Packet<'a> {
 /// This function prints the first 64 bytes of the packet
 #[macro_export]
 macro_rules! debug_packet {
-    ($packet:expr) => {
-        {
-            println!("[DEBUG] Serialized packet: {}", $packet.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ")); // TODO: Add another field for the message; (message, packet)
-        }
-    };
+    ($packet:expr) => {{
+        println!(
+            "[DEBUG] Serialized packet: {}",
+            $packet
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        ); // TODO: Add another field for the message; (message, packet)
+    }};
 }

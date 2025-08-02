@@ -1,20 +1,32 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
-#[derive(Default, Debug, Clone)]
-pub struct ChangeRoom {
-    pub message_type: u8,
-    pub room_number: u16
+#[derive(Debug, Clone)]
+pub struct Leave {
+    pub message_type: PktType,
 }
 
-impl<'a> Parser<'a> for ChangeRoom {
+impl Default for Leave {
+    fn default() -> Self {
+        Leave {
+            message_type: PktType::Leave,
+        }
+    }
+}
+
+impl<'a> Parser<'a> for Leave {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
-        packet.extend(self.room_number.to_le_bytes());
+        packet.push(self.message_type.into());
 
         // Write the packet to the buffer
         writer.write_all(&packet).map_err(|_| {
@@ -25,19 +37,13 @@ impl<'a> Parser<'a> for ChangeRoom {
         })?;
 
         debug_packet!(&packet);
-        
+
         Ok(())
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        println!("[CHANGE_ROOM] Deserializing packet: {}", packet);
-
-        let room_number = u16::from_le_bytes([packet.body[0], packet.body[1]]);
-
-        // Implement deserialization logic here
-        Ok(ChangeRoom {
+        Ok(Leave {
             message_type: packet.message_type,
-            room_number
         })
     }
 }
