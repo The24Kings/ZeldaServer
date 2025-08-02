@@ -2,20 +2,20 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
 
-pub mod accept;
-pub mod change_room;
-pub mod character;
-pub mod connection;
-pub mod error;
-pub mod fight;
-pub mod game;
-pub mod leave;
-pub mod loot;
-pub mod message;
-pub mod pvp_fight;
-pub mod room;
-pub mod start;
-pub mod version;
+pub mod pkt_accept;
+pub mod pkt_change_room;
+pub mod pkt_character;
+pub mod pkt_connection;
+pub mod pkt_error;
+pub mod pkt_fight;
+pub mod pkt_game;
+pub mod pkt_leave;
+pub mod pkt_loot;
+pub mod pkt_message;
+pub mod pkt_pvp_fight;
+pub mod pkt_room;
+pub mod pkt_start;
+pub mod pkt_version;
 
 /**
  * Packet structure used for passing data between the server and client at a low level
@@ -113,7 +113,11 @@ impl<'a> Packet<'a> {
 
         println!(
             "[PACKET] Read description: {}",
-            String::from(if desc.is_empty() { "No description provided" } else { &desc_str })
+            String::from(if desc.is_empty() {
+                "No description provided"
+            } else {
+                &desc_str
+            })
         );
 
         // Extend the buffer with the description
@@ -159,9 +163,14 @@ impl<'a> std::fmt::Display for Packet<'a> {
 /// This function prints the first 64 bytes of the packet
 #[macro_export]
 macro_rules! debug_packet {
-    ($packet:expr) => {
-        {
-            println!("[DEBUG] Serialized packet: {}", $packet.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ")); // TODO: Add another field for the message; (message, packet)
-        }
-    };
+    ($packet:expr) => {{
+        println!(
+            "[DEBUG] Serialized packet: {}",
+            $packet
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        ); // TODO: Add another field for the message; (message, packet)
+    }};
 }

@@ -5,10 +5,10 @@ use crate::protocol::{
     error::ErrorCode,
     map::Map,
     packet::{
-        accept::Accept,
-        character::{Character, CharacterFlags},
-        connection::Connection,
-        error::Error,
+        pkt_accept::Accept,
+        pkt_character::{Character, CharacterFlags},
+        pkt_connection::Connection,
+        pkt_error::Error,
     },
     send,
 };
@@ -30,7 +30,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Check to see if the recipient is a player in the map
-                let player = match map.players.iter_mut().find(|player| player.name == content.recipient) {
+                let player = match map
+                    .players
+                    .iter_mut()
+                    .find(|player| player.name == content.recipient)
+                {
                     Some(player) => player,
                     None => {
                         eprintln!("[SERVER] Unable to find player in map");
@@ -78,7 +82,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                 // Find the player in the map
                 let player_entry = match map.players.iter_mut().enumerate().find(|(_, player)| {
-                    player.author.as_ref().map_or(false, |a| Arc::ptr_eq(a, &author))
+                    player
+                        .author
+                        .as_ref()
+                        .map_or(false, |a| Arc::ptr_eq(a, &author))
                 }) {
                     Some((index, player)) => {
                         println!("[SERVER] Found player at index: {}", index);
@@ -104,9 +111,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                     continue; // Skip this iteration and wait for the next packet
                 }
-                
+
                 // Check if the room is a valid connection
-                let room = match map.rooms.iter().find(|room| room.room_number == player_entry.1.current_room) {
+                let room = match map
+                    .rooms
+                    .iter()
+                    .find(|room| room.room_number == player_entry.1.current_room)
+                {
                     Some(room) => room,
                     None => {
                         eprintln!("[SERVER] Unable to find room in map");
@@ -124,7 +135,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 };
 
                 if !&room.connections.contains(&content.room_number) {
-                    eprintln!("[SERVER] Invalid connection... Room only has: {:?}", &room.connections);
+                    eprintln!(
+                        "[SERVER] Invalid connection... Room only has: {:?}",
+                        &room.connections
+                    );
 
                     send(Type::Error(
                         author.clone(),
@@ -138,7 +152,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 }
 
                 // Find the next room in the map
-                let new_room = match map.rooms.iter_mut().find(|room| room.room_number == content.room_number) {
+                let new_room = match map
+                    .rooms
+                    .iter_mut()
+                    .find(|room| room.room_number == content.room_number)
+                {
                     Some(room) => room,
                     None => {
                         eprintln!("[SERVER] Unable to find room in map");
@@ -167,11 +185,16 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 //TODO: Alert all players in the room that a new player has joined
 
                 // Remove the player from their old room (Must be here to allow the mutable borrow to end)
-                match map.rooms.iter_mut().find(|room| room.room_number == player_entry.1.current_room) {
+                match map
+                    .rooms
+                    .iter_mut()
+                    .find(|room| room.room_number == player_entry.1.current_room)
+                {
                     Some(room) => {
                         println!("[SERVER] Removing player from old room");
-                        room.players.retain(|&player_index| player_index != player_entry.0);
-                    },
+                        room.players
+                            .retain(|&player_index| player_index != player_entry.0);
+                    }
                     None => {
                         eprintln!("");
 
@@ -197,11 +220,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 };
 
                 for new_room in connections {
-                    send(Type::Connection(author.clone(), Connection::from(&new_room))).unwrap_or_else(
-                        |e| {
-                            eprintln!("[SERVER] Failed to send connection packet: {}", e);
-                        },
-                    );
+                    send(Type::Connection(
+                        author.clone(),
+                        Connection::from(&new_room),
+                    ))
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send connection packet: {}", e);
+                    });
                 }
             }
             Type::Fight(_author, content) => {
@@ -241,7 +266,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 let player_entry = match map.players.iter_mut().enumerate().find(|(_, player)| {
-                    player.author.as_ref().map_or(false, |a| Arc::ptr_eq(a, &author))
+                    player
+                        .author
+                        .as_ref()
+                        .map_or(false, |a| Arc::ptr_eq(a, &author))
                 }) {
                     Some((index, player)) => {
                         println!("[SERVER] Found player at index: {}", index);
@@ -273,7 +301,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 // Add the player to the room
                 println!("[SERVER] Adding player to starting room");
                 room.players.push(player_entry.0);
-                    
+
                 send(Type::Room(author.clone(), room.clone())).unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send room packet: {}", e);
                 });
@@ -338,7 +366,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 }
 
                 // Check if the player is already in the map
-                match map.players.iter_mut().find(|player| player.name == content.name) {
+                match map
+                    .players
+                    .iter_mut()
+                    .find(|player| player.name == content.name)
+                {
                     Some(player) => {
                         if player.flags.started {
                             eprintln!("[SERVER] Player is already in the game");
@@ -359,13 +391,20 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                         player.author = Some(author.clone());
 
                         // Remove the player from the room they left off in
-                        match map.rooms.iter_mut().enumerate().find(|(_, room)| room.room_number == player.current_room) {
+                        match map
+                            .rooms
+                            .iter_mut()
+                            .enumerate()
+                            .find(|(_, room)| room.room_number == player.current_room)
+                        {
                             Some((index, room)) => {
                                 println!("[SERVER] Removing player from old room");
                                 room.players.retain(|&player_index| player_index != index);
-                            },
+                            }
                             None => {
-                                eprintln!("[SERVER] Unable to find where teh player left off in the map");
+                                eprintln!(
+                                    "[SERVER] Unable to find where teh player left off in the map"
+                                );
                             }
                         }
 
@@ -387,7 +426,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
 
                 // Send the character back to the client (we changed the flags and junk)
                 // We just added the player to the map, so we need to send the updated character
-                let player = match map.players.iter().find(|player| player.name == content.name) {
+                let player = match map
+                    .players
+                    .iter()
+                    .find(|player| player.name == content.name)
+                {
                     Some(player) => player,
                     None => &mut Character::default(),
                 };
@@ -400,7 +443,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 let player = match map.players.iter_mut().find(|player| {
-                    player.author.as_ref().map_or(false, |a| Arc::ptr_eq(a, &author))
+                    player
+                        .author
+                        .as_ref()
+                        .map_or(false, |a| Arc::ptr_eq(a, &author))
                 }) {
                     Some(player) => player,
                     None => {
@@ -413,7 +459,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Type>>>, map: &mut Map) {
                 player.flags = CharacterFlags::deactivate(false);
                 player.author = None;
 
-                println!("[SERVER] Found character in map, resetting flags and disabling connection.");
+                println!(
+                    "[SERVER] Found character in map, resetting flags and disabling connection."
+                );
 
                 // Attmept to shutdown the connection
                 match author.shutdown(std::net::Shutdown::Both) {

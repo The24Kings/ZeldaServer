@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
 use super::Type;
-use super::packet::{Packet, Parser, leave::Leave, start::Start, fight::Fight};
+use super::packet::{Packet, Parser, pkt_fight::Fight, pkt_leave::Leave, pkt_start::Start};
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -34,10 +34,12 @@ impl Client {
 
         // Match the type of the packet to the enum Type
         let packet: Option<Type> = match packet_type[0] {
-            1 => { // MESSAGE
-                let mut buffer = vec!(0; 66);
+            1 => {
+                // MESSAGE
+                let mut buffer = vec![0; 66];
 
-                let packet = Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (0, 1))?;
+                let packet =
+                    Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (0, 1))?;
 
                 let object = match Parser::deserialize(packet) {
                     Ok(deserialized) => Type::Message(self.stream.clone(), deserialized),
@@ -51,9 +53,10 @@ impl Client {
 
                 // Send the packet to the sender
                 Some(object)
-            },
-            2 => { // CHANGEROOM
-                let mut buffer = vec!(0; 2);
+            }
+            2 => {
+                // CHANGEROOM
+                let mut buffer = vec![0; 2];
 
                 let packet = Packet::read_into(&self.stream, packet_type[0], &mut buffer)?;
 
@@ -69,12 +72,14 @@ impl Client {
 
                 // Send the packet to the sender
                 Some(object)
-            },
-            3 => { // FIGHT
+            }
+            3 => {
+                // FIGHT
                 Some(Type::Fight(self.stream.clone(), Fight::default()))
-            },
-            4 => { // PVPFIGHT
-                let mut buffer = vec!(0; 32);
+            }
+            4 => {
+                // PVPFIGHT
+                let mut buffer = vec![0; 32];
 
                 let packet = Packet::read_into(&self.stream, packet_type[0], &mut buffer)?;
 
@@ -90,9 +95,10 @@ impl Client {
 
                 // Send the packet to the sender
                 Some(object)
-            },
-            5 => { // LOOT
-                let mut buffer = vec!(0; 32);
+            }
+            5 => {
+                // LOOT
+                let mut buffer = vec![0; 32];
 
                 let packet = Packet::read_into(&self.stream, packet_type[0], &mut buffer)?;
 
@@ -108,38 +114,44 @@ impl Client {
 
                 // Send the packet to the sender
                 Some(object)
-            },
-            6 => { // START
+            }
+            6 => {
+                // START
                 Some(Type::Start(self.stream.clone(), Start::default()))
-            },
-            7 => { // ERROR
-                let mut buffer = vec!(0; 3);
+            }
+            7 => {
+                // ERROR
+                let mut buffer = vec![0; 3];
 
                 let _ = Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (1, 2))?;
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
-            },
-            8 => { // ACCEPT
-                let mut buffer = vec!(0; 1);
+            }
+            8 => {
+                // ACCEPT
+                let mut buffer = vec![0; 1];
 
                 let _ = Packet::read_into(&self.stream, packet_type[0], &mut buffer)?;
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
-            },
-            9 => { // ROOM
-                let mut buffer = vec!(0; 36);
+            }
+            9 => {
+                // ROOM
+                let mut buffer = vec![0; 36];
 
                 let _ = Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (34, 35))?; // Consueme all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
-            },
-            10 => { // CHARACTER
-                let mut buffer = vec!(0; 47);
+            }
+            10 => {
+                // CHARACTER
+                let mut buffer = vec![0; 47];
 
-                let packet = Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (45, 46))?;
+                let packet =
+                    Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (45, 46))?;
 
                 let object = match Parser::deserialize(packet) {
                     Ok(deserialized) => Type::Character(self.stream.clone(), deserialized),
@@ -153,34 +165,38 @@ impl Client {
 
                 // Send the packet to the sender
                 Some(object)
-            },
-            11 => { // GAME
-                let mut buffer = vec!(0; 6); 
+            }
+            11 => {
+                // GAME
+                let mut buffer = vec![0; 6];
 
                 let _ = Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (4, 5))?; // Consueme all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
-            },
-            12 => { // LEAVE
+            }
+            12 => {
+                // LEAVE
                 Some(Type::Leave(self.stream.clone(), Leave::default()))
-            },
-            13 => { // CONNECTION
-                let mut buffer = vec!(0; 36);
+            }
+            13 => {
+                // CONNECTION
+                let mut buffer = vec![0; 36];
 
                 let _ = Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (34, 35))?; // Consueme all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
-            },
-            14 => { // VERSION
-                let mut buffer = vec!(0; 4);
+            }
+            14 => {
+                // VERSION
+                let mut buffer = vec![0; 4];
 
                 let _ = Packet::read_extended(&self.stream, packet_type[0], &mut buffer, (2, 3))?; // Consueme all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
-            },
+            }
             _ => {
                 // Invalid packet type
                 return Err(std::io::Error::new(
@@ -193,7 +209,8 @@ impl Client {
         // Send the packet to the server thread
         match packet {
             Some(pkt) => {
-                self.sender.send(pkt.clone()).map_err(|e| { // If the send fails with SendError, it means the server thread has closed
+                self.sender.send(pkt.clone()).map_err(|e| {
+                    // If the send fails with SendError, it means the server thread has closed
                     std::io::Error::new(
                         std::io::ErrorKind::BrokenPipe,
                         format!("Failed to send packet: {}", e),
@@ -201,13 +218,11 @@ impl Client {
                 })?;
 
                 Ok(pkt)
-            },
-            None => {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    "You tried to send the server a bad packet... naughty!",
-                ))
             }
+            None => Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "You tried to send the server a bad packet... naughty!",
+            )),
         }
     }
 }

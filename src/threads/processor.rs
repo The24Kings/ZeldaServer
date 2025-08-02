@@ -2,9 +2,8 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 
-use crate::protocol::client::Client;
-use crate::protocol::packet::{game::Game, leave::Leave, version::Version};
-use crate::protocol::{Type, send};
+use crate::protocol::packet::{pkt_game::Game, pkt_leave::Leave, pkt_version::Version};
+use crate::protocol::{Type, client::Client, send};
 
 pub fn connection(stream: Arc<TcpStream>, initial_points: u16, stat_limit: u16, sender: Sender<Type>) {
     let client = Client::new(stream.clone(), sender);
