@@ -1,8 +1,14 @@
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::{
+        packet::{Packet, Parser},
+        pkt_type::PktType,
+    },
+};
 
 #[derive(Default, Debug, Clone)]
 pub struct Version {
-    pub message_type: u8,
+    pub message_type: PktType,
     pub major_rev: u8,
     pub minor_rev: u8,
     pub extension_len: u16,
@@ -14,7 +20,7 @@ impl<'a> Parser<'a> for Version {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
-        packet.push(self.message_type);
+        packet.push(self.message_type.into());
         packet.extend(self.major_rev.to_le_bytes());
         packet.extend(self.minor_rev.to_le_bytes());
         packet.extend(self.extension_len.to_le_bytes());
