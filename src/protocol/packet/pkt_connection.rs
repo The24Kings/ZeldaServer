@@ -1,8 +1,11 @@
 use std::io::Write;
 
-use crate::{debug_packet, protocol::packet::{Packet, Parser}};
+use crate::{
+    debug_packet,
+    protocol::packet::{Packet, Parser},
+};
 
-use super::room::Room;
+use super::pkt_room::Room;
 
 #[derive(Default, Debug, Clone)]
 pub struct Connection {
@@ -21,7 +24,7 @@ impl Connection {
             room_number: room.room_number,
             room_name: room.room_name.clone(),
             description_len: room.desc_short.len() as u16,
-            description: room.desc_short.clone()
+            description: room.desc_short.clone(),
         }
     }
 }
