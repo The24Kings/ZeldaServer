@@ -21,8 +21,14 @@ pub fn connection(
         stream.clone(),
         pkt_version::Version {
             message_type: 14,
-            major_rev: 2,
-            minor_rev: 3,
+            major_rev: env::var("MAJOR_REV")
+                .expect("[CONNECTION] MAJOR_REV must be set.")
+                .parse()
+                .expect("[CONNECTION] Failed to parse MAJOR_REV"),
+            minor_rev: env::var("MINOR_REV")
+                .expect("[CONNECTION] MINOR_REV must be set.")
+                .parse()
+                .expect("[CONNECTION] Failed to parse MINOR_REV"),
             extension_len: 0,
             extensions: None,
         },
