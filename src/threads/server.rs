@@ -134,22 +134,22 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     }
                 };
 
-                if !&room.connections.contains(&content.room_number) {
-                    eprintln!(
-                        "[SERVER] Invalid connection... Room only has: {:?}",
-                        &room.connections
-                    );
+                // if !&room.connections.contains(&content.room_number) {
+                //     eprintln!(
+                //         "[SERVER] Invalid connection... Room only has: {:?}",
+                //         &room.connections
+                //     );
 
-                    send(ServerMessage::Error(
-                        author.clone(),
-                        Error::new(ErrorCode::BadRoom, "Invalid connection!"),
-                    ))
-                    .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                //     send(ServerMessage::Error(
+                //         author.clone(),
+                //         Error::new(ErrorCode::BadRoom, "Invalid connection!"),
+                //     ))
+                //     .unwrap_or_else(|e| {
+                //         eprintln!("[SERVER] Failed to send error packet: {}", e);
+                //     });
 
-                    continue; // Skip this iteration and wait for the next packet
-                }
+                //     continue; // Skip this iteration and wait for the next packet
+                // }
 
                 // Find the next room in the map
                 let new_room = match map
@@ -174,39 +174,43 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
 
                 // Add the player to the new room
                 println!("[SERVER] Adding player to new room");
-                new_room.players.push(player_entry.0);
+                // new_room.players.push(player_entry.0);
 
                 // Send the room to the client
-                send(ServerMessage::Room(author.clone(), new_room.clone())).unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send room packet: {}", e);
-                });
+                // send(ServerMessage::Room(author.clone(), new_room.clone())).unwrap_or_else(|e| {
+                //     eprintln!("[SERVER] Failed to send room packet: {}", e);
+                // });
 
                 //TODO: Send all players and monsters in the room
                 //TODO: Alert all players in the room that a new player has joined
 
                 // Remove the player from their old room (Must be here to allow the mutable borrow to end)
-                match map
-                    .rooms
-                    .iter_mut()
-                    .find(|room| room.room_number == player_entry.1.current_room)
-                {
-                    Some(room) => {
-                        println!("[SERVER] Removing player from old room");
-                        room.players
-                            .retain(|&player_index| player_index != player_entry.0);
-                    }
-                    None => {
-                        eprintln!("");
+                // match map
+                //     .rooms
+                //     .iter_mut()
+                //     .find(|room| room.room_number == player_entry.1.current_room)
+                // {
+                //     Some(room) => {
+                //         println!("[SERVER] Removing player from old room");
+                //         room.players
+                //             .retain(|&player_index| player_index != player_entry.0);
+                //     }
+                //     None => {
+                //         eprintln!("");
 
-                        continue;
-                    }
-                }
+                //         continue;
+                //     }
+                // }
 
                 println!("[SERVER] Updating player room");
                 player_entry.1.current_room = content.room_number;
 
                 // Send the updated character back to the client
-                send(ServerMessage::Character(author.clone(), player_entry.1.clone())).unwrap_or_else(|e| {
+                send(ServerMessage::Character(
+                    author.clone(),
+                    player_entry.1.clone(),
+                ))
+                .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send character packet: {}", e);
                 });
 
@@ -285,7 +289,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 player_entry.1.flags.started = true;
 
                 // Send the updated character back to the client
-                send(ServerMessage::Character(author.clone(), player_entry.1.clone())).unwrap_or_else(|e| {
+                send(ServerMessage::Character(
+                    author.clone(),
+                    player_entry.1.clone(),
+                ))
+                .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send character packet: {}", e);
                 });
 
@@ -299,12 +307,12 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 };
 
                 // Add the player to the room
-                println!("[SERVER] Adding player to starting room");
-                room.players.push(player_entry.0);
+                // println!("[SERVER] Adding player to starting room");
+                // room.players.push(player_entry.0);
 
-                send(ServerMessage::Room(author.clone(), room.clone())).unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send room packet: {}", e);
-                });
+                // send(ServerMessage::Room(author.clone(), room.clone())).unwrap_or_else(|e| {
+                //     eprintln!("[SERVER] Failed to send room packet: {}", e);
+                // });
 
                 //TODO: Send all players and monsters in the room
                 //TODO: Alert all players in the room that a new player has joined
@@ -319,11 +327,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 };
 
                 for room in connections {
-                    send(ServerMessage::Connection(author.clone(), Connection::from(&room))).unwrap_or_else(
-                        |e| {
-                            eprintln!("[SERVER] Failed to send connection packet: {}", e);
-                        },
-                    );
+                    send(ServerMessage::Connection(
+                        author.clone(),
+                        Connection::from(&room),
+                    ))
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send connection packet: {}", e);
+                    });
                 }
             }
             ServerMessage::Character(author, content) => {
@@ -391,22 +401,22 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                         player.author = Some(author.clone());
 
                         // Remove the player from the room they left off in
-                        match map
-                            .rooms
-                            .iter_mut()
-                            .enumerate()
-                            .find(|(_, room)| room.room_number == player.current_room)
-                        {
-                            Some((index, room)) => {
-                                println!("[SERVER] Removing player from old room");
-                                room.players.retain(|&player_index| player_index != index);
-                            }
-                            None => {
-                                eprintln!(
-                                    "[SERVER] Unable to find where teh player left off in the map"
-                                );
-                            }
-                        }
+                        // match map
+                        //     .rooms
+                        //     .iter_mut()
+                        //     .enumerate()
+                        //     .find(|(_, room)| room.room_number == player.current_room)
+                        // {
+                        //     Some((index, room)) => {
+                        //         println!("[SERVER] Removing player from old room");
+                        //         room.players.retain(|&player_index| player_index != index);
+                        //     }
+                        //     None => {
+                        //         eprintln!(
+                        //             "[SERVER] Unable to find where teh player left off in the map"
+                        //         );
+                        //     }
+                        // }
 
                         println!("[SERVER] Found character in map, reactivating character.");
                     }
@@ -435,9 +445,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     None => &mut Character::default(),
                 };
 
-                send(ServerMessage::Character(author.clone(), player.clone())).unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send character packet: {}", e);
-                });
+                send(ServerMessage::Character(author.clone(), player.clone())).unwrap_or_else(
+                    |e| {
+                        eprintln!("[SERVER] Failed to send character packet: {}", e);
+                    },
+                );
             }
             ServerMessage::Leave(author, content) => {
                 println!("[SERVER] Received: \n{:#?}", content);

@@ -1,26 +1,57 @@
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 use std::{env, fs::File};
 
-use super::{
-    ServerMessage,
-    packet::{pkt_character, pkt_message, pkt_room},
-    pkt_type::PktType,
-    send,
-};
+use super::packet::{pkt_character, pkt_room};
 
-#[derive(Default, Debug, Clone)]
+// #[derive(Default, Debug, Clone)]
+// pub struct Map {
+//     pub init_points: u16,
+//     pub stat_limit: u16,
+//     pub rooms: Vec<pkt_room::Room>,
+//     pub players: Vec<pkt_character::Character>,
+//     pub monsters: Vec<pkt_character::Character>,
+//     pub desc_len: u16,
+//     pub desc: String,
+// }
+
+#[derive(Debug)]
 pub struct Map {
     pub init_points: u16,
     pub stat_limit: u16,
-    pub rooms: Vec<pkt_room::Room>,
+    pub rooms: Vec<Room>,
     pub players: Vec<pkt_character::Character>,
-    pub monsters: Vec<pkt_character::Character>,
-    pub desc_len: u16,
+    // pub monsters: Vec<pkt_character::Character>,
+    pub desc: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Room {
+    pub room_number: u16,
+    pub title: String,
+    pub connections: Vec<Connection>,
+    pub desc: String,
+    pub monsters: Option<Vec<Monster>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Connection {
+    pub room_number: u16,
+    pub title: String,
+    pub desc_short: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Monster {
+    pub name: String,
+    pub health: i16,
+    pub attack: u16,
+    pub defense: u16,
+    pub gold: u16,
     pub desc: String,
 }
 
 impl Map {
-    pub fn new() -> Self {
+    pub fn new(rooms: Vec<Room>) -> Self {
         Map {
             init_points: env::var("INITIAL_POINTS")
                 .expect("[MAP] INITIAL_POINTS must be set.")
@@ -30,32 +61,32 @@ impl Map {
                 .expect("[MAP] STAT_LIMIT must be set.")
                 .parse()
                 .expect("[MAP] Failed to parse STAT_LIMIT"),
-            rooms: Vec::new(),
+            rooms,
             players: Vec::new(),
-            monsters: Vec::new(),
-            desc_len: 0,
+            // monsters: Vec::new(),
+            // desc_len: 0,
             desc: String::new(),
         }
     }
 
     pub fn add_player(&mut self, player: pkt_character::Character) {
-        self.players.push(player);
+        // self.players.push(player);
     }
 
     pub fn add_monster(&mut self, monster: pkt_character::Character) {
-        self.monsters.push(monster);
+        // self.monsters.push(monster);
     }
 
     pub fn remove_player(&mut self, name: String) {
-        if let Some(pos) = self.players.iter().position(|x| x.name == name) {
-            self.players.remove(pos);
-        }
+        // if let Some(pos) = self.players.iter().position(|x| x.name == name) {
+        //     self.players.remove(pos);
+        // }
     }
 
     pub fn remove_monster(&mut self, name: String) {
-        if let Some(pos) = self.monsters.iter().position(|x| x.name == name) {
-            self.monsters.remove(pos);
-        }
+        // if let Some(pos) = self.monsters.iter().position(|x| x.name == name) {
+        //     self.monsters.remove(pos);
+        // }
     }
 
     /// Broadcast a message to all players in the game
@@ -63,81 +94,81 @@ impl Map {
         println!("[BROADCAST] Sending message: {}", message);
 
         // Send the packet to the server
-        for player in &self.players {
-            let author = match &player.author {
-                Some(author) => author,
-                None => {
-                    eprintln!("[BROADCAST] Player {} has no author!", player.name);
-                    continue;
-                }
-            };
+        // for player in &self.players {
+        //     let author = match &player.author {
+        //         Some(author) => author,
+        //         None => {
+        //             eprintln!("[BROADCAST] Player {} has no author!", player.name);
+        //             continue;
+        //         }
+        //     };
 
-            send(ServerMessage::Message(
-                author.clone(),
-                pkt_message::Message {
-                    message_type: PktType::Message,
-                    message_len: message.len() as u16,
-                    recipient: player.name.clone(),
-                    sender: "Server".to_string(),
-                    narration: false,
-                    message: message.clone(),
-                },
-            ))
-            .unwrap_or_else(|e| {
-                eprintln!(
-                    "[BROADCAST] Failed to send message to {}: {}",
-                    player.name, e
-                );
-            });
-        }
+        //     send(ServerMessage::Message(
+        //         author.clone(),
+        //         pkt_message::Message {
+        //             message_type: PktType::Message,
+        //             message_len: message.len() as u16,
+        //             recipient: player.name.clone(),
+        //             sender: "Server".to_string(),
+        //             narration: false,
+        //             message: message.clone(),
+        //         },
+        //     ))
+        //     .unwrap_or_else(|e| {
+        //         eprintln!(
+        //             "[BROADCAST] Failed to send message to {}: {}",
+        //             player.name, e
+        //         );
+        //     });
+        // }
 
         Ok(())
     }
 
     //TODO: Test this
     /// Alert all players in the current room of a character change
-    pub fn alert(&self, id: u16, plyr: &pkt_character::Character) -> Result<(), std::io::Error> {
-        println!("[ALERT] Alerting players about: {}", plyr.name);
+    // pub fn alert(&self, id: u16, plyr: &pkt_character::Character) -> Result<(), std::io::Error> {
+    //     println!("[ALERT] Alerting players about: {}", plyr.name);
 
-        let author = match &plyr.author {
-            Some(author) => author,
-            None => {
-                eprintln!("[ALERT] Player {} has no author!", plyr.name);
-                return Ok(());
-            }
-        };
+    //     let author = match &plyr.author {
+    //         Some(author) => author,
+    //         None => {
+    //             eprintln!("[ALERT] Player {} has no author!", plyr.name);
+    //             return Ok(());
+    //         }
+    //     };
 
-        if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
-            room.players
-                .iter()
-                .for_each(|&player_index| match self.players.get(player_index) {
-                    Some(to_alert) => {
-                        if let Err(e) = send(ServerMessage::Character(author.clone(), plyr.clone()))
-                        {
-                            eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
-                        }
-                    }
-                    None => {
-                        eprintln!("[ALERT] Invalid player index: {}", player_index);
-                    }
-                });
-        }
+    //     if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
+    //         room.players
+    //             .iter()
+    //             .for_each(|&player_index| match self.players.get(player_index) {
+    //                 Some(to_alert) => {
+    //                     if let Err(e) = send(ServerMessage::Character(author.clone(), plyr.clone()))
+    //                     {
+    //                         eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
+    //                     }
+    //                 }
+    //                 None => {
+    //                     eprintln!("[ALERT] Invalid player index: {}", player_index);
+    //                 }
+    //             });
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn get_exits(&self, id: u16) -> Option<Vec<&pkt_room::Room>> {
-        if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
-            let mut exits = Vec::new();
+        // if let Some(room) = self.rooms.iter().find(|r| r.room_number == id) {
+        //     let mut exits = Vec::new();
 
-            for exit in &room.connections {
-                if let Some(exit_room) = self.rooms.iter().find(|r| r.room_number == *exit) {
-                    exits.push(exit_room);
-                }
-            }
+        //     for exit in &room.connections {
+        //         if let Some(exit_room) = self.rooms.iter().find(|r| r.room_number == *exit) {
+        //             exits.push(exit_room);
+        //         }
+        //     }
 
-            return Some(exits);
-        }
+        //     return Some(exits);
+        // }
 
         None
     }
@@ -145,61 +176,66 @@ impl Map {
     pub fn build(data: File) -> Result<Self, serde_json::Error> {
         println!("[MAP] Building game map...");
 
-        match serde_json::from_reader::<File, Value>(data) {
-            Ok(json) => {
-                let mut map = Map::new();
+        let deserialized: Vec<Room> = serde_json::from_reader(&data)?;
+        println!("deserialized = {:?}", deserialized);
 
-                // Parse the JSON data into the Map struct
-                if let Some(tiles) = json["tiles"].as_array() {
-                    // Add all existing room to the map
-                    for tile in tiles {
-                        let id = tile["id"].as_u64().unwrap_or(99) as u16;
-                        let title = tile["title"].as_str().unwrap_or("ERROR").to_string();
-                        let desc = tile["desc"]
-                            .as_str()
-                            .unwrap_or("No Description.")
-                            .to_string();
-                        let desc_short = tile["desc_short"]
-                            .as_str()
-                            .unwrap_or("No Description.")
-                            .to_string();
-                        let exits = tile["connections"]
-                            .as_array()
-                            .unwrap_or(&vec![])
-                            .iter()
-                            .filter_map(|v| v.as_u64())
-                            .map(|v| v as u16)
-                            .collect::<Vec<_>>();
+        Ok(Map::new(deserialized))
 
-                        let monsters = tile["monsters"]
-                            .as_array()
-                            .unwrap_or(&vec![])
-                            .iter()
-                            .filter_map(|v| v.as_u64())
-                            .map(|v| v as usize)
-                            .collect::<Vec<_>>();
+        // match serde_json::from_reader::<File, Value>(data) {
+        //     Ok(json) => {
+        //         let mut map = Map::new();
 
-                        // Create a new room and add it to the map
-                        let room = pkt_room::Room::new(
-                            id,
-                            title.clone(),
-                            exits.clone(),
-                            monsters.clone(),
-                            desc_short.clone(),
-                            desc.clone(),
-                        );
+        //         // Parse the JSON data into the Map struct
+        //         if let Some(tiles) = json["tiles"].as_array() {
+        //             // Add all existing room to the map
+        //             for tile in tiles {
+        //                 let id = tile["id"].as_u64().unwrap_or(99) as u16;
+        //                 let title = tile["title"].as_str().unwrap_or("ERROR").to_string();
+        //                 let desc = tile["desc"]
+        //                     .as_str()
+        //                     .unwrap_or("No Description.")
+        //                     .to_string();
+        //                 let desc_short = tile["desc_short"]
+        //                     .as_str()
+        //                     .unwrap_or("No Description.")
+        //                     .to_string();
+        //                 let exits = tile["connections"]
+        //                     .as_array()
+        //                     .unwrap_or(&vec![])
+        //                     .iter()
+        //                     .filter_map(|v| v.as_u64())
+        //                     .map(|v| v as u16)
+        //                     .collect::<Vec<_>>();
 
-                        map.rooms.push(room.clone());
+        //                 let monsters = tile["monsters"]
+        //                     .as_array()
+        //                     .unwrap_or(&vec![])
+        //                     .iter()
+        //                     .filter_map(|v| v.as_u64())
+        //                     .map(|v| v as usize)
+        //                     .collect::<Vec<_>>();
 
-                        println!("[MAP] {:#?}", room);
-                    }
-                }
+        //                 // Create a new room and add it to the map
+        //                 let room = pkt_room::Room::new(
+        //                     id,
+        //                     title.clone(),
+        //                     exits.clone(),
+        //                     monsters.clone(),
+        //                     desc_short.clone(),
+        //                     desc.clone(),
+        //                 );
 
-                //TODO: Compile all the monsters into the map's monster vector
+        //                 map.rooms.push(room.clone());
 
-                return Ok(map);
-            }
-            Err(e) => return Err(e),
-        }
+        //                 println!("[MAP] {:#?}", room);
+        //             }
+        //         }
+
+        //         //TODO: Compile all the monsters into the map's monster vector
+
+        //         return Ok(map);
+        //     }
+        //     Err(e) => return Err(e),
+        // }
     }
 }
