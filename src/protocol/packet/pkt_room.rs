@@ -3,6 +3,7 @@ use std::io::Write;
 use crate::{
     debug_packet,
     protocol::{
+        map,
         packet::{Packet, Parser},
         pkt_type::PktType,
     },
@@ -13,34 +14,31 @@ pub struct Room {
     pub message_type: PktType,
     pub room_number: u16, // Same as room_number in ChangeRoom
     pub room_name: String,
-    pub connections: Vec<u16>, // Used for the game map
-    pub players: Vec<usize>,   // Used for the game map
-    pub monsters: Vec<usize>,  // Used for the game map
     pub description_len: u16,
-    pub desc_short: String, // Used for connection desc
     pub description: String,
 }
 
 impl Room {
     /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
-    pub fn new(
-        room: u16,
-        title: String,
-        conns: Vec<u16>,
-        mnstrs: Vec<usize>,
-        desc_short: String,
-        desc: String,
-    ) -> Self {
+    pub fn new(room: u16, title: String, desc: String) -> Self {
         Room {
             message_type: PktType::Room,
             room_number: room,
             room_name: title,
-            connections: conns,
-            players: Vec::new(), // Players are empty at the start
-            monsters: mnstrs,
             description_len: desc.len() as u16,
-            desc_short,
             description: desc,
+        }
+    }
+}
+
+impl From<&map::Room> for Room {
+    fn from(room: &map::Room) -> Self {
+        Room {
+            message_type: PktType::Room,
+            room_number: room.room_number,
+            room_name: room.title.clone(),
+            description_len: room.desc.len() as u16,
+            description: room.desc.clone(),
         }
     }
 }
@@ -86,11 +84,7 @@ impl<'a> Parser<'a> for Room {
             message_type,
             room_number,
             room_name,
-            connections: Vec::new(),
-            players: Vec::new(),
-            monsters: Vec::new(),
             description_len,
-            desc_short: String::new(),
             description,
         })
     }

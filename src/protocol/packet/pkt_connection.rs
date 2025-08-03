@@ -3,12 +3,11 @@ use std::io::Write;
 use crate::{
     debug_packet,
     protocol::{
+        map,
         packet::{Packet, Parser},
         pkt_type::PktType,
     },
 };
-
-use super::pkt_room::Room;
 
 #[derive(Default, Debug, Clone)]
 pub struct Connection {
@@ -19,15 +18,15 @@ pub struct Connection {
     pub description: String,
 }
 
-impl Connection {
+impl From<&map::Connection> for Connection {
     /// Create a new connection from the game map to send to the client
-    pub fn from(room: &Room) -> Self {
+    fn from(conn: &map::Connection) -> Self {
         Connection {
             message_type: PktType::Connection,
-            room_number: room.room_number,
-            room_name: room.room_name.clone(),
-            description_len: room.desc_short.len() as u16,
-            description: room.desc_short.clone(),
+            room_number: conn.room_number,
+            room_name: conn.title.clone(),
+            description_len: conn.desc_short.len() as u16,
+            description: conn.desc_short.clone(),
         }
     }
 }
