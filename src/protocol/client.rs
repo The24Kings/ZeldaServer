@@ -54,7 +54,6 @@ impl Client {
                 Some(object)
             }
             PktType::ChangeRoom => {
-                // CHANGEROOM
                 let mut buffer = vec![0; 2];
 
                 let packet = Packet::read_into(&self.stream, packet_type, &mut buffer)?;
@@ -74,15 +73,11 @@ impl Client {
                 // Send the packet to the sender
                 Some(object)
             }
-            PktType::Fight => {
-                // FIGHT
-                Some(ServerMessage::Fight(
-                    self.stream.clone(),
-                    pkt_fight::Fight::default(),
-                ))
-            }
+            PktType::Fight => Some(ServerMessage::Fight(
+                self.stream.clone(),
+                pkt_fight::Fight::default(),
+            )),
             PktType::PVPFight => {
-                // PVPFIGHT
                 let mut buffer = vec![0; 32];
 
                 let packet = Packet::read_into(&self.stream, packet_type, &mut buffer)?;
@@ -101,7 +96,6 @@ impl Client {
                 Some(object)
             }
             PktType::Loot => {
-                // LOOT
                 let mut buffer = vec![0; 32];
 
                 let packet = Packet::read_into(&self.stream, packet_type, &mut buffer)?;
@@ -119,15 +113,11 @@ impl Client {
                 // Send the packet to the sender
                 Some(object)
             }
-            PktType::Start => {
-                // START
-                Some(ServerMessage::Start(
-                    self.stream.clone(),
-                    pkt_start::Start::default(),
-                ))
-            }
+            PktType::Start => Some(ServerMessage::Start(
+                self.stream.clone(),
+                pkt_start::Start::default(),
+            )),
             PktType::Error => {
-                // ERROR
                 let mut buffer = vec![0; 3];
 
                 let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (1, 2))?;
@@ -136,7 +126,6 @@ impl Client {
                 None
             }
             PktType::Accept => {
-                // ACCEPT
                 let mut buffer = vec![0; 1];
 
                 let _ = Packet::read_into(&self.stream, packet_type, &mut buffer)?;
@@ -145,16 +134,14 @@ impl Client {
                 None
             }
             PktType::Room => {
-                // ROOM
                 let mut buffer = vec![0; 36];
 
-                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (34, 35))?; // Consueme all data in stream
+                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (34, 35))?; // Consume all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
             }
             PktType::Character => {
-                // CHARACTER
                 let mut buffer = vec![0; 47];
 
                 let packet =
@@ -174,10 +161,9 @@ impl Client {
                 Some(object)
             }
             PktType::Game => {
-                // GAME
                 let mut buffer = vec![0; 6];
 
-                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (4, 5))?; // Consueme all data in stream
+                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (4, 5))?; // Consume all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
@@ -190,19 +176,17 @@ impl Client {
                 ))
             }
             PktType::Connection => {
-                // CONNECTION
                 let mut buffer = vec![0; 36];
 
-                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (34, 35))?; // Consueme all data in stream
+                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (34, 35))?; // Consume all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
             }
             PktType::Version => {
-                // VERSION
                 let mut buffer = vec![0; 4];
 
-                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (2, 3))?; // Consueme all data in stream
+                let _ = Packet::read_extended(&self.stream, packet_type, &mut buffer, (2, 3))?; // Consume all data in stream
 
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
