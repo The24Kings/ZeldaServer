@@ -31,8 +31,8 @@ impl Room {
     }
 }
 
-impl From<&map::Room> for Room {
-    fn from(room: &map::Room) -> Self {
+impl From<map::Room> for Room {
+    fn from(room: map::Room) -> Self {
         Room {
             message_type: PktType::Room,
             room_number: room.room_number,
