@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, mpsc::Receiver};
 use crate::protocol::packet::{
     pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
 };
-use crate::protocol::{ServerMessage, error::ErrorCode, map::Map, pkt_type::PktType, send};
+use crate::protocol::{ServerMessage, error::ErrorCode, map::Map, pkt_type::PktType};
 
 pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
     loop {
@@ -31,10 +31,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     None => {
                         eprintln!("[SERVER] Unable to find player in map");
 
-                        send(ServerMessage::Error(
+                        ServerMessage::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::Other, "Player not found"),
-                        ))
+                        )
+                        .send()
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
                         });
@@ -48,13 +49,14 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     None => {
                         eprintln!("[SERVER] Character does not have an active connection");
 
-                        send(ServerMessage::Error(
+                        ServerMessage::Error(
                             author.clone(),
                             pkt_error::Error::new(
                                 ErrorCode::Other,
                                 "Character does not have an active connection",
                             ),
-                        ))
+                        )
+                        .send()
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
                         });
@@ -63,9 +65,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     }
                 };
 
-                send(ServerMessage::Message(author.clone(), content.clone())).unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send message packet: {}", e);
-                });
+                ServerMessage::Message(author.clone(), content.clone())
+                    .send()
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send message packet: {}", e);
+                    });
                 // ^ ============================================================================ ^
             }
             ServerMessage::ChangeRoom(author, content) => {
@@ -96,10 +100,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 if player.current_room == content.room_number {
                     eprintln!("[SERVER] Player is already in the room");
 
-                    send(ServerMessage::Error(
+                    ServerMessage::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Player is already in the room"),
-                    ))
+                    )
+                    .send()
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send error packet: {}", e);
                     });
@@ -117,10 +122,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     None => {
                         eprintln!("[SERVER] Unable to find room in map");
 
-                        send(ServerMessage::Error(
+                        ServerMessage::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
-                        ))
+                        )
+                        .send()
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
                         });
@@ -140,10 +146,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                         &cur_room.connections
                     );
 
-                    send(ServerMessage::Error(
+                    ServerMessage::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
-                    ))
+                    )
+                    .send()
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send error packet: {}", e);
                     });
@@ -166,21 +173,20 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                         room.players.push(player_idx);
 
                         // Send the room to the client
-                        send(ServerMessage::Room(
-                            author.clone(),
-                            pkt_room::Room::from(room.clone()),
-                        ))
-                        .unwrap_or_else(|e| {
-                            eprintln!("[SERVER] Failed to send room packet: {}", e);
-                        });
+                        ServerMessage::Room(author.clone(), pkt_room::Room::from(room.clone()))
+                            .send()
+                            .unwrap_or_else(|e| {
+                                eprintln!("[SERVER] Failed to send room packet: {}", e);
+                            });
                     }
                     None => {
                         eprintln!("[SERVER] Unable to find room in map");
 
-                        send(ServerMessage::Error(
+                        ServerMessage::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
-                        ))
+                        )
+                        .send()
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
                         });
@@ -204,13 +210,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 let player_clone = player.clone();
 
                 // Send the updated character back to the client
-                send(ServerMessage::Character(
-                    author.clone(),
-                    player_clone.clone(),
-                ))
-                .unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send character packet: {}", e);
-                });
+                ServerMessage::Character(author.clone(), player_clone.clone())
+                    .send()
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send character packet: {}", e);
+                    });
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -225,10 +229,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 };
 
                 for new_room in connections {
-                    send(ServerMessage::Connection(
+                    ServerMessage::Connection(
                         author.clone(),
                         pkt_connection::Connection::from(new_room),
-                    ))
+                    )
+                    .send()
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send connection packet: {}", e);
                     });
@@ -267,10 +272,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 println!("[SERVER] Received: \n{:#?}", content);
 
                 // Disabled, no player combat allowed
-                send(ServerMessage::Error(
+                ServerMessage::Error(
                     author.clone(),
                     pkt_error::Error::new(ErrorCode::NoPlayerCombat, "No player combat allowed"),
-                ))
+                )
+                .send()
                 .unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to send error packet: {}", e);
                 });
@@ -309,13 +315,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
 
                 let player_clone = player.clone();
 
-                send(ServerMessage::Character(
-                    author.clone(),
-                    player_clone.clone(),
-                ))
-                .unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send character packet: {}", e);
-                });
+                ServerMessage::Character(author.clone(), player_clone.clone())
+                    .send()
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send character packet: {}", e);
+                    });
 
                 map.alert_room(0, &player_clone).unwrap_or_else(|e| {
                     eprintln!("[SERVER] Failed to alert players: {}", e);
@@ -341,13 +345,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 println!("[SERVER] Adding player to starting room");
                 room.players.push(player_idx);
 
-                send(ServerMessage::Room(
-                    author.clone(),
-                    pkt_room::Room::from(room.clone()),
-                ))
-                .unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send room packet: {}", e);
-                });
+                ServerMessage::Room(author.clone(), pkt_room::Room::from(room.clone()))
+                    .send()
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send room packet: {}", e);
+                    });
 
                 let connections = match map.get_exits(0) {
                     Some(room) => room,
@@ -358,10 +360,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 };
 
                 for room in connections {
-                    send(ServerMessage::Connection(
+                    ServerMessage::Connection(
                         author.clone(),
                         pkt_connection::Connection::from(room),
-                    ))
+                    )
+                    .send()
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send connection packet: {}", e);
                     });
@@ -385,10 +388,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     Some(total) => total,
                     None => {
                         println!("[SERVER] Overflow in stats calculation");
-                        send(ServerMessage::Error(
+                        ServerMessage::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
-                        ))
+                        )
+                        .send()
                         .unwrap_or_else(|e| {
                             eprintln!("[SERVER] Failed to send error packet: {}", e);
                         });
@@ -400,10 +404,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 if total_stats > map.init_points {
                     println!("[SERVER] Invalid stats: {}", total_stats);
 
-                    send(ServerMessage::Error(
+                    ServerMessage::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
-                    ))
+                    )
+                    .send()
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send error packet: {}", e);
                     });
@@ -458,13 +463,14 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 if player.flags.started {
                     eprintln!("[SERVER] Player is already in the game");
 
-                    send(ServerMessage::Error(
+                    ServerMessage::Error(
                         author.clone(),
                         pkt_error::Error::new(
                             ErrorCode::PlayerExists,
                             "Player is already in the game; please leave the game and rejoin",
                         ),
-                    ))
+                    )
+                    .send()
                     .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send error packet: {}", e);
                     });
@@ -479,19 +485,17 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 // ================================================================================
                 // Send an Accept packet and updated character.
                 // ================================================================================
-                send(ServerMessage::Accept(
-                    author.clone(),
-                    pkt_accept::Accept::new(PktType::Character),
-                ))
-                .unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send accept packet: {}", e);
-                });
+                ServerMessage::Accept(author.clone(), pkt_accept::Accept::new(PktType::Character))
+                    .send()
+                    .unwrap_or_else(|e| {
+                        eprintln!("[SERVER] Failed to send accept packet: {}", e);
+                    });
 
-                send(ServerMessage::Character(author.clone(), player.clone())).unwrap_or_else(
-                    |e| {
+                ServerMessage::Character(author.clone(), player.clone())
+                    .send()
+                    .unwrap_or_else(|e| {
                         eprintln!("[SERVER] Failed to send character packet: {}", e);
-                    },
-                );
+                    });
                 // ^ ============================================================================ ^
             }
             ServerMessage::Leave(author, content) => {

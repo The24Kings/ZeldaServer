@@ -2,7 +2,7 @@ use std::env;
 use std::sync::mpsc::Sender;
 
 use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
-use crate::protocol::{ServerMessage, Stream, client::Client, pkt_type::PktType, send};
+use crate::protocol::{ServerMessage, Stream, client::Client, pkt_type::PktType};
 
 pub fn connection(
     stream: Stream,
@@ -17,7 +17,7 @@ pub fn connection(
         std::fs::read_to_string(filepath).expect("[CONNECTION] Failed to read description file!");
 
     // Send the initial game info to the client
-    send(ServerMessage::Version(
+    ServerMessage::Version(
         stream.clone(),
         pkt_version::Version {
             message_type: PktType::Version,
@@ -32,13 +32,14 @@ pub fn connection(
             extension_len: 0,
             extensions: None,
         },
-    ))
+    )
+    .send()
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send version packet: {}", e);
         return; // This is a critical error, so we return
     });
 
-    send(ServerMessage::Game(
+    ServerMessage::Game(
         stream.clone(),
         pkt_game::Game {
             message_type: PktType::Game,
@@ -47,7 +48,8 @@ pub fn connection(
             description_len: description.len() as u16,
             description,
         },
-    ))
+    )
+    .send()
     .unwrap_or_else(|e| {
         eprintln!("[CONNECTION] Failed to send game packet: {}", e);
         return; // This is a critical error, so we return

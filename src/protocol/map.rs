@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{env, fs::File};
 
-use crate::protocol::{ServerMessage, packet::pkt_message, pkt_type::PktType, send};
+use crate::protocol::{ServerMessage, packet::pkt_message, pkt_type::PktType};
 
 use super::packet::pkt_character;
 
@@ -90,7 +90,7 @@ impl Map {
 
             println!("[BROADCAST] Sending message to {}", player.name);
 
-            send(ServerMessage::Message(
+            ServerMessage::Message(
                 author.clone(),
                 pkt_message::Message {
                     message_type: PktType::Message,
@@ -100,7 +100,8 @@ impl Map {
                     narration: false,
                     message: message.clone(),
                 },
-            ))
+            )
+            .send()
             .unwrap_or_else(|e| {
                 eprintln!(
                     "[BROADCAST] Failed to send message to {}: {}",
@@ -135,7 +136,8 @@ impl Map {
         room.players
             .iter()
             .for_each(|&player_index| match self.players.get(player_index) {
-                Some(to_alert) => send(ServerMessage::Character(author.clone(), player.clone()))
+                Some(to_alert) => ServerMessage::Character(author.clone(), player.clone())
+                    .send()
                     .unwrap_or_else(|e| {
                         eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                     }),

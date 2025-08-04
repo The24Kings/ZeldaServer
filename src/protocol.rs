@@ -54,77 +54,79 @@ impl std::fmt::Display for ServerMessage {
     }
 }
 
-pub fn send(packed: ServerMessage) -> Result<(), std::io::Error> {
-    let mut byte_stream: Vec<u8> = Vec::new();
+impl ServerMessage {
+    pub fn send(&self) -> Result<(), std::io::Error> {
+        let mut byte_stream: Vec<u8> = Vec::new();
 
-    println!("[SEND] Sending packet: {}", packed);
+        println!("[PROTOCOL] Sending packet: {}", self);
 
-    // Serialize the packet and send it to the server
-    let author = match packed {
-        ServerMessage::Message(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::ChangeRoom(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Fight(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::PVPFight(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Loot(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Start(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Error(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Accept(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Room(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Character(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Game(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Leave(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Connection(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-        ServerMessage::Version(author, content) => {
-            content.serialize(&mut byte_stream)?;
-            author
-        }
-    };
+        // Serialize the packet and send it to the server
+        let author = match self {
+            ServerMessage::Message(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::ChangeRoom(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Fight(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::PVPFight(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Loot(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Start(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Error(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Accept(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Room(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Character(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Game(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Leave(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Connection(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+            ServerMessage::Version(author, content) => {
+                content.serialize(&mut byte_stream)?;
+                author
+            }
+        };
 
-    author.as_ref().write_all(&byte_stream).map_err(|e| {
-        std::io::Error::new(
-            std::io::ErrorKind::WriteZero,
-            format!("Failed to write to stream: {}", e),
-        )
-    })?;
+        author.as_ref().write_all(&byte_stream).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::WriteZero,
+                format!("Failed to write to stream: {}", e),
+            )
+        })?;
 
-    Ok(())
+        Ok(())
+    }
 }
