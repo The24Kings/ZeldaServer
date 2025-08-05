@@ -72,7 +72,7 @@ impl std::fmt::Display for Character {
 #[derive(Debug, Clone)]
 pub struct CharacterFlags {
     pub alive: bool,
-    pub join_battle: bool,
+    pub battle: bool, // A.K.A. Join-Battle
     pub monster: bool,
     pub started: bool,
     pub ready: bool,
@@ -82,7 +82,7 @@ impl Default for CharacterFlags {
     fn default() -> Self {
         CharacterFlags {
             alive: true,
-            join_battle: true,
+            battle: true,
             monster: false,
             started: false,
             ready: true,
@@ -96,7 +96,7 @@ impl LowerHex for CharacterFlags {
             f,
             "{:02x}",
             (self.alive as u8) << 7
-                | (self.join_battle as u8) << 6
+                | (self.battle as u8) << 6
                 | (self.monster as u8) << 5
                 | (self.started as u8) << 4
                 | (self.ready as u8) << 3
@@ -108,7 +108,7 @@ impl CharacterFlags {
     pub fn deactivate(monster: bool) -> Self {
         CharacterFlags {
             alive: false,
-            join_battle: false,
+            battle: false,
             monster,
             started: false,
             ready: false,
@@ -118,7 +118,7 @@ impl CharacterFlags {
     pub fn activate(monster: bool) -> Self {
         CharacterFlags {
             alive: true,
-            join_battle: true,
+            battle: true,
             monster,
             started: false,
             ready: true,
@@ -128,7 +128,7 @@ impl CharacterFlags {
     pub fn dead(monster: bool) -> Self {
         CharacterFlags {
             alive: false,
-            join_battle: false,
+            battle: false,
             monster,
             started: false,
             ready: true,
@@ -153,11 +153,7 @@ impl<'a> Parser<'a> for Character {
         let mut flags: u8 = 0x00;
 
         flags |= if self.flags.alive { 0b10000000 } else { 0x00 };
-        flags |= if self.flags.join_battle {
-            0b01000000
-        } else {
-            0x00
-        };
+        flags |= if self.flags.battle { 0b01000000 } else { 0x00 };
         flags |= if self.flags.monster { 0b00100000 } else { 0x00 };
         flags |= if self.flags.started { 0b00010000 } else { 0x00 };
         flags |= if self.flags.ready { 0b00001000 } else { 0x00 };
@@ -205,7 +201,7 @@ impl<'a> Parser<'a> for Character {
         // Parse the flags byte in little-endian order
         let flags = CharacterFlags {
             alive: flags & 0b10000000 != 0,
-            join_battle: flags & 0b01000000 != 0,
+            battle: flags & 0b01000000 != 0,
             monster: flags & 0b00100000 != 0,
             started: flags & 0b00010000 != 0,
             ready: flags & 0b00001000 != 0,
