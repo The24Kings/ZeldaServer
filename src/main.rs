@@ -20,30 +20,30 @@ struct Args {
 }
 
 fn main() {
-    dotenvy::dotenv().expect("Failed to load .env file");
+    dotenvy::dotenv().expect("[MAIN] Failed to load .env file");
     tracing_config::init!();
 
     let args = Args::parse();
 
     let address = format!("0.0.0.0:{}", args.port);
-    let listener = TcpListener::bind(&address).expect("Failed to bind to address");
+    let listener = TcpListener::bind(&address).expect("[MAIN] Failed to bind to address");
 
-    info!("Listening on {address}");
+    info!("[MAIN] Listening on {address}");
 
     // Create a channel for communication between threads
     let (tx, rx) = mpsc::channel();
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
-    let file = File::open(path).expect("Failed to open map file!");
-    let mut map = Map::build(file).expect("Failed to build map from file");
+    let path = env::var("MAP_FILEPATH").expect("[MAIN] MAP_FILEPATH must be set.");
+    let file = File::open(path).expect("[MAIN] Failed to open map file!");
+    let mut map = Map::build(file).expect("[MAIN] Failed to build map from file");
 
     let initial_points = map.init_points;
     let stat_limit = map.stat_limit;
 
     // Start the server thread with the map
-    info!("Parsed map successfully");
+    info!("[MAIN] Parsed map successfully");
 
     std::thread::spawn(move || {
         server(receiver, &mut map);
@@ -53,7 +53,7 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                info!("New connection: {:?}", stream.peer_addr());
+                info!("[MAIN] New connection: {:?}", stream.peer_addr());
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
 
@@ -63,7 +63,7 @@ fn main() {
                 });
             }
             Err(e) => {
-                warn!("Error accepting connection: {}", e);
+                warn!("[MAIN] Error accepting connection: {}", e);
             }
         }
     }

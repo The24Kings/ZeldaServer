@@ -93,7 +93,7 @@ impl<'a> Packet<'a> {
         let mut desc = vec![0u8; length];
 
         info!(
-            "Reading description of length {} at index {}, {}",
+            "[PACKET] Reading description of length {} at index {}, {}",
             length, index.0, index.1
         );
 
@@ -107,9 +107,12 @@ impl<'a> Packet<'a> {
 
         // Print the description
         if !desc.is_empty() {
-            info!("Read description: {}", String::from_utf8_lossy(&desc));
+            info!(
+                "[PACKET] Read description: {}",
+                String::from_utf8_lossy(&desc)
+            );
         } else {
-            info!("Read empty description");
+            info!("[PACKET] Read empty description");
         }
 
         // Extend the buffer with the description
