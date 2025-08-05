@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{env, fs::File};
+use tracing::{error, info, warn};
 
-use crate::protocol::{ServerMessage, packet::pkt_message, pkt_type::PktType};
-
-use super::packet::pkt_character;
+use crate::protocol::{Protocol, packet::pkt_character, packet::pkt_message, pkt_type::PktType};
 
 #[derive(Debug)]
 pub struct Map {
@@ -59,10 +58,10 @@ impl Map {
     }
 
     pub fn build(data: File) -> Result<Self, serde_json::Error> {
-        println!("[MAP] Building game map...");
+        info!("[MAP] Building game map...");
 
         let deserialized: Vec<Room> = serde_json::from_reader(&data)?;
-        println!("[MAP] Game map built with {} rooms.", deserialized.len());
+        info!("[MAP] Game map built with {} rooms.", deserialized.len());
 
         Ok(Map::new(deserialized))
     }
@@ -80,7 +79,7 @@ impl Map {
 
     /// Broadcast a message to all players in the game via Message packets.
     pub fn broadcast(&self, message: String) -> Result<(), std::io::Error> {
-        println!("[BROADCAST] Sending message: {}", message);
+        info!("[BROADCAST] Sending message: {}", message);
 
         // Send the packet to the server
         for player in &self.players {
@@ -88,9 +87,9 @@ impl Map {
                 std::io::Error::new(std::io::ErrorKind::NotFound, "Author not found")
             })?;
 
-            println!("[BROADCAST] Sending message to {}", player.name);
+            info!("[BROADCAST] Sending message to {}", player.name);
 
-            ServerMessage::Message(
+            Protocol::Message(
                 author.clone(),
                 pkt_message::Message {
                     message_type: PktType::Message,
@@ -103,7 +102,7 @@ impl Map {
             )
             .send()
             .unwrap_or_else(|e| {
-                eprintln!(
+                warn!(
                     "[BROADCAST] Failed to send message to {}: {}",
                     player.name, e
                 );
@@ -120,7 +119,7 @@ impl Map {
         room_number: u16,
         player: &pkt_character::Character,
     ) -> Result<(), std::io::Error> {
-        println!("[ALERT] Alerting players about: {}", player.name);
+        info!("[ALERT] Alerting players about: {}", player.name);
 
         let author = player
             .author
@@ -136,13 +135,13 @@ impl Map {
         room.players
             .iter()
             .for_each(|&player_index| match self.players.get(player_index) {
-                Some(to_alert) => ServerMessage::Character(author.clone(), player.clone())
+                Some(to_alert) => Protocol::Character(author.clone(), player.clone())
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
+                        error!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                     }),
                 None => {
-                    eprintln!("[ALERT] Invalid player index: {}", player_index);
+                    error!("[ALERT] Invalid player index: {}", player_index);
                 }
             });
 

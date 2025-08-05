@@ -1,15 +1,15 @@
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-use crate::{
-    debug_packet,
-    protocol::{
-        map,
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
+use crate::protocol::{
+    map,
+    packet::{Packet, Parser},
+    pcap::PCap,
+    pkt_type::PktType,
 };
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct Connection {
     pub message_type: PktType,
     pub room_number: u16,
@@ -28,6 +28,17 @@ impl From<&map::Connection> for Connection {
             description_len: conn.desc_short.len() as u16,
             description: conn.desc_short.clone(),
         }
+    }
+}
+
+impl std::fmt::Display for Connection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self)
+                .unwrap_or_else(|_| "Failed to serialize Connection".to_string())
+        )
     }
 }
 
@@ -54,7 +65,7 @@ impl<'a> Parser<'a> for Connection {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }

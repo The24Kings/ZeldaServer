@@ -1,12 +1,11 @@
 use clap::Parser;
-use dotenv::dotenv;
 use std::env;
 use std::fs::File;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
+use tracing::{info, warn};
 
-use protocol::map::Map;
-
+use crate::protocol::map::Map;
 use crate::threads::{processor::connection, server::server};
 
 pub mod protocol;
@@ -21,14 +20,15 @@ struct Args {
 }
 
 fn main() {
-    dotenv().ok();
+    dotenvy::dotenv().expect("[MAIN] Failed to load .env file");
+    tracing_config::init!();
 
     let args = Args::parse();
 
     let address = format!("0.0.0.0:{}", args.port);
     let listener = TcpListener::bind(&address).expect("[MAIN] Failed to bind to address");
 
-    println!("Listening on {address}");
+    info!("[MAIN] Listening on {address}");
 
     // Create a channel for communication between threads
     let (tx, rx) = mpsc::channel();
@@ -43,7 +43,7 @@ fn main() {
     let stat_limit = map.stat_limit;
 
     // Start the server thread with the map
-    println!("[MAIN] Parsed map successfully");
+    info!("[MAIN] Parsed map successfully");
 
     std::thread::spawn(move || {
         server(receiver, &mut map);
@@ -53,7 +53,7 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                println!("[MAIN] New connection: {:?}", stream.peer_addr());
+                info!("[MAIN] New connection: {:?}", stream.peer_addr());
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
 
@@ -63,7 +63,7 @@ fn main() {
                 });
             }
             Err(e) => {
-                eprintln!("[MAIN] Error accepting connection: {}", e);
+                warn!("[MAIN] Error accepting connection: {}", e);
             }
         }
     }

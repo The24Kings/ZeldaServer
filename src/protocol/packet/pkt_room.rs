@@ -1,21 +1,31 @@
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-use crate::{
-    debug_packet,
-    protocol::{
-        map,
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
+use crate::protocol::{
+    map,
+    packet::{Packet, Parser},
+    pcap::PCap,
+    pkt_type::PktType,
 };
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct Room {
     pub message_type: PktType,
     pub room_number: u16, // Same as room_number in ChangeRoom
     pub room_name: String,
     pub description_len: u16,
     pub description: String,
+}
+
+impl std::fmt::Display for Room {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Room".to_string())
+        )
+    }
 }
 
 impl Room {
@@ -66,7 +76,7 @@ impl<'a> Parser<'a> for Room {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }

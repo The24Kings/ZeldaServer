@@ -1,23 +1,24 @@
 use std::sync::{Arc, Mutex, mpsc::Receiver};
+use tracing::{error, info, warn};
 
 use crate::protocol::packet::{
     pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
 };
-use crate::protocol::{ServerMessage, error::ErrorCode, map::Map, pkt_type::PktType};
+use crate::protocol::{Protocol, error::ErrorCode, map::Map, pkt_type::PktType};
 
-pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
+pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
     loop {
         let packet = match receiver.lock().unwrap().recv() {
             Ok(packet) => packet,
             Err(e) => {
-                eprintln!("[SERVER] Error receiving packet: {}", e);
+                warn!("[SERVER] Error receiving packet: {}", e);
                 continue;
             }
         };
 
         match packet {
-            ServerMessage::Message(author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::Message(author, content) => {
+                info!("[SERVER] Received: {}", content);
 
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
@@ -29,15 +30,15 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 {
                     Some(player) => player,
                     None => {
-                        eprintln!("[SERVER] Unable to find player in map");
+                        error!("[SERVER] Unable to find player in map");
 
-                        ServerMessage::Error(
+                        Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::Other, "Player not found"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
-                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                            error!("[SERVER] Failed to send error packet: {}", e);
                         });
 
                         continue;
@@ -47,9 +48,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 let author = match &player.author {
                     Some(author) => author,
                     None => {
-                        eprintln!("[SERVER] Character does not have an active connection");
+                        error!("[SERVER] Character does not have an active connection");
 
-                        ServerMessage::Error(
+                        Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(
                                 ErrorCode::Other,
@@ -58,22 +59,22 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                         )
                         .send()
                         .unwrap_or_else(|e| {
-                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                            error!("[SERVER] Failed to send error packet: {}", e);
                         });
 
                         continue;
                     }
                 };
 
-                ServerMessage::Message(author.clone(), content.clone())
+                Protocol::Message(author.clone(), content.clone())
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send message packet: {}", e);
+                        error!("[SERVER] Failed to send message packet: {}", e);
                     });
                 // ^ ============================================================================ ^
             }
-            ServerMessage::ChangeRoom(author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::ChangeRoom(author, content) => {
+                info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
                 let (player_idx, player) =
@@ -84,11 +85,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                             .map_or(false, |a| Arc::ptr_eq(a, &author))
                     }) {
                         Some((index, player)) => {
-                            println!("[SERVER] Found player at index: {}", index);
+                            info!("[SERVER] Found player at index: {}", index);
                             (index, player)
                         }
                         None => {
-                            eprintln!("[SERVER] Unable to find player in map");
+                            error!("[SERVER] Unable to find player in map");
                             continue;
                         }
                     };
@@ -98,15 +99,15 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 // given connection. Shuffle the player around to the next room and send data.
                 // ================================================================================
                 if player.current_room == content.room_number {
-                    eprintln!("[SERVER] Player is already in the room");
+                    error!("[SERVER] Player is already in the room");
 
-                    ServerMessage::Error(
+                    Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Player is already in the room"),
                     )
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        error!("[SERVER] Failed to send error packet: {}", e);
                     });
 
                     continue;
@@ -120,15 +121,15 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 {
                     Some(room) => room,
                     None => {
-                        eprintln!("[SERVER] Unable to find room in map");
+                        error!("[SERVER] Unable to find room in map");
 
-                        ServerMessage::Error(
+                        Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
-                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                            error!("[SERVER] Failed to send error packet: {}", e);
                         });
 
                         continue;
@@ -141,24 +142,24 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     .any(|exit| exit.room_number == content.room_number);
 
                 if !valid_connection {
-                    eprintln!(
-                        "[SERVER] Invalid connection... Room only has: {:?}",
+                    error!(
+                        "Invalid connection... Room only has: {:?}",
                         &cur_room.connections
                     );
 
-                    ServerMessage::Error(
+                    Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
                     )
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        error!("[SERVER] Failed to send error packet: {}", e);
                     });
 
                     continue;
                 }
 
-                println!("[SERVER] Removing player from old room");
+                info!("[SERVER] Removing player from old room");
                 cur_room.players.retain(|&index| index != player_idx);
 
                 // Find the next room in the map, add the player, and send it off
@@ -169,26 +170,26 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 {
                     Some(room) => {
                         // Add the player to the new room
-                        println!("[SERVER] Adding player to new room");
+                        info!("[SERVER] Adding player to new room");
                         room.players.push(player_idx);
 
                         // Send the room to the client
-                        ServerMessage::Room(author.clone(), pkt_room::Room::from(room.clone()))
+                        Protocol::Room(author.clone(), pkt_room::Room::from(room.clone()))
                             .send()
                             .unwrap_or_else(|e| {
-                                eprintln!("[SERVER] Failed to send room packet: {}", e);
+                                error!("[SERVER] Failed to send room packet: {}", e);
                             });
                     }
                     None => {
-                        eprintln!("[SERVER] Unable to find room in map");
+                        error!("[SERVER] Unable to find room in map");
 
-                        ServerMessage::Error(
+                        Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
-                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                            error!("[SERVER] Failed to send error packet: {}", e);
                         });
 
                         continue;
@@ -201,7 +202,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 // ================================================================================
                 // Update the player data and send it to the client
                 // ================================================================================
-                println!("[SERVER] Updating player room");
+                info!("[SERVER] Updating player room");
 
                 let old_room = player.current_room;
                 player.current_room = content.room_number;
@@ -210,10 +211,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 let player_clone = player.clone();
 
                 // Send the updated character back to the client
-                ServerMessage::Character(author.clone(), player_clone.clone())
+                Protocol::Character(author.clone(), player_clone.clone())
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send character packet: {}", e);
+                        error!("[SERVER] Failed to send character packet: {}", e);
                     });
                 // ^ ============================================================================ ^
 
@@ -223,19 +224,19 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 let connections = match map.get_exits(content.room_number) {
                     Some(exits) => exits,
                     None => {
-                        eprintln!("[SERVER] Unable to find room in map");
+                        error!("[SERVER] Unable to find room in map");
                         continue;
                     }
                 };
 
                 for new_room in connections {
-                    ServerMessage::Connection(
+                    Protocol::Connection(
                         author.clone(),
                         pkt_connection::Connection::from(new_room),
                     )
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send connection packet: {}", e);
+                        error!("[SERVER] Failed to send connection packet: {}", e);
                     });
                 }
                 // ^ ============================================================================ ^
@@ -244,17 +245,17 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 // Update info for all other connected clients
                 // ================================================================================
                 map.alert_room(old_room, &player_clone).unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to alert players: {}", e);
+                    warn!("[SERVER] Failed to alert players: {}", e);
                 });
 
                 map.alert_room(content.room_number, &player_clone)
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to alert players: {}", e);
+                        warn!("[SERVER] Failed to alert players: {}", e);
                     });
                 // ^ ============================================================================ ^
             }
-            ServerMessage::Fight(_author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::Fight(_author, content) => {
+                info!("[SERVER] Received: {}", content);
                 //TODO: Fight logic
 
                 /*
@@ -268,27 +269,27 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     the message to all players in the room
                 */
             }
-            ServerMessage::PVPFight(author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::PVPFight(author, content) => {
+                info!("[SERVER] Received: {}", content);
 
                 // Disabled, no player combat allowed
-                ServerMessage::Error(
+                Protocol::Error(
                     author.clone(),
                     pkt_error::Error::new(ErrorCode::NoPlayerCombat, "No player combat allowed"),
                 )
                 .send()
                 .unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to send error packet: {}", e);
+                    error!("[SERVER] Failed to send error packet: {}", e);
                 });
             }
-            ServerMessage::Loot(_author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::Loot(_author, content) => {
+                info!("[SERVER] Received: {}", content);
                 //TODO: Loot logic
                 // Find the character in the map and the thing being looted
                 // Loot the thing and send both the updated character and the looted thing back to the client
             }
-            ServerMessage::Start(author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::Start(author, content) => {
+                info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
                 let (player_idx, player) =
@@ -299,11 +300,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                             .map_or(false, |a| Arc::ptr_eq(a, &author))
                     }) {
                         Some((index, player)) => {
-                            println!("[SERVER] Found player at index: {}", index);
+                            info!("[SERVER] Found player at index: {}", index);
                             (index, player)
                         }
                         None => {
-                            eprintln!("[SERVER] Unable to find player in map");
+                            error!("[SERVER] Unable to find player in map");
                             continue;
                         }
                     };
@@ -315,19 +316,19 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
 
                 let player_clone = player.clone();
 
-                ServerMessage::Character(author.clone(), player_clone.clone())
+                Protocol::Character(author.clone(), player_clone.clone())
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send character packet: {}", e);
+                        error!("[SERVER] Failed to send character packet: {}", e);
                     });
 
                 map.alert_room(0, &player_clone).unwrap_or_else(|e| {
-                    eprintln!("[SERVER] Failed to alert players: {}", e);
+                    warn!("[SERVER] Failed to alert players: {}", e);
                 });
 
                 map.broadcast(format!("{} has started the game!", player_clone.name))
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to broadcast message: {}", e);
+                        warn!("[SERVER] Failed to broadcast message: {}", e);
                     });
                 // ^ ============================================================================ ^
 
@@ -337,44 +338,41 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 let room = match map.rooms.iter_mut().find(|room| room.room_number == 0) {
                     Some(room) => room,
                     None => {
-                        eprintln!("[SERVER] Unable to find room in map");
+                        error!("[SERVER] Unable to find room in map");
                         continue;
                     }
                 };
 
-                println!("[SERVER] Adding player to starting room");
+                info!("[SERVER] Adding player to starting room");
                 room.players.push(player_idx);
 
-                ServerMessage::Room(author.clone(), pkt_room::Room::from(room.clone()))
+                Protocol::Room(author.clone(), pkt_room::Room::from(room.clone()))
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send room packet: {}", e);
+                        error!("[SERVER] Failed to send room packet: {}", e);
                     });
 
                 let connections = match map.get_exits(0) {
                     Some(room) => room,
                     None => {
-                        eprintln!("[SERVER] Unable to find room in map");
+                        error!("[SERVER] Unable to find room in map");
                         continue;
                     }
                 };
 
                 for room in connections {
-                    ServerMessage::Connection(
-                        author.clone(),
-                        pkt_connection::Connection::from(room),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send connection packet: {}", e);
-                    });
+                    Protocol::Connection(author.clone(), pkt_connection::Connection::from(room))
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send connection packet: {}", e);
+                        });
                 }
                 // ^ ============================================================================ ^
 
                 //TODO: Send all players and monsters in the room
             }
-            ServerMessage::Character(author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::Character(author, content) => {
+                info!("[SERVER] Received: {}", content);
 
                 // ================================================================================
                 // Check the given stats are valid, if not all points have been allocated, do so equally.
@@ -387,14 +385,14 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 let total_stats = match total_stats {
                     Some(total) => total,
                     None => {
-                        println!("[SERVER] Overflow in stats calculation");
-                        ServerMessage::Error(
+                        info!("[SERVER] Overflow in stats calculation");
+                        Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
-                            eprintln!("[SERVER] Failed to send error packet: {}", e);
+                            error!("[SERVER] Failed to send error packet: {}", e);
                         });
 
                         continue;
@@ -402,15 +400,15 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 };
 
                 if total_stats > map.init_points {
-                    println!("[SERVER] Invalid stats: {}", total_stats);
+                    info!("[SERVER] Invalid stats: {}", total_stats);
 
-                    ServerMessage::Error(
+                    Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
                     )
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        error!("[SERVER] Failed to send error packet: {}", e);
                     });
 
                     continue;
@@ -422,7 +420,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     || content.defense < 1
                     || content.regen < 1
                 {
-                    println!("[SERVER] Distributing remaining stat points");
+                    info!("[SERVER] Distributing remaining stat points");
 
                     // Distribute the remaining stat points equally
                     updated_content.attack += (map.init_points - total_stats) / 3;
@@ -442,7 +440,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     .find(|player| player.name == content.name)
                 {
                     Some(player) => {
-                        println!("[SERVER] Found character in map, reactivating character.");
+                        info!("[SERVER] Found character in map, reactivating character.");
                         player
                     }
                     None => {
@@ -450,20 +448,20 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                             Some(author.clone()),
                             &updated_content,
                         ));
-                        println!("[SERVER] Added character to map.");
+                        info!("[SERVER] Added character to map.");
 
                         // Now get the newly added player
                         map.players
                             .iter_mut()
                             .find(|player| player.name == content.name)
-                            .expect("[SERVER] Player just added should exist") // If this fails, something is wrong
+                            .expect("[SERVER] Player just added should exist") // If this fails, something is wrong so panic (we probably ran out of memory)
                     }
                 };
 
                 if player.flags.started {
-                    eprintln!("[SERVER] Player is already in the game");
+                    error!("[SERVER] Player is already in the game");
 
-                    ServerMessage::Error(
+                    Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(
                             ErrorCode::PlayerExists,
@@ -472,7 +470,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                     )
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send error packet: {}", e);
+                        error!("[SERVER] Failed to send error packet: {}", e);
                     });
 
                     continue;
@@ -485,21 +483,21 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                 // ================================================================================
                 // Send an Accept packet and updated character.
                 // ================================================================================
-                ServerMessage::Accept(author.clone(), pkt_accept::Accept::new(PktType::Character))
+                Protocol::Accept(author.clone(), pkt_accept::Accept::new(PktType::Character))
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send accept packet: {}", e);
+                        error!("[SERVER] Failed to send accept packet: {}", e);
                     });
 
-                ServerMessage::Character(author.clone(), player.clone())
+                Protocol::Character(author.clone(), player.clone())
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to send character packet: {}", e);
+                        error!("[SERVER] Failed to send character packet: {}", e);
                     });
                 // ^ ============================================================================ ^
             }
-            ServerMessage::Leave(author, content) => {
-                println!("[SERVER] Received: \n{:#?}", content);
+            Protocol::Leave(author, content) => {
+                info!("[SERVER] Received: {}", content);
 
                 // ================================================================================
                 // Grab the player and deactivate them, alert the server and the room that the player
@@ -513,13 +511,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
                         .map_or(false, |a| Arc::ptr_eq(a, &author))
                 }) {
                     Some(player) => {
-                        println!(
+                        info!(
                             "[SERVER] Found character in map, resetting flags and disabling connection."
                         );
                         player
                     }
                     None => {
-                        eprintln!("[SERVER] Unable to find player in map");
+                        error!("[SERVER] Unable to find player in map");
                         continue;
                     }
                 };
@@ -531,30 +529,30 @@ pub fn server(receiver: Arc<Mutex<Receiver<ServerMessage>>>, map: &mut Map) {
 
                 map.broadcast(format!("{} has left the game.", player_clone.name))
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to broadcast message: {}", e);
+                        warn!("[SERVER] Failed to broadcast message: {}", e);
                     });
 
                 map.alert_room(player_clone.current_room, &player_clone)
                     .unwrap_or_else(|e| {
-                        eprintln!("[SERVER] Failed to alert players: {}", e);
+                        warn!("[SERVER] Failed to alert players: {}", e);
                     });
 
                 match author.shutdown(std::net::Shutdown::Both) {
                     Ok(_) => {
-                        println!("[SERVER] Connection shutdown successfully");
+                        info!("[SERVER] Connection shutdown successfully");
                     }
                     Err(e) => {
-                        eprintln!("[SERVER] Failed to shutdown connection: {}", e);
+                        error!("[SERVER] Failed to shutdown connection: {}", e);
                     }
                 }
                 // ^ ============================================================================ ^
             }
-            ServerMessage::Error(_, _) => {}
-            ServerMessage::Accept(_, _) => {}
-            ServerMessage::Room(_, _) => {}
-            ServerMessage::Game(_, _) => {}
-            ServerMessage::Connection(_, _) => {}
-            ServerMessage::Version(_, _) => {}
+            Protocol::Error(_, _) => {}
+            Protocol::Accept(_, _) => {}
+            Protocol::Room(_, _) => {}
+            Protocol::Game(_, _) => {}
+            Protocol::Connection(_, _) => {}
+            Protocol::Version(_, _) => {}
         }
     }
 }

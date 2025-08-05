@@ -1,6 +1,7 @@
 use std::io::{Read, Write};
+use tracing::debug;
 
-use crate::protocol::{Stream, pkt_type::PktType};
+use crate::protocol::{Stream, pcap::PCap, pkt_type::PktType};
 
 pub mod pkt_accept;
 pub mod pkt_change_room;
@@ -17,11 +18,6 @@ pub mod pkt_room;
 pub mod pkt_start;
 pub mod pkt_version;
 
-/**
- * Packet structure used for passing data between the server and client at a low level
- * message_type: Type of the packet
- * body: Body of the packet
- */
 #[derive(Debug, Clone)]
 pub struct Packet<'a> {
     pub stream: &'a Stream,
@@ -45,21 +41,16 @@ impl<'a> Packet<'a> {
         buffer: &'b mut Vec<u8>,
     ) -> Result<Packet<'b>, std::io::Error> {
         // Read the remaining bytes for the packet
-        let _bytes_read = stream.as_ref().read(buffer).map_err(|e| {
+        let _bytes_read = stream.as_ref().read_exact(buffer).map_err(|e| {
             std::io::Error::new(
                 std::io::ErrorKind::UnexpectedEof,
                 format!("Failed to read packet body: {}", e),
             )
         })?;
 
-        println!(
-            "[PACKET] Read packet body: {}",
-            buffer
-                .iter()
-                .map(|b| format!("{:02x}", b))
-                .collect::<Vec<String>>()
-                .join(" ")
-        );
+        // Print the packet body
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(buffer.clone()));
+
         // Create a new packet with the read bytes
         let packet = Packet::new(stream, message_type, buffer);
 
@@ -75,27 +66,18 @@ impl<'a> Packet<'a> {
         buffer: &'b mut Vec<u8>,
         index: (usize, usize),
     ) -> Result<Packet<'b>, std::io::Error> {
-        stream.as_ref().read(buffer).map_err(|e| {
+        stream.as_ref().read_exact(buffer).map_err(|e| {
             std::io::Error::new(
                 std::io::ErrorKind::UnexpectedEof,
                 format!("Failed to read packet body: {}", e),
             )
         })?;
 
-        println!(
-            "[PACKET] Read packet body: {}",
-            buffer
-                .iter()
-                .map(|b| format!("{:02x}", b))
-                .collect::<Vec<String>>()
-                .join(" ")
-        );
-
         // Get the description length from the buffer
         let length = usize::from_le_bytes([buffer[index.0], buffer[index.1], 0, 0, 0, 0, 0, 0]);
         let mut desc = vec![0u8; length];
 
-        println!(
+        debug!(
             "[PACKET] Reading description of length {} at index {}, {}",
             length, index.0, index.1
         );
@@ -109,19 +91,20 @@ impl<'a> Packet<'a> {
         })?;
 
         // Print the description
-        let desc_str = String::from_utf8_lossy(&desc);
-
-        println!(
-            "[PACKET] Read description: {}",
-            String::from(if desc.is_empty() {
-                "No description provided"
-            } else {
-                &desc_str
-            })
-        );
+        if !desc.is_empty() {
+            debug!(
+                "[PACKET] Read description: {}",
+                String::from_utf8_lossy(&desc)
+            );
+        } else {
+            debug!("[PACKET] Read empty description");
+        }
 
         // Extend the buffer with the description
         buffer.extend_from_slice(&desc);
+
+        // Print the packet body
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(buffer.clone()));
 
         let packet = Packet::new(stream, message_type, buffer);
 
@@ -130,7 +113,7 @@ impl<'a> Packet<'a> {
 }
 
 /**
- * Trait imlementation for the packet
+ * Trait implementation for the packet
  * Serialize: Serialize the packet to a byte array
  * Deserialize: Deserialize the packet from a byte array
  * Display: Display the packet in a human readable format
@@ -148,7 +131,7 @@ impl<'a> std::fmt::Display for Packet<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\nPacket {{\n    message_type: {},\n    body: [\n        {}\n    ]\n}}",
+            "{{message_type: {}, body: [{}]}}",
             self.message_type,
             self.body
                 .iter()
@@ -157,20 +140,4 @@ impl<'a> std::fmt::Display for Packet<'a> {
                 .join(" ")
         )
     }
-}
-
-/// Debug function to print the packet in a human readable format
-/// This function prints the first 64 bytes of the packet
-#[macro_export]
-macro_rules! debug_packet {
-    ($packet:expr) => {{
-        println!(
-            "[DEBUG] Serialized packet: {}",
-            $packet
-                .iter()
-                .map(|b| format!("{:02x}", b))
-                .collect::<Vec<String>>()
-                .join(" ")
-        ); // TODO: Add another field for the message; (message, packet)
-    }};
 }

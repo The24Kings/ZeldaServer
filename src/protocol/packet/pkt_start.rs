@@ -1,13 +1,14 @@
-use crate::{
-    debug_packet,
-    protocol::{
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
-};
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-#[derive(Debug, Clone)]
+use crate::protocol::{
+    packet::{Packet, Parser},
+    pcap::PCap,
+    pkt_type::PktType,
+};
+
+#[derive(Debug, Serialize, Clone)]
 pub struct Start {
     pub message_type: PktType,
 }
@@ -17,6 +18,16 @@ impl Default for Start {
         Start {
             message_type: PktType::Start,
         }
+    }
+}
+
+impl std::fmt::Display for Start {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Start".to_string())
+        )
     }
 }
 
@@ -35,7 +46,7 @@ impl<'a> Parser<'a> for Start {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }

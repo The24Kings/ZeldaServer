@@ -1,14 +1,14 @@
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-use crate::{
-    debug_packet,
-    protocol::{
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
+use crate::protocol::{
+    packet::{Packet, Parser},
+    pcap::PCap,
+    pkt_type::PktType,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Fight {
     pub message_type: PktType,
 }
@@ -18,6 +18,16 @@ impl Default for Fight {
         Fight {
             message_type: PktType::Fight,
         }
+    }
+}
+
+impl std::fmt::Display for Fight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Fight".to_string())
+        )
     }
 }
 
@@ -36,7 +46,7 @@ impl<'a> Parser<'a> for Fight {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }

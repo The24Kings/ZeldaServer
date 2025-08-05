@@ -1,4 +1,6 @@
-#[derive(Default, Debug, Clone)]
+use serde::Serialize;
+
+#[derive(Default, Serialize, Debug, Clone)]
 #[repr(u8)]
 pub enum ErrorCode {
     #[default]

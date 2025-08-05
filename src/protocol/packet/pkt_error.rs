@@ -1,11 +1,15 @@
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-use crate::debug_packet;
-use crate::protocol::error::ErrorCode;
-use crate::protocol::packet::{Packet, Parser};
-use crate::protocol::pkt_type::PktType;
+use crate::protocol::{
+    error::ErrorCode,
+    packet::{Packet, Parser},
+    pcap::PCap,
+    pkt_type::PktType,
+};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct Error {
     pub message_type: PktType,
     pub error: ErrorCode,
@@ -21,6 +25,16 @@ impl Error {
             message_len: message.len() as u16,
             message: message.to_string(),
         }
+    }
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Error".to_string())
+        )
     }
 }
 
@@ -42,7 +56,7 @@ impl<'a> Parser<'a> for Error {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }
