@@ -4,6 +4,7 @@ use tracing::debug;
 
 use crate::protocol::{
     packet::{Packet, Parser},
+    pcap::PCap,
     pkt_type::PktType,
 };
 
@@ -45,7 +46,7 @@ impl<'a> Parser<'a> for Game {
             )
         })?;
 
-        debug!("{:?}", packet);
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }

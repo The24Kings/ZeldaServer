@@ -15,6 +15,7 @@ pub mod client;
 pub mod error;
 pub mod map;
 pub mod packet;
+pub mod pcap;
 pub mod pkt_type;
 
 pub enum Protocol {

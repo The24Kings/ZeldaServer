@@ -14,6 +14,7 @@ log = "0.4.27"
 regex = "1.11.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
+tabled = "0.20.0"
 tracing = { version = "0.1.41", features = ["log"] }
 tracing-config = "0.2.2"
 tracing-subscriber = "0.3.19"

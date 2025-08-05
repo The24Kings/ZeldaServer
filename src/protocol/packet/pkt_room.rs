@@ -5,6 +5,7 @@ use tracing::debug;
 use crate::protocol::{
     map,
     packet::{Packet, Parser},
+    pcap::PCap,
     pkt_type::PktType,
 };
 
@@ -75,7 +76,7 @@ impl<'a> Parser<'a> for Room {
             )
         })?;
 
-        debug!("{:?}", packet);
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }

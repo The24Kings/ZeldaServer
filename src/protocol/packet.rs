@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
-use tracing::info;
+use tracing::debug;
 
-use crate::protocol::{Stream, pkt_type::PktType};
+use crate::protocol::{Stream, pcap::PCap, pkt_type::PktType};
 
 pub mod pkt_accept;
 pub mod pkt_change_room;
@@ -48,14 +48,8 @@ impl<'a> Packet<'a> {
             )
         })?;
 
-        // println!(
-        //     "Read packet body: {}",
-        //     buffer
-        //         .iter()
-        //         .map(|b| format!("{:02x}", b))
-        //         .collect::<Vec<String>>()
-        //         .join(" ")
-        // );
+        // Print the packet body
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(buffer.clone()));
 
         // Create a new packet with the read bytes
         let packet = Packet::new(stream, message_type, buffer);
@@ -79,20 +73,11 @@ impl<'a> Packet<'a> {
             )
         })?;
 
-        // println!(
-        //     "Read packet body: {}",
-        //     buffer
-        //         .iter()
-        //         .map(|b| format!("{:02x}", b))
-        //         .collect::<Vec<String>>()
-        //         .join(" ")
-        // );
-
         // Get the description length from the buffer
         let length = usize::from_le_bytes([buffer[index.0], buffer[index.1], 0, 0, 0, 0, 0, 0]);
         let mut desc = vec![0u8; length];
 
-        info!(
+        debug!(
             "[PACKET] Reading description of length {} at index {}, {}",
             length, index.0, index.1
         );
@@ -107,16 +92,19 @@ impl<'a> Packet<'a> {
 
         // Print the description
         if !desc.is_empty() {
-            info!(
+            debug!(
                 "[PACKET] Read description: {}",
                 String::from_utf8_lossy(&desc)
             );
         } else {
-            info!("[PACKET] Read empty description");
+            debug!("[PACKET] Read empty description");
         }
 
         // Extend the buffer with the description
         buffer.extend_from_slice(&desc);
+
+        // Print the packet body
+        debug!("[DEBUG] Packet body:\n{}", PCap::build(buffer.clone()));
 
         let packet = Packet::new(stream, message_type, buffer);
 
