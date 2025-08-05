@@ -189,8 +189,9 @@ impl<'a> Parser<'a> for Character {
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         let name = String::from_utf8_lossy(&packet.body[0..32])
-            .trim_end_matches('\0')
-            .to_string();
+            .split('\0')
+            .take(1)
+            .collect::<String>();
         let flags = packet.body[32];
         let attack = u16::from_le_bytes([packet.body[33], packet.body[34]]);
         let defense = u16::from_le_bytes([packet.body[35], packet.body[36]]);

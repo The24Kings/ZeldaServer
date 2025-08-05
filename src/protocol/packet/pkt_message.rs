@@ -87,11 +87,12 @@ impl<'a> Parser<'a> for Message {
 
         let recipient = String::from_utf8_lossy(&r_bytes)
             .split('\0')
-            .collect::<Vec<&str>>()[0]
-            .to_string();
+            .take(1)
+            .collect::<String>();
         let sender = String::from_utf8_lossy(&s_bytes)
-            .trim_end_matches('\0')
-            .to_string();
+            .split('\0')
+            .take(1)
+            .collect::<String>();
         let message = String::from_utf8_lossy(&packet.body[66..]).to_string();
 
         Ok(Message {

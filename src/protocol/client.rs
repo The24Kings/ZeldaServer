@@ -32,7 +32,7 @@ impl Client {
         info!("[CLIENT] Read packet type: {}", packet_type);
 
         // Match the type of the packet to the enum Type
-        let packet: Option<Protocol> = match packet_type {
+        let packet = match packet_type {
             PktType::Message => {
                 let mut buffer = vec![0; 66];
 
