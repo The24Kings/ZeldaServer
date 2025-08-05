@@ -1,5 +1,4 @@
 use clap::Parser;
-use dotenv::dotenv;
 use std::env;
 use std::fs::File;
 use std::net::TcpListener;
@@ -21,7 +20,7 @@ struct Args {
 }
 
 fn main() {
-    dotenv().ok();
+    dotenvy::dotenv().expect("Failed to load .env file");
     tracing_config::init!();
 
     let args = Args::parse();
