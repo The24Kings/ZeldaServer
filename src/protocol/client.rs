@@ -35,7 +35,6 @@ impl Client {
         // Match the type of the packet to the enum Type
         let packet: Option<ServerMessage> = match packet_type {
             PktType::Message => {
-                // MESSAGE
                 let mut buffer = vec![0; 66];
 
                 let packet = Packet::read_extended(&self.stream, packet_type, &mut buffer, (0, 1))?;
@@ -191,7 +190,7 @@ impl Client {
                 // Ignore this packet, the clients shouldn't be sending us this
                 None
             }
-            _ => {
+            PktType::Default => {
                 // Invalid packet type
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Unsupported,
