@@ -6,7 +6,7 @@ use tabled::{
 };
 
 #[derive(Tabled, Debug, Clone)]
-pub struct PCapLine {
+struct PCapLine {
     address: String,
     hex: String,
     ascii: String,
