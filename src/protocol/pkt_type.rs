@@ -52,23 +52,22 @@ impl From<u8> for PktType {
 
 impl std::fmt::Display for PktType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let name = match self {
-            PktType::Default => "Default",
-            PktType::Message => "Message",
-            PktType::ChangeRoom => "ChangeRoom",
-            PktType::Fight => "Fight",
-            PktType::PVPFight => "PVPFight",
-            PktType::Loot => "Loot",
-            PktType::Start => "Start",
-            PktType::Error => "Error",
-            PktType::Accept => "Accept",
-            PktType::Room => "Room",
-            PktType::Character => "Character",
-            PktType::Game => "Game",
-            PktType::Leave => "Leave",
-            PktType::Connection => "Connection",
-            PktType::Version => "Version",
-        };
-        write!(f, "{name}")
+        match self {
+            PktType::Default => write!(f, "Default"),
+            PktType::Message => write!(f, "Message"),
+            PktType::ChangeRoom => write!(f, "ChangeRoom"),
+            PktType::Fight => write!(f, "Fight"),
+            PktType::PVPFight => write!(f, "PVPFight"),
+            PktType::Loot => write!(f, "Loot"),
+            PktType::Start => write!(f, "Start"),
+            PktType::Error => write!(f, "Error"),
+            PktType::Accept => write!(f, "Accept"),
+            PktType::Room => write!(f, "Room"),
+            PktType::Character => write!(f, "Character"),
+            PktType::Game => write!(f, "Game"),
+            PktType::Leave => write!(f, "Leave"),
+            PktType::Connection => write!(f, "Connection"),
+            PktType::Version => write!(f, "Version"),
+        }
     }
 }
