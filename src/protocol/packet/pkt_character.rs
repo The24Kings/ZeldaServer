@@ -1,8 +1,12 @@
-use crate::debug_packet;
-use crate::protocol::Stream;
-use crate::protocol::packet::{Packet, Parser};
-use crate::protocol::pkt_type::PktType;
+use std::fmt::LowerHex;
 use std::io::Write;
+use tracing::debug;
+
+use crate::protocol::{
+    Stream,
+    packet::{Packet, Parser},
+    pkt_type::PktType,
+};
 
 #[derive(Debug, Clone)]
 pub struct Character {
@@ -58,6 +62,12 @@ impl Default for Character {
     }
 }
 
+impl std::fmt::Display for Character {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Character: {} -> 0x{:#x}", self.name, self.flags)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CharacterFlags {
     pub alive: bool,
@@ -76,6 +86,20 @@ impl Default for CharacterFlags {
             started: false,
             ready: true,
         }
+    }
+}
+
+impl LowerHex for CharacterFlags {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:02x}",
+            (self.alive as u8) << 7
+                | (self.join_battle as u8) << 6
+                | (self.monster as u8) << 5
+                | (self.started as u8) << 4
+                | (self.ready as u8) << 3
+        )
     }
 }
 
@@ -157,14 +181,12 @@ impl<'a> Parser<'a> for Character {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("{:?}", packet);
 
         Ok(())
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        println!("[CHARACTER] Deserializing packet: {}", packet);
-
         let name = String::from_utf8_lossy(&packet.body[0..32])
             .trim_end_matches('\0')
             .to_string();

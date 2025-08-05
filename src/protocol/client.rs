@@ -1,10 +1,9 @@
 use std::io::Read;
 use std::sync::mpsc::Sender;
-
-use crate::protocol::pkt_type::PktType;
+use tracing::info;
 
 use super::packet::{Packet, Parser, pkt_fight, pkt_leave, pkt_start};
-use super::{ServerMessage, Stream};
+use super::{ServerMessage, Stream, pkt_type::PktType};
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -30,7 +29,7 @@ impl Client {
             ));
         }
 
-        println!("[CLIENT] Read packet type: {}", packet_type);
+        info!("Read packet type: {}", packet_type);
 
         // Match the type of the packet to the enum Type
         let packet: Option<ServerMessage> = match packet_type {

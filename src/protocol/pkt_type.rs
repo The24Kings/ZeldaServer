@@ -1,4 +1,6 @@
-#[derive(Default, Debug, Clone, Copy)]
+use serde::Serialize;
+
+#[derive(Default, Serialize, Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum PktType {
     #[default]

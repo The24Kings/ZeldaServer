@@ -1,6 +1,7 @@
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
+use tracing::info;
 
 use crate::protocol::packet::Parser;
 use crate::protocol::packet::{
@@ -36,20 +37,20 @@ pub enum ServerMessage {
 impl std::fmt::Display for ServerMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ServerMessage::Message(_, msg) => write!(f, "\n{:#?}", msg),
-            ServerMessage::ChangeRoom(_, room) => write!(f, "\n{:#?}", room),
-            ServerMessage::Fight(_, fight) => write!(f, "\n{:#?}", fight),
-            ServerMessage::PVPFight(_, pvp_fight) => write!(f, "\n{:#?}", pvp_fight),
-            ServerMessage::Loot(_, loot) => write!(f, "\n{:#?}", loot),
-            ServerMessage::Start(_, start) => write!(f, "\n{:#?}", start),
-            ServerMessage::Error(_, error) => write!(f, "\n{:#?}", error),
-            ServerMessage::Accept(_, accept) => write!(f, "\n{:#?}", accept),
-            ServerMessage::Room(_, room) => write!(f, "\n{:#?}", room),
-            ServerMessage::Character(_, character) => write!(f, "\n{:#?}", character),
-            ServerMessage::Game(_, game) => write!(f, "\n{:#?}", game),
-            ServerMessage::Leave(_, leave) => write!(f, "\n{:#?}", leave),
-            ServerMessage::Connection(_, connection) => write!(f, "\n{:#?}", connection),
-            ServerMessage::Version(_, version) => write!(f, "\n{:#?}", version),
+            ServerMessage::Message(_, msg) => write!(f, "{}", msg),
+            ServerMessage::ChangeRoom(_, room) => write!(f, "{}", room),
+            ServerMessage::Fight(_, fight) => write!(f, "{}", fight),
+            ServerMessage::PVPFight(_, pvp_fight) => write!(f, "{}", pvp_fight),
+            ServerMessage::Loot(_, loot) => write!(f, "{}", loot),
+            ServerMessage::Start(_, start) => write!(f, "{}", start),
+            ServerMessage::Error(_, error) => write!(f, "{}", error),
+            ServerMessage::Accept(_, accept) => write!(f, "{}", accept),
+            ServerMessage::Room(_, room) => write!(f, "{}", room),
+            ServerMessage::Character(_, character) => write!(f, "{}", character),
+            ServerMessage::Game(_, game) => write!(f, "{}", game),
+            ServerMessage::Leave(_, leave) => write!(f, "{}", leave),
+            ServerMessage::Connection(_, connection) => write!(f, "{}", connection),
+            ServerMessage::Version(_, version) => write!(f, "{}", version),
         }
     }
 }
@@ -58,7 +59,7 @@ impl ServerMessage {
     pub fn send(&self) -> Result<(), std::io::Error> {
         let mut byte_stream: Vec<u8> = Vec::new();
 
-        println!("[PROTOCOL] Sending packet: {}", self);
+        info!("Sending packet: {}", self);
 
         // Serialize the packet and send it to the server
         let author = match self {

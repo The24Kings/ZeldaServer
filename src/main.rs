@@ -4,9 +4,9 @@ use std::env;
 use std::fs::File;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
+use tracing::{info, warn};
 
-use protocol::map::Map;
-
+use crate::protocol::map::Map;
 use crate::threads::{processor::connection, server::server};
 
 pub mod protocol;
@@ -22,28 +22,29 @@ struct Args {
 
 fn main() {
     dotenv().ok();
+    tracing_config::init!();
 
     let args = Args::parse();
 
     let address = format!("0.0.0.0:{}", args.port);
-    let listener = TcpListener::bind(&address).expect("[MAIN] Failed to bind to address");
+    let listener = TcpListener::bind(&address).expect("Failed to bind to address");
 
-    println!("Listening on {address}");
+    info!("Listening on {address}");
 
     // Create a channel for communication between threads
     let (tx, rx) = mpsc::channel();
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let path = env::var("MAP_FILEPATH").expect("[MAIN] MAP_FILEPATH must be set.");
-    let file = File::open(path).expect("[MAIN] Failed to open map file!");
-    let mut map = Map::build(file).expect("[MAIN] Failed to build map from file");
+    let path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
+    let file = File::open(path).expect("Failed to open map file!");
+    let mut map = Map::build(file).expect("Failed to build map from file");
 
     let initial_points = map.init_points;
     let stat_limit = map.stat_limit;
 
     // Start the server thread with the map
-    println!("[MAIN] Parsed map successfully");
+    info!("Parsed map successfully");
 
     std::thread::spawn(move || {
         server(receiver, &mut map);
@@ -53,7 +54,7 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                println!("[MAIN] New connection: {:?}", stream.peer_addr());
+                info!("New connection: {:?}", stream.peer_addr());
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
 
@@ -63,7 +64,7 @@ fn main() {
                 });
             }
             Err(e) => {
-                eprintln!("[MAIN] Error accepting connection: {}", e);
+                warn!("Error accepting connection: {}", e);
             }
         }
     }

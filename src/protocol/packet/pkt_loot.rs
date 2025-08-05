@@ -1,17 +1,26 @@
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-use crate::{
-    debug_packet,
-    protocol::{
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
+use crate::protocol::{
+    packet::{Packet, Parser},
+    pkt_type::PktType,
 };
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct Loot {
     pub message_type: PktType,
     pub target_name: String,
+}
+
+impl std::fmt::Display for Loot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Loot".to_string())
+        )
+    }
 }
 
 impl<'a> Parser<'a> for Loot {
@@ -33,7 +42,7 @@ impl<'a> Parser<'a> for Loot {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("{:?}", packet);
 
         Ok(())
     }

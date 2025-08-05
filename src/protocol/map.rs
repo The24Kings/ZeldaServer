@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::{env, fs::File};
+use tracing::{error, info, warn};
 
-use crate::protocol::{ServerMessage, packet::pkt_message, pkt_type::PktType};
-
-use super::packet::pkt_character;
+use crate::protocol::{
+    ServerMessage, packet::pkt_character, packet::pkt_message, pkt_type::PktType,
+};
 
 #[derive(Debug)]
 pub struct Map {
@@ -45,13 +46,13 @@ impl Map {
     pub fn new(rooms: Vec<Room>) -> Self {
         Map {
             init_points: env::var("INITIAL_POINTS")
-                .expect("[MAP] INITIAL_POINTS must be set.")
+                .expect("INITIAL_POINTS must be set.")
                 .parse()
-                .expect("[MAP] Failed to parse INITIAL_POINTS"),
+                .expect("Failed to parse INITIAL_POINTS"),
             stat_limit: env::var("STAT_LIMIT")
-                .expect("[MAP] STAT_LIMIT must be set.")
+                .expect("STAT_LIMIT must be set.")
                 .parse()
-                .expect("[MAP] Failed to parse STAT_LIMIT"),
+                .expect("Failed to parse STAT_LIMIT"),
             rooms,
             players: Vec::new(),
             desc: String::new(),
@@ -59,10 +60,10 @@ impl Map {
     }
 
     pub fn build(data: File) -> Result<Self, serde_json::Error> {
-        println!("[MAP] Building game map...");
+        info!("Building game map...");
 
         let deserialized: Vec<Room> = serde_json::from_reader(&data)?;
-        println!("[MAP] Game map built with {} rooms.", deserialized.len());
+        info!("Game map built with {} rooms.", deserialized.len());
 
         Ok(Map::new(deserialized))
     }
@@ -80,7 +81,7 @@ impl Map {
 
     /// Broadcast a message to all players in the game via Message packets.
     pub fn broadcast(&self, message: String) -> Result<(), std::io::Error> {
-        println!("[BROADCAST] Sending message: {}", message);
+        info!("Sending message: {}", message);
 
         // Send the packet to the server
         for player in &self.players {
@@ -88,7 +89,7 @@ impl Map {
                 std::io::Error::new(std::io::ErrorKind::NotFound, "Author not found")
             })?;
 
-            println!("[BROADCAST] Sending message to {}", player.name);
+            info!("Sending message to {}", player.name);
 
             ServerMessage::Message(
                 author.clone(),
@@ -103,10 +104,7 @@ impl Map {
             )
             .send()
             .unwrap_or_else(|e| {
-                eprintln!(
-                    "[BROADCAST] Failed to send message to {}: {}",
-                    player.name, e
-                );
+                warn!("Failed to send message to {}: {}", player.name, e);
             });
         }
 
@@ -120,7 +118,7 @@ impl Map {
         room_number: u16,
         player: &pkt_character::Character,
     ) -> Result<(), std::io::Error> {
-        println!("[ALERT] Alerting players about: {}", player.name);
+        info!("[ALERT] Alerting players about: {}", player.name);
 
         let author = player
             .author
@@ -139,10 +137,10 @@ impl Map {
                 Some(to_alert) => ServerMessage::Character(author.clone(), player.clone())
                     .send()
                     .unwrap_or_else(|e| {
-                        eprintln!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
+                        error!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
                     }),
                 None => {
-                    eprintln!("[ALERT] Invalid player index: {}", player_index);
+                    error!("[ALERT] Invalid player index: {}", player_index);
                 }
             });
 

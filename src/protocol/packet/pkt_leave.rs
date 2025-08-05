@@ -1,14 +1,13 @@
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-use crate::{
-    debug_packet,
-    protocol::{
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
+use crate::protocol::{
+    packet::{Packet, Parser},
+    pkt_type::PktType,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Leave {
     pub message_type: PktType,
 }
@@ -18,6 +17,16 @@ impl Default for Leave {
         Leave {
             message_type: PktType::Leave,
         }
+    }
+}
+
+impl std::fmt::Display for Leave {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Leave".to_string())
+        )
     }
 }
 
@@ -36,7 +45,7 @@ impl<'a> Parser<'a> for Leave {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("{:?}", packet);
 
         Ok(())
     }

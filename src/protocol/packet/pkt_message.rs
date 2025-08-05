@@ -1,14 +1,13 @@
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-use crate::{
-    debug_packet,
-    protocol::{
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
+use crate::protocol::{
+    packet::{Packet, Parser},
+    pkt_type::PktType,
 };
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct Message {
     pub message_type: PktType,
     pub message_len: u16,
@@ -16,6 +15,17 @@ pub struct Message {
     pub sender: String,
     pub narration: bool,
     pub message: String,
+}
+
+impl std::fmt::Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self)
+                .unwrap_or_else(|_| "Failed to serialize Message".to_string())
+        )
+    }
 }
 
 impl<'a> Parser<'a> for Message {
@@ -53,14 +63,12 @@ impl<'a> Parser<'a> for Message {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("{:?}", packet);
 
         Ok(())
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        println!("[MESSAGE] Deserializing packet: {}", packet);
-
         let message_len = u16::from_le_bytes([packet.body[0], packet.body[1]]);
 
         // Process the names for recipient and sender

@@ -1,16 +1,27 @@
-use crate::{
-    debug_packet,
-    protocol::{
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
-};
+use serde::Serialize;
 use std::io::Write;
+use tracing::debug;
 
-#[derive(Default, Debug, Clone)]
+use crate::protocol::{
+    packet::{Packet, Parser},
+    pkt_type::PktType,
+};
+
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct PVPFight {
     pub message_type: PktType,
     pub target_name: String,
+}
+
+impl std::fmt::Display for PVPFight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self)
+                .unwrap_or_else(|_| "Failed to serialize PVPFight".to_string())
+        )
+    }
 }
 
 impl<'a> Parser<'a> for PVPFight {
@@ -32,7 +43,7 @@ impl<'a> Parser<'a> for PVPFight {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("{:?}", packet);
 
         Ok(())
     }

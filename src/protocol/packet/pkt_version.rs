@@ -1,22 +1,34 @@
-use crate::{
-    debug_packet,
-    protocol::{
-        packet::{Packet, Parser},
-        pkt_type::PktType,
-    },
+use serde::Serialize;
+use std::io::Write;
+use tracing::debug;
+
+use crate::protocol::{
+    packet::{Packet, Parser},
+    pkt_type::PktType,
 };
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct Version {
     pub message_type: PktType,
     pub major_rev: u8,
     pub minor_rev: u8,
     pub extension_len: u16,
-    pub extensions: Option<Vec<u8>>, // 0-1 length, 2+ extention;
+    pub extensions: Option<Vec<u8>>, // 0-1 length, 2+ extension;
+}
+
+impl std::fmt::Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self)
+                .unwrap_or_else(|_| "Failed to serialize Version".to_string())
+        )
+    }
 }
 
 impl<'a> Parser<'a> for Version {
-    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
@@ -37,14 +49,12 @@ impl<'a> Parser<'a> for Version {
             )
         })?;
 
-        debug_packet!(&packet);
+        debug!("{:?}", packet);
 
         Ok(())
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        println!("[VERSION] Deserializing packet: {}", packet);
-
         Ok(Version {
             message_type: packet.message_type,
             major_rev: packet.body[0],

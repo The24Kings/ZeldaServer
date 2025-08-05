@@ -1,5 +1,6 @@
 use std::env;
 use std::sync::mpsc::Sender;
+use tracing::{error, info, warn};
 
 use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
 use crate::protocol::{ServerMessage, Stream, client::Client, pkt_type::PktType};
@@ -12,9 +13,8 @@ pub fn connection(
 ) {
     let client = Client::new(stream.clone(), sender);
 
-    let filepath = env::var("DESC_FILEPATH").expect("[CONNECTION] DESC_FILEPATH must be set.");
-    let description =
-        std::fs::read_to_string(filepath).expect("[CONNECTION] Failed to read description file!");
+    let filepath = env::var("DESC_FILEPATH").expect("DESC_FILEPATH must be set.");
+    let description = std::fs::read_to_string(filepath).expect("Failed to read description file!");
 
     // Send the initial game info to the client
     ServerMessage::Version(
@@ -22,20 +22,20 @@ pub fn connection(
         pkt_version::Version {
             message_type: PktType::Version,
             major_rev: env::var("MAJOR_REV")
-                .expect("[CONNECTION] MAJOR_REV must be set.")
+                .expect("MAJOR_REV must be set.")
                 .parse()
-                .expect("[CONNECTION] Failed to parse MAJOR_REV"),
+                .expect("Failed to parse MAJOR_REV"),
             minor_rev: env::var("MINOR_REV")
-                .expect("[CONNECTION] MINOR_REV must be set.")
+                .expect("MINOR_REV must be set.")
                 .parse()
-                .expect("[CONNECTION] Failed to parse MINOR_REV"),
+                .expect("Failed to parse MINOR_REV"),
             extension_len: 0,
             extensions: None,
         },
     )
     .send()
     .unwrap_or_else(|e| {
-        eprintln!("[CONNECTION] Failed to send version packet: {}", e);
+        error!("Failed to send version packet: {}", e);
         return; // This is a critical error, so we return
     });
 
@@ -51,7 +51,7 @@ pub fn connection(
     )
     .send()
     .unwrap_or_else(|e| {
-        eprintln!("[CONNECTION] Failed to send game packet: {}", e);
+        error!("Failed to send game packet: {}", e);
         return; // This is a critical error, so we return
     });
 
@@ -59,30 +59,30 @@ pub fn connection(
     loop {
         match client.read() {
             Ok(_) => {
-                println!("[CONNECTION] Packet read successfully");
+                info!("Packet read successfully");
             }
             Err(e) => {
                 match e.kind() {
                     std::io::ErrorKind::ConnectionReset => {
-                        eprintln!("[CONNECTION] Connection reset by peer. Terminating thread.");
+                        error!("Connection reset by peer. Terminating thread.");
                     }
                     std::io::ErrorKind::ConnectionAborted => {
-                        eprintln!("[CONNECTION] Connection aborted. Terminating thread.");
+                        error!("Connection aborted. Terminating thread.");
                     }
                     std::io::ErrorKind::NotConnected => {
-                        eprintln!("[CONNECTION] Not connected. Terminating thread.");
+                        error!("Not connected. Terminating thread.");
                     }
                     std::io::ErrorKind::BrokenPipe => {
-                        eprintln!("[CONNECTION] Broken pipe. Terminating thread.");
+                        error!("Broken pipe. Terminating thread.");
                     }
                     std::io::ErrorKind::UnexpectedEof => {
-                        eprintln!("[CONNECTION] Unexpected EOF. Terminating thread.");
+                        error!("Unexpected EOF. Terminating thread.");
                     }
                     std::io::ErrorKind::Unsupported => {
-                        eprintln!("[CONNECTION] Unsupported operation. Terminating thread.");
+                        error!("Unsupported operation. Terminating thread.");
                     }
                     _ => {
-                        eprintln!("[CONNECTION] Non-terminal error: '{}'. Continuing.", e);
+                        warn!("Non-terminal error: '{}'. Continuing.", e);
                         continue; // Continue processing other packets
                     }
                 }
@@ -96,7 +96,7 @@ pub fn connection(
                         pkt_leave::Leave::default(),
                     ))
                     .unwrap_or_else(|_| {
-                        eprintln!("[CONNECTION] Failed to send leave packet");
+                        error!("Failed to send leave packet");
                     });
 
                 break;
