@@ -1,4 +1,18 @@
 
+|| ^ WARNING ^        Under Construction!        ^ WARNING ^
+|| 
+||           | Missing Feature | Status        |
+||           | ----------------| ------------- |
+||           | Send Monsters   | Next in Queue |
+||           | Fighting        | Blocked       |
+||           | Looting         | Blocked       |
+||           | Dynamic Map     | Drafting      |
+|| 
+||        Please report any bugs you might find on Github!
+||           https://github.com/The24Kings/ImprovedLurk
+||                         Thank you!
+|| 
+|| ^ WARNING ^        Under Construction!        ^ WARNING ^
  ______    _     _           _____ 
 |___  /   | |   | |         / ____|                         
    / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __ 
