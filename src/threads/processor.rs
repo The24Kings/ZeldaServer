@@ -60,22 +60,22 @@ pub fn connection(stream: Stream, initial_points: u16, stat_limit: u16, sender: 
             Err(e) => {
                 match e.kind() {
                     std::io::ErrorKind::ConnectionReset => {
-                        error!("[READ] Connection reset by peer. Terminating thread.");
+                        error!("[READ] Connection reset: {}. Terminating thread.", e);
                     }
                     std::io::ErrorKind::ConnectionAborted => {
-                        error!("[READ] Connection aborted. Terminating thread.");
+                        error!("[READ] Connection aborted: {}. Terminating thread.", e);
                     }
                     std::io::ErrorKind::NotConnected => {
-                        error!("[READ] Not connected. Terminating thread.");
+                        error!("[READ] Not connected: {}. Terminating thread.", e);
                     }
                     std::io::ErrorKind::BrokenPipe => {
-                        error!("[READ] Broken pipe. Terminating thread.");
+                        error!("[READ] Broken pipe: {}. Terminating thread.", e);
                     }
                     std::io::ErrorKind::UnexpectedEof => {
-                        error!("[READ] Unexpected EOF. Terminating thread.");
+                        error!("[READ] Unexpected EOF: {}. Terminating thread.", e);
                     }
                     std::io::ErrorKind::Unsupported => {
-                        error!("[READ] Unsupported operation. Terminating thread.");
+                        error!("[READ] Unsupported operation: {}. Terminating thread.", e);
                     }
                     _ => {
                         warn!("[READ] Non-terminal error: '{}'. Continuing.", e);
