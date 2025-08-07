@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
-use std::{env, fs::File};
+use std::{env, fs::File, sync::Arc};
 use tracing::{error, info, warn};
 
-use crate::protocol::{Protocol, packet::pkt_character, packet::pkt_message, pkt_type::PktType};
+use crate::protocol::{
+    Protocol, Stream,
+    packet::{pkt_character, pkt_message},
+    pkt_type::PktType,
+};
 
 #[derive(Debug)]
 pub struct Map {
@@ -70,10 +74,32 @@ impl Map {
         self.players.push(player);
     }
 
-    pub fn get_exits(&self, id: u16) -> Option<Vec<&Connection>> {
+    pub fn player_from_name(
+        &mut self,
+        name: &String,
+    ) -> Option<(usize, &mut pkt_character::Character)> {
+        self.players
+            .iter_mut()
+            .enumerate()
+            .find(|(_, player)| player.name == *name)
+    }
+
+    pub fn player_from_stream(
+        &mut self,
+        stream: &Stream,
+    ) -> Option<(usize, &mut pkt_character::Character)> {
+        self.players.iter_mut().enumerate().find(|(_, player)| {
+            player
+                .author
+                .as_ref()
+                .map_or(false, |a| Arc::ptr_eq(a, &stream))
+        })
+    }
+
+    pub fn exits(&self, room_number: u16) -> Option<Vec<&Connection>> {
         self.rooms
             .iter()
-            .find(|r| r.room_number == id)
+            .find(|r| r.room_number == room_number)
             .map(|room| room.connections.iter().collect())
     }
 
@@ -138,10 +164,10 @@ impl Map {
                 Some(to_alert) => Protocol::Character(author.clone(), player.clone())
                     .send()
                     .unwrap_or_else(|e| {
-                        error!("[ALERT] Failed to alert {}: {}", to_alert.name, e);
+                        error!("[ALERT] Failed to alert '{}': {}", to_alert.name, e);
                     }),
                 None => {
-                    error!("[ALERT] Invalid player index: {}", player_index);
+                    error!("[ALERT] Player index '{}' out of bounds", player_index);
                 }
             });
 

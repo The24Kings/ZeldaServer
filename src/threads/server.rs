@@ -204,7 +204,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send all connections to the client
                 // ================================================================================
-                let connections = match map.get_exits(content.room_number) {
+                let connections = match map.exits(content.room_number) {
                     Some(exits) => exits,
                     None => {
                         error!("[SERVER] No exits for room {}", content.room_number);
@@ -274,22 +274,16 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
-                let (player_idx, player) =
-                    match map.players.iter_mut().enumerate().find(|(_, player)| {
-                        player
-                            .author
-                            .as_ref()
-                            .map_or(false, |a| Arc::ptr_eq(a, &author))
-                    }) {
-                        Some((index, player)) => {
-                            info!("[SERVER] Found player at index: {}", index);
-                            (index, player)
-                        }
-                        None => {
-                            error!("[SERVER] Unable to find player in map");
-                            continue;
-                        }
-                    };
+                let (player_idx, player) = match map.player_from_stream(&author) {
+                    Some((index, player)) => {
+                        info!("[SERVER] Found player at index: {}", index);
+                        (index, player)
+                    }
+                    None => {
+                        error!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
 
                 // ================================================================================
                 // Activate the character and send the information off to client
@@ -334,7 +328,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                         error!("[SERVER] Failed to send room packet: {}", e);
                     });
 
-                let connections = match map.get_exits(0) {
+                let connections = match map.exits(0) {
                     Some(room) => room,
                     None => {
                         error!("[SERVER] Unable to find room in map");
@@ -398,27 +392,23 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // Create a new player and return it if not.
                 // We ignore the flags from the client and set the correct ones accordingly.
                 // ================================================================================
-                let player = match map
-                    .players
-                    .iter_mut()
-                    .find(|player| player.name == content.name)
-                {
-                    Some(player) => {
-                        info!("[SERVER] Found character in map, reactivating character.");
+                let player = match map.player_from_name(&content.name) {
+                    Some((_, player)) => {
+                        info!("[SERVER] Reactivating character.");
                         player
                     }
                     None => {
+                        info!("[SERVER] Adding character to map.");
+
                         map.add_player(pkt_character::Character::from(
                             Some(author.clone()),
                             &updated_content,
                         ));
-                        info!("[SERVER] Added character to map.");
 
                         // Now get the newly added player
                         map.players
-                            .iter_mut()
-                            .find(|player| player.name == content.name)
-                            .expect("[SERVER] Player just added should exist") // If this fails, something is wrong so panic (we probably ran out of memory)
+                            .last_mut()
+                            .expect("[SERVER] Player just added should exist") // Should never fail, the previous function would panic if we run out of memory
                     }
                 };
 
@@ -467,13 +457,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // Shutdown the connection.
                 // ================================================================================
 
-                let player = match map.players.iter_mut().find(|player| {
-                    player
-                        .author
-                        .as_ref()
-                        .map_or(false, |a| Arc::ptr_eq(a, &author))
-                }) {
-                    Some(player) => player,
+                let player = match map.player_from_stream(&author) {
+                    Some((_, player)) => player,
                     None => {
                         error!("[SERVER] Unable to find player in map");
                         continue;
