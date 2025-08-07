@@ -456,13 +456,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // has been deactivated, but is technically still there.
                 // Shutdown the connection.
                 // ================================================================================
-
                 let player = match map.player_from_stream(&author) {
                     Some((_, player)) => player,
-                    None => {
-                        error!("[SERVER] Unable to find player in map");
-                        continue;
-                    }
+                    None => continue,
                 };
 
                 player.flags = CharacterFlags::deactivate(false);
