@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::io::Write;
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::protocol::{
     error::ErrorCode,
@@ -19,6 +19,8 @@ pub struct Error {
 
 impl Error {
     pub fn new(error: ErrorCode, message: &str) -> Self {
+        error!("[SERVER] {}", message);
+
         Error {
             message_type: PktType::Error,
             error,

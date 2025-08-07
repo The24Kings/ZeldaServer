@@ -3,11 +3,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::info;
 
-use crate::protocol::packet::Parser;
-use crate::protocol::packet::{
-    pkt_accept, pkt_change_room, pkt_character, pkt_connection, pkt_error, pkt_fight, pkt_game,
-    pkt_leave, pkt_loot, pkt_message, pkt_pvp_fight, pkt_room, pkt_start, pkt_version,
-};
+use crate::protocol::packet::*;
 
 pub type Stream = Arc<TcpStream>;
 
@@ -122,12 +118,7 @@ impl Protocol {
             }
         };
 
-        author.as_ref().write_all(&byte_stream).map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::WriteZero,
-                format!("Failed to write to stream: {}", e),
-            )
-        })?;
+        author.as_ref().write_all(&byte_stream)?;
 
         Ok(())
     }

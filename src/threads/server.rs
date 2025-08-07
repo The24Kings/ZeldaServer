@@ -30,8 +30,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 {
                     Some(player) => player,
                     None => {
-                        error!("[SERVER] Unable to find player in map");
-
                         Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::Other, "Player not found"),
@@ -48,8 +46,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 let author = match &player.author {
                     Some(author) => author,
                     None => {
-                        error!("[SERVER] Character does not have an active connection");
-
                         Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(
@@ -99,8 +95,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // given connection. Shuffle the player around to the next room and send data.
                 // ================================================================================
                 if player.current_room == content.room_number {
-                    error!("[SERVER] Player is already in the room");
-
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Player is already in the room"),
@@ -121,8 +115,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 {
                     Some(room) => room,
                     None => {
-                        error!("[SERVER] Unable to find room in map");
-
                         Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
@@ -142,11 +134,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     .any(|exit| exit.room_number == content.room_number);
 
                 if !valid_connection {
-                    error!(
-                        "Invalid connection... Room only has: {:?}",
-                        &cur_room.connections
-                    );
-
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
@@ -169,11 +156,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     .find(|room| room.room_number == content.room_number)
                 {
                     Some(room) => {
-                        // Add the player to the new room
                         info!("[SERVER] Adding player to new room");
                         room.players.push(player_idx);
 
-                        // Send the room to the client
                         Protocol::Room(author.clone(), pkt_room::Room::from(room.clone()))
                             .send()
                             .unwrap_or_else(|e| {
@@ -181,8 +166,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                             });
                     }
                     None => {
-                        error!("[SERVER] Unable to find room in map");
-
                         Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
@@ -224,7 +207,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 let connections = match map.get_exits(content.room_number) {
                     Some(exits) => exits,
                     None => {
-                        error!("[SERVER] Unable to find room in map");
+                        error!("[SERVER] No exits for room {}", content.room_number);
                         continue;
                     }
                 };
@@ -272,7 +255,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
             Protocol::PVPFight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                // Disabled, no player combat allowed
                 Protocol::Error(
                     author.clone(),
                     pkt_error::Error::new(ErrorCode::NoPlayerCombat, "No player combat allowed"),
@@ -380,28 +362,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 let total_stats = content
                     .attack
                     .checked_add(content.defense)
-                    .and_then(|sum| sum.checked_add(content.regen));
-
-                let total_stats = match total_stats {
-                    Some(total) => total,
-                    None => {
-                        info!("[SERVER] Overflow in stats calculation");
-                        Protocol::Error(
-                            author.clone(),
-                            pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
-
-                        continue;
-                    }
-                };
+                    .and_then(|sum| sum.checked_add(content.regen))
+                    .unwrap_or(map.init_points + 1); // This will cause the next check to fail
 
                 if total_stats > map.init_points {
-                    info!("[SERVER] Invalid stats: {}", total_stats);
-
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
@@ -459,13 +423,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 };
 
                 if player.flags.started {
-                    error!("[SERVER] Player is already in the game");
-
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(
                             ErrorCode::PlayerExists,
-                            "Player is already in the game; please leave the game and rejoin",
+                            "Player is already in the game.",
                         ),
                     )
                     .send()
@@ -504,18 +466,14 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // has been deactivated, but is technically still there.
                 // Shutdown the connection.
                 // ================================================================================
+
                 let player = match map.players.iter_mut().find(|player| {
                     player
                         .author
                         .as_ref()
                         .map_or(false, |a| Arc::ptr_eq(a, &author))
                 }) {
-                    Some(player) => {
-                        info!(
-                            "[SERVER] Found character in map, resetting flags and disabling connection."
-                        );
-                        player
-                    }
+                    Some(player) => player,
                     None => {
                         error!("[SERVER] Unable to find player in map");
                         continue;
