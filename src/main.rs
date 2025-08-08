@@ -53,7 +53,8 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                info!("[MAIN] New connection: {:?}", stream.peer_addr());
+                info!("[MAIN] New connection: {:?}", stream);
+
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
 
