@@ -3,7 +3,7 @@ use std::env;
 use std::fs::File;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::protocol::map::Map;
 use crate::threads::{processor::connection, server::server};
@@ -45,7 +45,7 @@ fn main() {
     // Start the server thread with the map
     info!("[MAIN] Parsed map successfully");
 
-    std::thread::spawn(move || {
+    let _ = std::thread::spawn(move || {
         server(receiver, &mut map);
     });
 
@@ -59,9 +59,11 @@ fn main() {
                 let sender = tx.clone();
 
                 // Handle the connection in a separate thread
-                std::thread::spawn(move || {
+                let client_h = std::thread::spawn(move || {
                     connection(stream, initial_points, stat_limit, sender);
                 });
+
+                debug!("[MAIN] Spawned client thread: {:?}", client_h.thread().id());
             }
             Err(e) => {
                 warn!("[MAIN] Error accepting connection: {}", e);
