@@ -147,11 +147,6 @@ impl Map {
     ) -> Result<(), std::io::Error> {
         info!("[ALERT] Alerting players about: {}", player.name);
 
-        let author = player
-            .author
-            .as_ref()
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Author not found"))?;
-
         let room = self
             .rooms
             .iter()
@@ -161,11 +156,20 @@ impl Map {
         room.players
             .iter()
             .for_each(|&player_index| match self.players.get(player_index) {
-                Some(to_alert) => Protocol::Character(author.clone(), player.clone())
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[ALERT] Failed to alert '{}': {}", to_alert.name, e);
-                    }),
+                Some(to_alert) => {
+                    info!("[ALERT] Alerting player: {}", to_alert.name);
+
+                    match to_alert.author.as_ref() {
+                        Some(stream) => Protocol::Character(stream.clone(), player.clone())
+                            .send()
+                            .unwrap_or_else(|e| {
+                                error!("[ALERT] Failed to alert '{}': {}", to_alert.name, e);
+                            }),
+                        None => {
+                            warn!("[ALERT] Player {} is not connected", to_alert.name);
+                        }
+                    }
+                }
                 None => {
                     error!("[ALERT] Player index '{}' out of bounds", player_index);
                 }
