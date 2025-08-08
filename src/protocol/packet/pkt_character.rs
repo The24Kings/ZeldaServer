@@ -1,5 +1,6 @@
-use std::fmt::LowerHex;
 use std::io::Write;
+use std::os::fd::AsRawFd;
+use std::{fmt::LowerHex, os::fd::AsFd};
 use tracing::debug;
 
 use crate::protocol::{
@@ -65,7 +66,42 @@ impl Default for Character {
 
 impl std::fmt::Display for Character {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Character: {} -> 0x{:#x}", self.name, self.flags)
+        let author = match &self.author {
+            Some(stream) => format!(
+                "\"addr\":\"{}\",\"peer\":\"{}\",\"fd\":{}",
+                stream
+                    .as_ref()
+                    .peer_addr()
+                    .unwrap_or_else(|_| std::net::SocketAddr::from(([0, 0, 0, 0], 0))),
+                stream
+                    .as_ref()
+                    .local_addr()
+                    .unwrap_or_else(|_| std::net::SocketAddr::from(([0, 0, 0, 0], 0))),
+                stream.as_fd().as_raw_fd()
+            ),
+            None => "None".to_string(),
+        };
+
+        write!(
+            f,
+            "{{\"author\":{{{}}},\"message_type\":\"{}\",\"name\":\"{}\",\"flags\":{{\"alive\":{},\"battle\":{},\"monster\":{},\"started\":{},\"ready\":{}}},\"attack\":{},\"defense\":{},\"regen\":{},\"health\":{},\"gold\":{},\"current_room\":{},\"description_len\":{},\"description\":\"{}\"}}",
+            author,
+            self.message_type,
+            self.name,
+            self.flags.alive,
+            self.flags.battle,
+            self.flags.monster,
+            self.flags.started,
+            self.flags.ready,
+            self.attack,
+            self.defense,
+            self.regen,
+            self.health,
+            self.gold,
+            self.current_room,
+            self.description_len,
+            self.description
+        )
     }
 }
 
