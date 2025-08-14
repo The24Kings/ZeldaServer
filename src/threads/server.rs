@@ -550,13 +550,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
 
                 room.players.retain(|&idx| idx != player_idx);
 
-                // map.message_room(
-                //     old_room_number,
-                //     format!("{}'s corpse disappeared into a puff of smoke.", player_name),
-                // )
-                // .unwrap_or_else(|e| {
-                //     error!("[SERVER] Failed to message room: {}", e);
-                // });
+                map.message_room(
+                    old_room_number,
+                    format!("{}'s corpse disappeared into a puff of smoke.", player_name),
+                )
+                .unwrap_or_else(|e| {
+                    error!("[SERVER] Failed to message room: {}", e);
+                });
 
                 // TODO: We also need to alert the old room that the "body" disappears
                 // ^ ============================================================================ ^

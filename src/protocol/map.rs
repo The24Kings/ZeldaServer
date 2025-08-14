@@ -138,6 +138,63 @@ impl Map {
         Ok(())
     }
 
+    pub fn message_room(&self, room_number: u16, message: String) -> Result<(), std::io::Error> {
+        info!(
+            "[ROOM MESSAGE] Sending message to room {}: {}",
+            room_number, message
+        );
+
+        let room = self
+            .rooms
+            .iter()
+            .find(|r| r.room_number == room_number)
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Room not found"))?;
+
+        room.players.iter().for_each(|&player_index| {
+            let player = match self.players.get(player_index) {
+                Some(player) => player,
+                None => {
+                    error!(
+                        "[ROOM MESSAGE] Player index '{}' out of bounds",
+                        player_index
+                    );
+                    return;
+                }
+            };
+
+            let author = match player.author.as_ref() {
+                Some(author) => author,
+                None => {
+                    warn!("[ROOM MESSAGE] Player {} is not connected", player.name);
+                    return;
+                }
+            };
+
+            debug!("[ROOM MESSAGE] Sending message to {}", player.name);
+
+            Protocol::Message(
+                author.clone(),
+                pkt_message::Message {
+                    message_type: PktType::Message,
+                    message_len: message.len() as u16,
+                    recipient: player.name.clone(),
+                    sender: "Narrator".to_string(),
+                    narration: true,
+                    message: message.clone(),
+                },
+            )
+            .send()
+            .unwrap_or_else(|e| {
+                error!(
+                    "[ROOM MESSAGE] Failed to send message to {}: {}",
+                    player.name, e
+                );
+            });
+        });
+
+        Ok(())
+    }
+
     /// Alert all players in the current room of a character change by sending a Character packet
     /// to each player in the room.
     pub fn alert_room(
