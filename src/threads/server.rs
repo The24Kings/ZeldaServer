@@ -458,19 +458,19 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // Check if the player has already been created (Primary Key -> Name).
                 // Create a new player and return it if not.
                 // We ignore the flags from the client and set the correct ones accordingly.
+                // Store the old room so that we may remove the player later and set ignore input room
                 // ================================================================================
                 let player = match map.player_from_name(&content.name) {
                     Some((_, player)) => {
                         info!("[SERVER] Reactivating character.");
+                        info!("[SERVER] Player left off in: {}", player.current_room);
+
                         player
                     }
                     None => {
                         info!("[SERVER] Adding character to map.");
 
-                        map.add_player(pkt_character::Character::from(
-                            Some(author.clone()),
-                            &updated_content,
-                        ));
+                        map.add_player(pkt_character::Character::to_default(&updated_content));
 
                         // Now get the newly added player
                         map.players
@@ -495,8 +495,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     continue;
                 }
 
+                let old_room_number = player.current_room;
+
                 player.flags = CharacterFlags::activate(false);
                 player.author = Some(author.clone());
+                player.current_room = 0; // Start in the first room
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -512,6 +515,53 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     .send()
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send character packet: {}", e);
+                    });
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Remove the player from the room they left off in to avoid 2 players existing on
+                // the map at once
+                // ================================================================================
+                if old_room_number == 0 {
+                    continue;
+                }
+
+                let player_clone = player.clone(); // Borrow and mutability band-aids :smil:
+                let player_name = player.name.clone();
+
+                let player_idx = match map.players.iter().position(|p| p.name == player_name) {
+                    Some(idx) => idx,
+                    None => {
+                        warn!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
+
+                let room = match map
+                    .rooms
+                    .iter_mut()
+                    .find(|room| room.room_number == old_room_number)
+                {
+                    Some(room) => room,
+                    None => {
+                        warn!("[SERVER] Unable to find where the player left off in the map");
+                        continue;
+                    }
+                };
+
+                room.players.retain(|&idx| idx != player_idx);
+
+                map.message_room(
+                    old_room_number,
+                    format!("{}'s corpse disappeared into a puff of smoke.", player_name),
+                )
+                .unwrap_or_else(|e| {
+                    error!("[SERVER] Failed to message room: {}", e);
+                });
+
+                map.alert_room(old_room_number, &player_clone)
+                    .unwrap_or_else(|e| {
+                        warn!("[SERVER] Failed to alert players: {}", e);
                     });
                 // ^ ============================================================================ ^
             }
