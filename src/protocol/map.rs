@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{env, fs::File, sync::Arc};
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::protocol::{
     Protocol, Stream,
@@ -113,7 +113,7 @@ impl Map {
                 std::io::Error::new(std::io::ErrorKind::NotFound, "Author not found")
             })?;
 
-            info!("[BROADCAST] Sending message to {}", player.name);
+            debug!("[BROADCAST] Sending message to {}", player.name);
 
             Protocol::Message(
                 author.clone(),
@@ -157,7 +157,7 @@ impl Map {
             .iter()
             .for_each(|&player_index| match self.players.get(player_index) {
                 Some(to_alert) => {
-                    info!("[ALERT] Alerting player: {}", to_alert.name);
+                    debug!("[ALERT] Alerting player: {}", to_alert.name);
 
                     match to_alert.author.as_ref() {
                         Some(stream) => Protocol::Character(stream.clone(), player.clone())

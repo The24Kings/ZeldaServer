@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex, mpsc::Receiver};
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::protocol::packet::{
     pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
@@ -128,9 +128,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
-                let room_players = cur_room.players.clone();
-                let room_monsters = cur_room.monsters.clone();
-
                 let valid_connection = cur_room
                     .connections
                     .iter()
@@ -153,21 +150,12 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 cur_room.players.retain(|&index| index != player_idx);
 
                 // Find the next room in the map, add the player, and send it off
-                match map
+                let new_room = match map
                     .rooms
                     .iter_mut()
                     .find(|room| room.room_number == content.room_number)
                 {
-                    Some(room) => {
-                        info!("[SERVER] Adding player to new room");
-                        room.players.push(player_idx);
-
-                        Protocol::Room(author.clone(), pkt_room::Room::from(room.clone()))
-                            .send()
-                            .unwrap_or_else(|e| {
-                                error!("[SERVER] Failed to send room packet: {}", e);
-                            });
-                    }
+                    Some(room) => room,
                     None => {
                         Protocol::Error(
                             author.clone(),
@@ -181,6 +169,18 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                         continue;
                     }
                 };
+
+                info!("[SERVER] Adding player to new room");
+                new_room.players.push(player_idx);
+
+                Protocol::Room(author.clone(), pkt_room::Room::from(new_room.clone()))
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send room packet: {}", e);
+                    });
+
+                let room_players = new_room.players.clone();
+                let room_monsters = new_room.monsters.clone();
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -241,30 +241,22 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|&idx| {
-                    map.players.get(idx).filter(|player| match &player.author {
-                        Some(stream) => !Arc::ptr_eq(stream, &author), // Filter out the packet's author
-                        None => false,
-                    })
-                });
+                let players = room_players.iter().filter_map(|&idx| map.players.get(idx));
 
-                info!("[SERVER] Players: {:?}", players);
+                debug!("[SERVER] Players: {:?}", players);
 
                 let monsters = match &room_monsters {
                     Some(monsters) => monsters.iter(),
                     None => [].iter(),
                 };
 
-                for player in players {
-                    // FIXME: Doesn't seem to be sending the players even though there are players in the iterator?
-                    info!("[SERVER] Sending player: {}", player.name);
-
+                players.for_each(|player| {
                     Protocol::Character(author.clone(), player.clone())
                         .send()
                         .unwrap_or_else(|e| {
                             error!("[SERVER] Failed to send character packet: {}", e);
                         });
-                }
+                });
 
                 for monster in monsters {
                     Protocol::Character(
@@ -393,30 +385,22 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|&idx| {
-                    map.players.get(idx).filter(|player| match &player.author {
-                        Some(stream) => !Arc::ptr_eq(stream, &author), // Filter out the packet's author
-                        None => false,
-                    })
-                });
+                let players = room_players.iter().filter_map(|&idx| map.players.get(idx));
 
-                info!("[SERVER] Players: {:?}", players);
+                debug!("[SERVER] Players: {:?}", players);
 
                 let monsters = match &room_monsters {
                     Some(monsters) => monsters.iter(),
                     None => [].iter(),
                 };
 
-                for player in players {
-                    // FIXME: Doesn't seem to be sending the players even though there are players in the iterator?
-                    info!("[SERVER] Sending player: {}", player.name);
-
+                players.for_each(|player| {
                     Protocol::Character(author.clone(), player.clone())
                         .send()
                         .unwrap_or_else(|e| {
                             error!("[SERVER] Failed to send character packet: {}", e);
                         });
-                }
+                });
 
                 for monster in monsters {
                     Protocol::Character(
