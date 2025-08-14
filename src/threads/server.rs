@@ -526,12 +526,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     continue;
                 }
 
+                let player_clone = player.clone(); // Borrow and mutability band-aids :smil:
                 let player_name = player.name.clone();
 
                 let player_idx = match map.players.iter().position(|p| p.name == player_name) {
                     Some(idx) => idx,
                     None => {
-                        warn!("[SERVER] Unable to find player {} in map", player_name);
+                        warn!("[SERVER] Unable to find player in map");
                         continue;
                     }
                 };
@@ -558,7 +559,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     error!("[SERVER] Failed to message room: {}", e);
                 });
 
-                // TODO: We also need to alert the old room that the "body" disappears
+                map.alert_room(old_room_number, &player_clone)
+                    .unwrap_or_else(|e| {
+                        warn!("[SERVER] Failed to alert players: {}", e);
+                    });
                 // ^ ============================================================================ ^
             }
             Protocol::Leave(author, content) => {
