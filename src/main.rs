@@ -19,7 +19,7 @@ struct Args {
     port: u16,
 }
 
-fn main() {
+fn main() -> ! {
     dotenvy::dotenv().expect("[MAIN] Failed to load .env file");
     tracing_config::init!();
 
@@ -49,11 +49,10 @@ fn main() {
         server(receiver, &mut map);
     });
 
-    // Listen for incoming connections
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                info!("[MAIN] New connection: {:?}", stream);
+    loop {
+        match listener.accept() {
+            Ok((stream, addr)) => {
+                info!("[MAIN] New connection: {}", addr);
 
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
