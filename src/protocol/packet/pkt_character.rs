@@ -3,6 +3,7 @@ use std::os::fd::AsRawFd;
 use std::{fmt::LowerHex, os::fd::AsFd};
 use tracing::debug;
 
+use crate::protocol::map::Monster;
 use crate::protocol::{
     Stream,
     packet::{Packet, Parser},
@@ -41,6 +42,23 @@ impl Character {
             current_room: 0,
             description_len: incoming.description_len,
             description: incoming.description.clone(),
+        }
+    }
+
+    pub fn from_monster(incoming: &Monster, current_room: u16) -> Self {
+        Character {
+            author: None,
+            message_type: PktType::Character,
+            name: incoming.name.clone(),
+            flags: CharacterFlags::activate(true),
+            attack: incoming.attack,
+            defense: incoming.defense,
+            regen: 0, // Monsters don't regenerate health
+            health: incoming.health,
+            gold: incoming.gold,
+            current_room,
+            description_len: incoming.desc.len() as u16,
+            description: incoming.desc.clone(),
         }
     }
 }
