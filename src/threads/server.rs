@@ -526,20 +526,39 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     continue;
                 }
 
-                match map
+                let player_name = player.name.clone();
+
+                let player_idx = match map.players.iter().position(|p| p.name == player_name) {
+                    Some(idx) => idx,
+                    None => {
+                        warn!("[SERVER] Unable to find player {} in map", player_name);
+                        continue;
+                    }
+                };
+
+                let room = match map
                     .rooms
                     .iter_mut()
-                    .enumerate()
-                    .find(|(_, room)| room.room_number == old_room_number)
+                    .find(|room| room.room_number == old_room_number)
                 {
-                    Some((index, room)) => {
-                        info!("[SERVER] Removing player from old room");
-                        room.players.retain(|&player_index| player_index != index);
-                    }
+                    Some(room) => room,
                     None => {
                         warn!("[SERVER] Unable to find where the player left off in the map");
+                        continue;
                     }
-                }
+                };
+
+                room.players.retain(|&idx| idx != player_idx);
+
+                // map.message_room(
+                //     old_room_number,
+                //     format!("{}'s corpse disappeared into a puff of smoke.", player_name),
+                // )
+                // .unwrap_or_else(|e| {
+                //     error!("[SERVER] Failed to message room: {}", e);
+                // });
+
+                // TODO: We also need to alert the old room that the "body" disappears
                 // ^ ============================================================================ ^
             }
             Protocol::Leave(author, content) => {
