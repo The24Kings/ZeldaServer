@@ -391,19 +391,19 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // Check if the player has already been created (Primary Key -> Name).
                 // Create a new player and return it if not.
                 // We ignore the flags from the client and set the correct ones accordingly.
+                // Store the old room so that we may remove the player later and set ignore input room
                 // ================================================================================
                 let player = match map.player_from_name(&content.name) {
                     Some((_, player)) => {
                         info!("[SERVER] Reactivating character.");
+                        info!("[SERVER] Player left off in: {}", player.current_room);
+
                         player
                     }
                     None => {
                         info!("[SERVER] Adding character to map.");
 
-                        map.add_player(pkt_character::Character::from(
-                            Some(author.clone()),
-                            &updated_content,
-                        ));
+                        map.add_player(pkt_character::Character::to_default(&updated_content));
 
                         // Now get the newly added player
                         map.players
@@ -428,8 +428,11 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     continue;
                 }
 
+                let old_room_number = player.current_room;
+
                 player.flags = CharacterFlags::activate(false);
                 player.author = Some(author.clone());
+                player.current_room = 0; // Start in the first room
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -446,6 +449,30 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send character packet: {}", e);
                     });
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Remove the player from the room they left off in to avoid 2 players existing on
+                // the map at once
+                // ================================================================================
+                if old_room_number == 0 {
+                    continue;
+                }
+
+                match map
+                    .rooms
+                    .iter_mut()
+                    .enumerate()
+                    .find(|(_, room)| room.room_number == old_room_number)
+                {
+                    Some((index, room)) => {
+                        info!("[SERVER] Removing player from old room");
+                        room.players.retain(|&player_index| player_index != index);
+                    }
+                    None => {
+                        warn!("[SERVER] Unable to find where the player left off in the map");
+                    }
+                }
                 // ^ ============================================================================ ^
             }
             Protocol::Leave(author, content) => {

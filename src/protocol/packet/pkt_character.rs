@@ -27,9 +27,9 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn from(author: Option<Stream>, incoming: &Character) -> Self {
+    pub fn to_default(incoming: &Character) -> Self {
         Character {
-            author,
+            author: incoming.author.clone(),
             message_type: incoming.message_type,
             name: incoming.name.clone(),
             flags: CharacterFlags::default(),
