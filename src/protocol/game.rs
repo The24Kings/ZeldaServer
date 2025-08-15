@@ -10,7 +10,7 @@ use crate::protocol::{
 
 #[derive(Debug)]
 pub struct Map {
-    pub rooms: Vec<Room>, //TODO: Also change to HasMap and use the room id as the key
+    pub rooms: HashMap<u16, Room>,
     pub players: HashMap<String, pkt_character::Character>,
     pub desc: String,
 }
@@ -43,7 +43,7 @@ pub struct Monster {
 }
 
 impl Map {
-    pub fn new(rooms: Vec<Room>) -> Self {
+    pub fn new(rooms: HashMap<u16, Room>) -> Self {
         Map {
             rooms,
             players: HashMap::new(),
@@ -52,12 +52,18 @@ impl Map {
     }
 
     pub fn build(data: File) -> Result<Self, serde_json::Error> {
+        let mut rooms: HashMap<u16, Room> = HashMap::new();
+
         info!("[MAP] Building game map...");
 
         let deserialized: Vec<Room> = serde_json::from_reader(&data)?;
         info!("[MAP] Game map built with {} rooms.", deserialized.len());
 
-        Ok(Map::new(deserialized))
+        for room in deserialized {
+            rooms.insert(room.room_number, room);
+        }
+
+        Ok(Map::new(rooms))
     }
 
     pub fn add_player(&mut self, player: pkt_character::Character) {
@@ -82,11 +88,10 @@ impl Map {
         })
     }
 
-    pub fn exits(&self, room_number: u16) -> Option<Vec<&Connection>> {
+    pub fn exits(&self, room_number: u16) -> Option<Vec<Connection>> {
         self.rooms
-            .iter()
-            .find(|r| r.room_number == room_number)
-            .map(|room| room.connections.iter().collect())
+            .get(&room_number)
+            .map(|room| room.connections.clone())
     }
 
     /// Broadcast a message to all players in the game via Message packets.
@@ -132,8 +137,7 @@ impl Map {
 
         let room = self
             .rooms
-            .iter()
-            .find(|r| r.room_number == room_number)
+            .get(&room_number)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Room not found"))?;
 
         room.players.iter().for_each(|name| {
@@ -186,8 +190,7 @@ impl Map {
 
         let room = self
             .rooms
-            .iter()
-            .find(|r| r.room_number == room_number)
+            .get(&room_number)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Room not found"))?;
 
         room.players.iter().for_each(|name| {

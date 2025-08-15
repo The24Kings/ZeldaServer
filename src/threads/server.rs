@@ -96,11 +96,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 }
 
                 // Check if the room is a valid connection
-                let cur_room = match map
-                    .rooms
-                    .iter_mut()
-                    .find(|room| room.room_number == player.current_room)
-                {
+                let cur_room = match map.rooms.get_mut(&player.current_room) {
                     Some(room) => room,
                     None => {
                         Protocol::Error(
@@ -138,11 +134,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 cur_room.players.retain(|name| name != &player.name);
 
                 // Find the next room in the map, add the player, and send it off
-                let new_room = match map
-                    .rooms
-                    .iter_mut()
-                    .find(|room| room.room_number == content.room_number)
-                {
+                let new_room = match map.rooms.get_mut(&content.room_number) {
                     Some(room) => room,
                     None => {
                         Protocol::Error(
@@ -204,7 +196,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 for new_room in connections {
                     Protocol::Connection(
                         author.clone(),
-                        pkt_connection::Connection::from(new_room),
+                        pkt_connection::Connection::from(&new_room),
                     )
                     .send()
                     .unwrap_or_else(|e| {
@@ -295,10 +287,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
-                let (player_idx, player) = match map.player_from_stream(&author) {
-                    Some((index, player)) => {
-                        info!("[SERVER] Found player at index: {}", index);
-                        (index, player)
+                let player = match map.player_from_stream(&author) {
+                    Some((_, player)) => {
+                        info!("[SERVER] Found player '{}'", player.name);
+                        player
                     }
                     None => {
                         error!("[SERVER] Unable to find player in map");
@@ -332,7 +324,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send the starting room and connections to the client
                 // ================================================================================
-                let room = match map.rooms.iter_mut().find(|room| room.room_number == 0) {
+                let room = match map.rooms.get_mut(&0) {
                     Some(room) => room,
                     None => {
                         error!("[SERVER] Unable to find room in map");
@@ -362,7 +354,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 };
 
                 for room in connections {
-                    Protocol::Connection(author.clone(), pkt_connection::Connection::from(room))
+                    Protocol::Connection(author.clone(), pkt_connection::Connection::from(&room))
                         .send()
                         .unwrap_or_else(|e| {
                             error!("[SERVER] Failed to send connection packet: {}", e);
@@ -520,11 +512,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 let player_clone = player.clone(); // Borrow and mutability band-aids :smil:
                 let player_name = player.name.clone();
 
-                let room = match map
-                    .rooms
-                    .iter_mut()
-                    .find(|room| room.room_number == old_room_number)
-                {
+                let room = match map.rooms.get_mut(&old_room_number) {
                     Some(room) => room,
                     None => {
                         warn!("[SERVER] Unable to find where the player left off in the map");
