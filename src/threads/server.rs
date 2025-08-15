@@ -78,11 +78,17 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
+                // Clone the player here to end the mutable borrow of map
+                let player_clone = player.clone();
+                let player_name = player.name.clone();
+                let cur_room_id = player.current_room;
+                let nxt_room_id = content.room_number;
+
                 // ================================================================================
                 // Check to make sure the player exists, is in the given room, and can move to the
                 // given connection. Shuffle the player around to the next room and send data.
                 // ================================================================================
-                if player.current_room == content.room_number {
+                if cur_room_id == nxt_room_id {
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Player is already in the room"),
@@ -94,9 +100,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
 
                     continue;
                 }
-
                 // Check if the room is a valid connection
-                let cur_room = match map.rooms.get_mut(&player.current_room) {
+                let cur_room = match map.rooms.get_mut(&cur_room_id) {
                     Some(room) => room,
                     None => {
                         Protocol::Error(
@@ -112,29 +117,35 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
-                let valid_connection = cur_room
-                    .connections
-                    .iter()
-                    .any(|exit| exit.room_number == content.room_number);
+                match cur_room.connections.get(&nxt_room_id) {
+                    Some(exit) => {
+                        info!("[SERVER] Found connection: '{}'", exit.title);
 
-                if !valid_connection {
-                    Protocol::Error(
-                        author.clone(),
-                        pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        info!(
+                            "[SERVER] Setting players's current room to: {}",
+                            nxt_room_id
+                        );
+                        player.current_room = nxt_room_id; //FIXME: Causes issues with borrowing twice as mut
+                    }
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
 
-                    continue;
+                        continue;
+                    }
                 }
 
                 info!("[SERVER] Removing player from old room");
-                cur_room.players.retain(|name| name != &player.name);
+                cur_room.players.retain(|name| *name != player_name);
 
                 // Find the next room in the map, add the player, and send it off
-                let new_room = match map.rooms.get_mut(&content.room_number) {
+                let new_room = match map.rooms.get_mut(&nxt_room_id) {
                     Some(room) => room,
                     None => {
                         Protocol::Error(
@@ -151,7 +162,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 };
 
                 info!("[SERVER] Adding player to new room");
-                new_room.players.push(player.name.clone());
+                new_room.players.push(player_name);
 
                 Protocol::Room(author.clone(), pkt_room::Room::from(new_room.clone()))
                     .send()
@@ -168,12 +179,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 info!("[SERVER] Updating player room");
 
-                let old_room = player.current_room;
-                player.current_room = content.room_number;
-
-                // Clone the player here to end the mutable borrow of map
-                let player_clone = player.clone();
-
                 // Send the updated character back to the client
                 Protocol::Character(author.clone(), player_clone.clone())
                     .send()
@@ -185,15 +190,15 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send all connections to the client
                 // ================================================================================
-                let connections = match map.exits(content.room_number) {
+                let connections = match map.exits(nxt_room_id) {
                     Some(exits) => exits,
                     None => {
-                        error!("[SERVER] No exits for room {}", content.room_number);
+                        error!("[SERVER] No exits for room {}", nxt_room_id);
                         continue;
                     }
                 };
 
-                for new_room in connections {
+                for (_, new_room) in connections {
                     Protocol::Connection(
                         author.clone(),
                         pkt_connection::Connection::from(&new_room),
@@ -208,9 +213,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Update info for all other connected clients
                 // ================================================================================
-                map.alert_room(old_room, &player_clone).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
+                map.alert_room(cur_room_id, &player_clone)
+                    .unwrap_or_else(|e| {
+                        warn!("[SERVER] Failed to alert players: {}", e);
+                    });
 
                 map.alert_room(content.room_number, &player_clone)
                     .unwrap_or_else(|e| {
@@ -353,7 +359,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
-                for room in connections {
+                for (_, room) in connections {
                     Protocol::Connection(author.clone(), pkt_connection::Connection::from(&room))
                         .send()
                         .unwrap_or_else(|e| {

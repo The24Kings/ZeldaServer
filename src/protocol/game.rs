@@ -19,7 +19,7 @@ pub struct Map {
 pub struct Room {
     pub room_number: u16,
     pub title: String,
-    pub connections: Vec<Connection>,
+    pub connections: HashMap<u16, Connection>,
     pub desc: String,
     pub players: Vec<String>,
     pub monsters: Option<Vec<Monster>>,
@@ -88,7 +88,7 @@ impl Map {
         })
     }
 
-    pub fn exits(&self, room_number: u16) -> Option<Vec<Connection>> {
+    pub fn exits(&self, room_number: u16) -> Option<HashMap<u16, Connection>> {
         self.rooms
             .get(&room_number)
             .map(|room| room.connections.clone())
