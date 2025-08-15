@@ -5,7 +5,7 @@ use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
 use tracing::{debug, info, warn};
 
-use crate::protocol::game::Map;
+use crate::protocol::game;
 use crate::threads::{processor::connection, server::server};
 
 pub mod protocol;
@@ -37,13 +37,13 @@ fn main() -> ! {
     // Build the game map
     let path = env::var("MAP_FILEPATH").expect("[MAIN] MAP_FILEPATH must be set.");
     let file = File::open(path).expect("[MAIN] Failed to open map file!");
-    let mut map = Map::build(file).expect("[MAIN] Failed to build map from file");
+    let mut rooms = game::build(file).expect("[MAIN] Failed to build map from file");
 
     // Start the server thread with the map
     info!("[MAIN] Parsed map successfully");
 
     let _ = std::thread::spawn(move || {
-        server(receiver, &mut map);
+        server(receiver, &mut rooms);
     });
 
     loop {
