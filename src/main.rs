@@ -5,7 +5,7 @@ use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
 use tracing::{debug, info, warn};
 
-use crate::protocol::map::Map;
+use crate::protocol::game::Map;
 use crate::threads::{processor::connection, server::server};
 
 pub mod protocol;
@@ -39,9 +39,6 @@ fn main() -> ! {
     let file = File::open(path).expect("[MAIN] Failed to open map file!");
     let mut map = Map::build(file).expect("[MAIN] Failed to build map from file");
 
-    let initial_points = map.init_points;
-    let stat_limit = map.stat_limit;
-
     // Start the server thread with the map
     info!("[MAIN] Parsed map successfully");
 
@@ -59,7 +56,7 @@ fn main() -> ! {
 
                 // Handle the connection in a separate thread
                 let client_h = std::thread::spawn(move || {
-                    connection(stream, initial_points, stat_limit, sender);
+                    connection(stream, sender);
                 });
 
                 debug!("[MAIN] Spawned client thread: {:?}", client_h.thread().id());

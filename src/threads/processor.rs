@@ -5,7 +5,7 @@ use tracing::{error, info, warn};
 use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
 use crate::protocol::{Protocol, Stream, client::Client, pkt_type::PktType};
 
-pub fn connection(stream: Stream, initial_points: u16, stat_limit: u16, sender: Sender<Protocol>) {
+pub fn connection(stream: Stream, sender: Sender<Protocol>) {
     let client = Client::new(stream.clone(), sender);
 
     let filepath = env::var("DESC_FILEPATH").expect("[CONNECT] DESC_FILEPATH must be set.");
@@ -39,8 +39,14 @@ pub fn connection(stream: Stream, initial_points: u16, stat_limit: u16, sender: 
         stream.clone(),
         pkt_game::Game {
             message_type: PktType::Game,
-            initial_points,
-            stat_limit,
+            initial_points: env::var("INITIAL_POINTS")
+                .expect("[MAP] INITIAL_POINTS must be set.")
+                .parse()
+                .expect("[MAP] Failed to parse INITIAL_POINTS"),
+            stat_limit: env::var("STAT_LIMIT")
+                .expect("[MAP] STAT_LIMIT must be set.")
+                .parse()
+                .expect("[MAP] Failed to parse STAT_LIMIT"),
             description_len: description.len() as u16,
             description,
         },

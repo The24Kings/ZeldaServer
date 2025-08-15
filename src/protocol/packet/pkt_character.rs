@@ -3,7 +3,7 @@ use std::os::fd::AsRawFd;
 use std::{fmt::LowerHex, os::fd::AsFd};
 use tracing::debug;
 
-use crate::protocol::map::Monster;
+use crate::protocol::game::Monster;
 use crate::protocol::{
     Stream,
     packet::{Packet, Parser},

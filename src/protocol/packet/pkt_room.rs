@@ -3,7 +3,7 @@ use std::io::Write;
 use tracing::debug;
 
 use crate::protocol::{
-    map,
+    game,
     packet::{Packet, Parser},
     pcap::PCap,
     pkt_type::PktType,
@@ -41,8 +41,8 @@ impl Room {
     }
 }
 
-impl From<map::Room> for Room {
-    fn from(room: map::Room) -> Self {
+impl From<game::Room> for Room {
+    fn from(room: game::Room) -> Self {
         Room {
             message_type: PktType::Room,
             room_number: room.room_number,

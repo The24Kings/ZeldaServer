@@ -4,7 +4,7 @@ use tracing::{debug, error, info, warn};
 use crate::protocol::packet::{
     pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
 };
-use crate::protocol::{Protocol, error::ErrorCode, map::Map, pkt_type::PktType};
+use crate::protocol::{Protocol, error::ErrorCode, game::Map, pkt_type::PktType};
 
 pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
     loop {

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{env, fs::File, sync::Arc};
+use std::{collections::HashMap, fs::File, sync::Arc};
 use tracing::{debug, error, info, warn};
 
 use crate::protocol::{
@@ -10,10 +10,8 @@ use crate::protocol::{
 
 #[derive(Debug)]
 pub struct Map {
-    pub init_points: u16,
-    pub stat_limit: u16,
     pub rooms: Vec<Room>,
-    pub players: Vec<pkt_character::Character>,
+    pub players: HashMap<String, pkt_character::Character>,
     pub desc: String,
 }
 
@@ -23,7 +21,7 @@ pub struct Room {
     pub title: String,
     pub connections: Vec<Connection>,
     pub desc: String,
-    pub players: Vec<usize>, // Indices of players in the map's player list
+    pub players: Vec<String>,
     pub monsters: Option<Vec<Monster>>,
 }
 
@@ -47,16 +45,8 @@ pub struct Monster {
 impl Map {
     pub fn new(rooms: Vec<Room>) -> Self {
         Map {
-            init_points: env::var("INITIAL_POINTS")
-                .expect("[MAP] INITIAL_POINTS must be set.")
-                .parse()
-                .expect("[MAP] Failed to parse INITIAL_POINTS"),
-            stat_limit: env::var("STAT_LIMIT")
-                .expect("[MAP] STAT_LIMIT must be set.")
-                .parse()
-                .expect("[MAP] Failed to parse STAT_LIMIT"),
             rooms,
-            players: Vec::new(),
+            players: HashMap::new(),
             desc: String::new(),
         }
     }
@@ -71,28 +61,24 @@ impl Map {
     }
 
     pub fn add_player(&mut self, player: pkt_character::Character) {
-        self.players.push(player);
+        self.players.insert(player.name.clone(), player);
     }
 
-    pub fn player_from_name(
-        &mut self,
-        name: &String,
-    ) -> Option<(usize, &mut pkt_character::Character)> {
-        self.players
-            .iter_mut()
-            .enumerate()
-            .find(|(_, player)| player.name == *name)
+    pub fn player_from_name(&mut self, name: &String) -> Option<&mut pkt_character::Character> {
+        self.players.get_mut(name)
     }
 
     pub fn player_from_stream(
         &mut self,
         stream: &Stream,
-    ) -> Option<(usize, &mut pkt_character::Character)> {
-        self.players.iter_mut().enumerate().find(|(_, player)| {
-            player
-                .author
-                .as_ref()
-                .map_or(false, |a| Arc::ptr_eq(a, &stream))
+    ) -> Option<(&String, &mut pkt_character::Character)> {
+        self.players.iter_mut().find(|(_, player)| {
+            let author = player.author.as_ref().ok_or_else(|| false);
+
+            match author {
+                Ok(author) => Arc::ptr_eq(&author, stream),
+                Err(_) => false,
+            }
         })
     }
 
@@ -108,7 +94,7 @@ impl Map {
         info!("[BROADCAST] Sending message: {}", message);
 
         // Send the packet to the server
-        for player in &self.players {
+        for (_, player) in &self.players {
             let author = player.author.as_ref().ok_or_else(|| {
                 std::io::Error::new(std::io::ErrorKind::NotFound, "Author not found")
             })?;
@@ -150,14 +136,11 @@ impl Map {
             .find(|r| r.room_number == room_number)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Room not found"))?;
 
-        room.players.iter().for_each(|&player_index| {
-            let player = match self.players.get(player_index) {
+        room.players.iter().for_each(|name| {
+            let player = match self.players.get(name) {
                 Some(player) => player,
                 None => {
-                    error!(
-                        "[ROOM MESSAGE] Player index '{}' out of bounds",
-                        player_index
-                    );
+                    error!("[ROOM MESSAGE] Player '{}' doesn't exist!", name);
                     return;
                 }
             };
@@ -165,12 +148,12 @@ impl Map {
             let author = match player.author.as_ref() {
                 Some(author) => author,
                 None => {
-                    warn!("[ROOM MESSAGE] Player {} is not connected", player.name);
+                    warn!("[ROOM MESSAGE] Player '{}' is not connected", name);
                     return;
                 }
             };
 
-            debug!("[ROOM MESSAGE] Sending message to {}", player.name);
+            debug!("[ROOM MESSAGE] Sending message to '{}'", name);
 
             Protocol::Message(
                 author.clone(),
@@ -185,10 +168,7 @@ impl Map {
             )
             .send()
             .unwrap_or_else(|e| {
-                error!(
-                    "[ROOM MESSAGE] Failed to send message to {}: {}",
-                    player.name, e
-                );
+                error!("[ROOM MESSAGE] Failed to send message to '{}': {}", name, e);
             });
         });
 
@@ -202,7 +182,7 @@ impl Map {
         room_number: u16,
         player: &pkt_character::Character,
     ) -> Result<(), std::io::Error> {
-        info!("[ALERT] Alerting players about: {}", player.name);
+        info!("[ALERT] Alerting players about: '{}'", player.name);
 
         let room = self
             .rooms
@@ -210,27 +190,31 @@ impl Map {
             .find(|r| r.room_number == room_number)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Room not found"))?;
 
-        room.players
-            .iter()
-            .for_each(|&player_index| match self.players.get(player_index) {
-                Some(to_alert) => {
-                    debug!("[ALERT] Alerting player: {}", to_alert.name);
+        room.players.iter().for_each(|name| {
+            debug!("[ALERT] Alerting player: '{}'", name);
 
-                    match to_alert.author.as_ref() {
-                        Some(stream) => Protocol::Character(stream.clone(), player.clone())
-                            .send()
-                            .unwrap_or_else(|e| {
-                                error!("[ALERT] Failed to alert '{}': {}", to_alert.name, e);
-                            }),
-                        None => {
-                            warn!("[ALERT] Player {} is not connected", to_alert.name);
-                        }
-                    }
-                }
+            let player = match self.players.get(name) {
+                Some(player) => player,
                 None => {
-                    error!("[ALERT] Player index '{}' out of bounds", player_index);
+                    error!("[ALERT] Player '{}' doesn't exist!", name);
+                    return;
                 }
-            });
+            };
+
+            let author = match player.author.as_ref() {
+                Some(author) => author,
+                None => {
+                    warn!("[ALERT] Player '{}' is not connected", player.name);
+                    return;
+                }
+            };
+
+            Protocol::Character(author.clone(), player.clone())
+                .send()
+                .unwrap_or_else(|e| {
+                    error!("[ALERT] Failed to alert '{}': {}", name, e);
+                })
+        });
 
         Ok(())
     }
