@@ -1,3 +1,4 @@
+use std::env;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use tracing::{debug, error, info, warn};
 
@@ -23,11 +24,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
-                let player = match map
-                    .players
-                    .iter_mut()
-                    .find(|player| player.name == content.recipient)
-                {
+                let player = match map.players.get(&content.recipient) {
                     Some(player) => player,
                     None => {
                         Protocol::Error(
@@ -73,22 +70,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
-                let (player_idx, player) =
-                    match map.players.iter_mut().enumerate().find(|(_, player)| {
-                        player
-                            .author
-                            .as_ref()
-                            .map_or(false, |a| Arc::ptr_eq(a, &author))
-                    }) {
-                        Some((index, player)) => {
-                            info!("[SERVER] Found player at index: {}", index);
-                            (index, player)
-                        }
-                        None => {
-                            error!("[SERVER] Unable to find player in map");
-                            continue;
-                        }
-                    };
+                let player = match map.player_from_stream(&author) {
+                    Some((_, player)) => player,
+                    None => {
+                        error!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
 
                 // ================================================================================
                 // Check to make sure the player exists, is in the given room, and can move to the
@@ -147,7 +135,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 }
 
                 info!("[SERVER] Removing player from old room");
-                cur_room.players.retain(|&index| index != player_idx);
+                cur_room.players.retain(|name| name != &player.name);
 
                 // Find the next room in the map, add the player, and send it off
                 let new_room = match map
@@ -171,7 +159,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 };
 
                 info!("[SERVER] Adding player to new room");
-                new_room.players.push(player_idx);
+                new_room.players.push(player.name.clone());
 
                 Protocol::Room(author.clone(), pkt_room::Room::from(new_room.clone()))
                     .send()
@@ -241,7 +229,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|&idx| map.players.get(idx));
+                let players = room_players.iter().filter_map(|name| map.players.get(name));
 
                 debug!("[SERVER] Players: {:?}", players);
 
@@ -354,7 +342,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
 
                 info!("[SERVER] Adding player to starting room");
 
-                room.players.push(player_idx);
+                room.players.push(player_clone.name);
 
                 let room_players = room.players.clone();
                 let room_monsters = room.monsters.clone();
@@ -385,7 +373,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|&idx| map.players.get(idx));
+                let players = room_players.iter().filter_map(|name| map.players.get(name));
 
                 debug!("[SERVER] Players: {:?}", players);
 
@@ -420,13 +408,18 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Check the given stats are valid, if not all points have been allocated, do so equally.
                 // ================================================================================
+                let init_points = env::var("INITIAL_POINTS") // This shouldn't panic here because we expect this as soon as a player connects (before this packet can be sent)
+                    .expect("[MAP] INITIAL_POINTS must be set.")
+                    .parse()
+                    .expect("[MAP] Failed to parse INITIAL_POINTS");
+
                 let total_stats = content
                     .attack
                     .checked_add(content.defense)
                     .and_then(|sum| sum.checked_add(content.regen))
-                    .unwrap_or(map.init_points + 1); // This will cause the next check to fail
+                    .unwrap_or(init_points + 1); // This will cause the next check to fail
 
-                if total_stats > map.init_points {
+                if total_stats > init_points {
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
@@ -441,16 +434,16 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
 
                 let mut updated_content = content.clone();
 
-                if total_stats < map.init_points && content.attack < 1
+                if total_stats < init_points && content.attack < 1
                     || content.defense < 1
                     || content.regen < 1
                 {
                     info!("[SERVER] Distributing remaining stat points");
 
                     // Distribute the remaining stat points equally
-                    updated_content.attack += (map.init_points - total_stats) / 3;
-                    updated_content.defense += (map.init_points - total_stats) / 3;
-                    updated_content.regen += (map.init_points - total_stats) / 3;
+                    updated_content.attack += (init_points - total_stats) / 3;
+                    updated_content.defense += (init_points - total_stats) / 3;
+                    updated_content.regen += (init_points - total_stats) / 3;
                 }
                 // ^ ============================================================================ ^
 
@@ -461,7 +454,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // Store the old room so that we may remove the player later and set ignore input room
                 // ================================================================================
                 let player = match map.player_from_name(&content.name) {
-                    Some((_, player)) => {
+                    Some(player) => {
                         info!("[SERVER] Reactivating character.");
                         info!("[SERVER] Player left off in: {}", player.current_room);
 
@@ -473,9 +466,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                         map.add_player(pkt_character::Character::to_default(&updated_content));
 
                         // Now get the newly added player
-                        map.players
-                            .last_mut()
-                            .expect("[SERVER] Player just added should exist") // Should never fail, the previous function would panic if we run out of memory
+                        map.players.get_mut(&updated_content.name).unwrap() // Should never panic because we JUST added this player to the map...
                     }
                 };
 
@@ -529,14 +520,6 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 let player_clone = player.clone(); // Borrow and mutability band-aids :smil:
                 let player_name = player.name.clone();
 
-                let player_idx = match map.players.iter().position(|p| p.name == player_name) {
-                    Some(idx) => idx,
-                    None => {
-                        warn!("[SERVER] Unable to find player in map");
-                        continue;
-                    }
-                };
-
                 let room = match map
                     .rooms
                     .iter_mut()
@@ -549,7 +532,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
-                room.players.retain(|&idx| idx != player_idx);
+                room.players.retain(|name| name != &player_name);
 
                 map.message_room(
                     old_room_number,

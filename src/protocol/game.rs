@@ -10,7 +10,7 @@ use crate::protocol::{
 
 #[derive(Debug)]
 pub struct Map {
-    pub rooms: Vec<Room>,
+    pub rooms: Vec<Room>, //TODO: Also change to HasMap and use the room id as the key
     pub players: HashMap<String, pkt_character::Character>,
     pub desc: String,
 }
