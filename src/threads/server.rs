@@ -1,15 +1,19 @@
 use std::collections::HashMap;
-use std::env;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use tracing::{debug, error, info, warn};
 
+use crate::config::Config;
 use crate::protocol::game::{self, Room};
 use crate::protocol::packet::{
     pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
 };
 use crate::protocol::{Protocol, error::ErrorCode, pkt_type::PktType};
 
-pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, rooms: &mut HashMap<u16, Room>) {
+pub fn server(
+    receiver: Arc<Mutex<Receiver<Protocol>>>,
+    config: Arc<Config>,
+    rooms: &mut HashMap<u16, Room>,
+) {
     let mut players: HashMap<String, pkt_character::Character> = HashMap::new();
 
     loop {
@@ -408,18 +412,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, rooms: &mut HashMap<u16,
                 // ================================================================================
                 // Check the given stats are valid, if not all points have been allocated, do so equally.
                 // ================================================================================
-                let init_points = env::var("INITIAL_POINTS") // This shouldn't panic here because we expect this as soon as a player connects (before this packet can be sent)
-                    .expect("[MAP] INITIAL_POINTS must be set.")
-                    .parse()
-                    .expect("[MAP] Failed to parse INITIAL_POINTS");
-
                 let total_stats = content
                     .attack
                     .checked_add(content.defense)
                     .and_then(|sum| sum.checked_add(content.regen))
-                    .unwrap_or(init_points + 1); // This will cause the next check to fail
+                    .unwrap_or(config.initial_points + 1); // This will cause the next check to fail
 
-                if total_stats > init_points {
+                if total_stats > config.initial_points {
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
@@ -434,16 +433,16 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, rooms: &mut HashMap<u16,
 
                 let mut updated_content = content.clone();
 
-                if total_stats < init_points && content.attack < 1
+                if total_stats < config.initial_points && content.attack < 1
                     || content.defense < 1
                     || content.regen < 1
                 {
                     info!("[SERVER] Distributing remaining stat points");
 
                     // Distribute the remaining stat points equally
-                    updated_content.attack += (init_points - total_stats) / 3;
-                    updated_content.defense += (init_points - total_stats) / 3;
-                    updated_content.regen += (init_points - total_stats) / 3;
+                    updated_content.attack += (config.initial_points - total_stats) / 3;
+                    updated_content.defense += (config.initial_points - total_stats) / 3;
+                    updated_content.regen += (config.initial_points - total_stats) / 3;
                 }
                 // ^ ============================================================================ ^
 

@@ -5,9 +5,11 @@ use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
 use tracing::{debug, info, warn};
 
+use crate::config::Config;
 use crate::protocol::game;
 use crate::threads::{processor::connection, server::server};
 
+pub mod config;
 pub mod protocol;
 pub mod threads;
 
@@ -22,6 +24,9 @@ struct Args {
 fn main() -> ! {
     dotenvy::dotenv().expect("[MAIN] Failed to load .env file");
     tracing_config::init!();
+
+    let server_config = Arc::new(Config::load());
+    let client_config = server_config.clone(); // The Arc will handle all reference counting, it's not actually cloning all the data :)
 
     let args = Args::parse();
 
@@ -43,7 +48,7 @@ fn main() -> ! {
     info!("[MAIN] Parsed map successfully");
 
     let _ = std::thread::spawn(move || {
-        server(receiver, &mut rooms);
+        server(receiver, server_config, &mut rooms);
     });
 
     loop {
@@ -53,10 +58,11 @@ fn main() -> ! {
 
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
+                let client_config = client_config.clone();
 
                 // Handle the connection in a separate thread
                 let client_h = std::thread::spawn(move || {
-                    connection(stream, sender);
+                    connection(stream, sender, client_config);
                 });
 
                 debug!("[MAIN] Spawned client thread: {:?}", client_h.thread().id());
