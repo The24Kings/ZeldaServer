@@ -172,9 +172,9 @@ pub fn alert_room(
     players: &HashMap<String, pkt_character::Character>,
     rooms: &HashMap<u16, Room>,
     room_number: u16,
-    player: &pkt_character::Character,
+    alert: &pkt_character::Character,
 ) -> Result<(), std::io::Error> {
-    info!("[ALERT] Alerting players about: '{}'", player.name);
+    info!("[ALERT] Alerting players about: '{}'", alert.name);
 
     let room = rooms
         .get(&room_number)
@@ -199,7 +199,7 @@ pub fn alert_room(
             }
         };
 
-        Protocol::Character(author.clone(), player.clone())
+        Protocol::Character(author.clone(), alert.clone())
             .send()
             .unwrap_or_else(|e| {
                 error!("[ALERT] Failed to alert '{}': {}", name, e);
