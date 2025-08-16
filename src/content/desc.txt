@@ -10,7 +10,6 @@
 || 
 ||           | Missing Feature | Status        |
 ||           | ----------------| ------------- |
-||           | Send Monsters   | Next in Queue |
 ||           | Fighting        | Blocked       |
 ||           | Looting         | Blocked       |
 ||           | Dynamic Map     | Drafting      |

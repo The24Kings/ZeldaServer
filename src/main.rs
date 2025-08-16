@@ -5,9 +5,11 @@ use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
 use tracing::{debug, info, warn};
 
-use crate::protocol::map::Map;
+use crate::config::Config;
+use crate::protocol::game;
 use crate::threads::{processor::connection, server::server};
 
+pub mod config;
 pub mod protocol;
 pub mod threads;
 
@@ -23,6 +25,9 @@ fn main() -> ! {
     dotenvy::dotenv().expect("[MAIN] Failed to load .env file");
     tracing_config::init!();
 
+    let server_config = Arc::new(Config::load());
+    let client_config = server_config.clone(); // The Arc will handle all reference counting, it's not actually cloning all the data :)
+
     let args = Args::parse();
 
     let address = format!("0.0.0.0:{}", args.port);
@@ -37,16 +42,13 @@ fn main() -> ! {
     // Build the game map
     let path = env::var("MAP_FILEPATH").expect("[MAIN] MAP_FILEPATH must be set.");
     let file = File::open(path).expect("[MAIN] Failed to open map file!");
-    let mut map = Map::build(file).expect("[MAIN] Failed to build map from file");
-
-    let initial_points = map.init_points;
-    let stat_limit = map.stat_limit;
+    let mut rooms = game::build(file).expect("[MAIN] Failed to build map from file");
 
     // Start the server thread with the map
     info!("[MAIN] Parsed map successfully");
 
     let _ = std::thread::spawn(move || {
-        server(receiver, &mut map);
+        server(receiver, server_config, &mut rooms);
     });
 
     loop {
@@ -56,10 +58,11 @@ fn main() -> ! {
 
                 let stream = Arc::new(stream);
                 let sender = tx.clone();
+                let client_config = client_config.clone();
 
                 // Handle the connection in a separate thread
                 let client_h = std::thread::spawn(move || {
-                    connection(stream, initial_points, stat_limit, sender);
+                    connection(stream, sender, client_config);
                 });
 
                 debug!("[MAIN] Spawned client thread: {:?}", client_h.thread().id());

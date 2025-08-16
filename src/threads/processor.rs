@@ -1,30 +1,23 @@
-use std::env;
-use std::sync::mpsc::Sender;
+use std::sync::{Arc, mpsc::Sender};
 use tracing::{error, info, warn};
 
+use crate::config::Config;
 use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
 use crate::protocol::{Protocol, Stream, client::Client, pkt_type::PktType};
 
-pub fn connection(stream: Stream, initial_points: u16, stat_limit: u16, sender: Sender<Protocol>) {
+pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>) {
     let client = Client::new(stream.clone(), sender);
 
-    let filepath = env::var("DESC_FILEPATH").expect("[CONNECT] DESC_FILEPATH must be set.");
-    let description =
-        std::fs::read_to_string(filepath).expect("[CONNECT] Failed to read description file!");
+    let description = std::fs::read_to_string(&config.description_path)
+        .expect("[CONNECT] Failed to read description file!");
 
     // Send the initial game info to the client
     Protocol::Version(
         stream.clone(),
         pkt_version::Version {
             message_type: PktType::Version,
-            major_rev: env::var("MAJOR_REV")
-                .expect("[CONNECT] MAJOR_REV must be set.")
-                .parse()
-                .expect("[CONNECT] Failed to parse MAJOR_REV"),
-            minor_rev: env::var("MINOR_REV")
-                .expect("[CONNECT] MINOR_REV must be set.")
-                .parse()
-                .expect("[CONNECT] Failed to parse MINOR_REV"),
+            major_rev: config.major_rev,
+            minor_rev: config.minor_rev,
             extension_len: 0,
             extensions: None,
         },
@@ -39,8 +32,8 @@ pub fn connection(stream: Stream, initial_points: u16, stat_limit: u16, sender: 
         stream.clone(),
         pkt_game::Game {
             message_type: PktType::Game,
-            initial_points,
-            stat_limit,
+            initial_points: config.initial_points,
+            stat_limit: config.stat_limit,
             description_len: description.len() as u16,
             description,
         },

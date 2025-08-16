@@ -3,7 +3,7 @@ use std::io::Write;
 use tracing::debug;
 
 use crate::protocol::{
-    map,
+    game,
     packet::{Packet, Parser},
     pcap::PCap,
     pkt_type::PktType,
@@ -18,9 +18,9 @@ pub struct Connection {
     pub description: String,
 }
 
-impl From<&map::Connection> for Connection {
+impl From<&game::Connection> for Connection {
     /// Create a new connection from the game map to send to the client
-    fn from(conn: &map::Connection) -> Self {
+    fn from(conn: &game::Connection) -> Self {
         Connection {
             message_type: PktType::Connection,
             room_number: conn.room_number,

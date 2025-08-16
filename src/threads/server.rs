@@ -1,12 +1,21 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use tracing::{debug, error, info, warn};
 
+use crate::config::Config;
+use crate::protocol::game::{self, Room};
 use crate::protocol::packet::{
     pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
 };
-use crate::protocol::{Protocol, error::ErrorCode, map::Map, pkt_type::PktType};
+use crate::protocol::{Protocol, error::ErrorCode, pkt_type::PktType};
 
-pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
+pub fn server(
+    receiver: Arc<Mutex<Receiver<Protocol>>>,
+    config: Arc<Config>,
+    rooms: &mut HashMap<u16, Room>,
+) {
+    let mut players: HashMap<String, pkt_character::Character> = HashMap::new();
+
     loop {
         let packet = match receiver.lock().unwrap().recv() {
             Ok(packet) => packet,
@@ -23,11 +32,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
-                let player = match map
-                    .players
-                    .iter_mut()
-                    .find(|player| player.name == content.recipient)
-                {
+                let player = match players.get(&content.recipient) {
                     Some(player) => player,
                     None => {
                         Protocol::Error(
@@ -73,28 +78,22 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
-                let (player_idx, player) =
-                    match map.players.iter_mut().enumerate().find(|(_, player)| {
-                        player
-                            .author
-                            .as_ref()
-                            .map_or(false, |a| Arc::ptr_eq(a, &author))
-                    }) {
-                        Some((index, player)) => {
-                            info!("[SERVER] Found player at index: {}", index);
-                            (index, player)
-                        }
-                        None => {
-                            error!("[SERVER] Unable to find player in map");
-                            continue;
-                        }
-                    };
+                let player = match game::player_from_stream(&mut players, author.clone()) {
+                    Some((_, player)) => player,
+                    None => {
+                        error!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
+
+                let cur_room_id = player.current_room;
+                let nxt_room_id = content.room_number;
 
                 // ================================================================================
                 // Check to make sure the player exists, is in the given room, and can move to the
                 // given connection. Shuffle the player around to the next room and send data.
                 // ================================================================================
-                if player.current_room == content.room_number {
+                if cur_room_id == nxt_room_id {
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::BadRoom, "Player is already in the room"),
@@ -106,13 +105,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
 
                     continue;
                 }
-
                 // Check if the room is a valid connection
-                let cur_room = match map
-                    .rooms
-                    .iter_mut()
-                    .find(|room| room.room_number == player.current_room)
-                {
+                let cur_room = match rooms.get_mut(&cur_room_id) {
                     Some(room) => room,
                     None => {
                         Protocol::Error(
@@ -128,33 +122,32 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
-                let valid_connection = cur_room
-                    .connections
-                    .iter()
-                    .any(|exit| exit.room_number == content.room_number);
+                match cur_room.connections.get(&nxt_room_id) {
+                    Some(exit) => {
+                        info!("[SERVER] Found connection: '{}'", exit.title);
+                    }
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
 
-                if !valid_connection {
-                    Protocol::Error(
-                        author.clone(),
-                        pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
-
-                    continue;
+                        continue;
+                    }
                 }
 
+                info!("[SERVER] Setting current room to: {}", nxt_room_id);
+                player.current_room = nxt_room_id;
+
                 info!("[SERVER] Removing player from old room");
-                cur_room.players.retain(|&index| index != player_idx);
+                cur_room.players.retain(|name| *name != player.name);
 
                 // Find the next room in the map, add the player, and send it off
-                let new_room = match map
-                    .rooms
-                    .iter_mut()
-                    .find(|room| room.room_number == content.room_number)
-                {
+                let new_room = match rooms.get_mut(&nxt_room_id) {
                     Some(room) => room,
                     None => {
                         Protocol::Error(
@@ -171,7 +164,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 };
 
                 info!("[SERVER] Adding player to new room");
-                new_room.players.push(player_idx);
+                new_room.players.push(player.name.clone());
 
                 Protocol::Room(author.clone(), pkt_room::Room::from(new_room.clone()))
                     .send()
@@ -179,6 +172,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                         error!("[SERVER] Failed to send room packet: {}", e);
                     });
 
+                // Ends mutable borrow of new_room
                 let room_players = new_room.players.clone();
                 let room_monsters = new_room.monsters.clone();
                 // ^ ============================================================================ ^
@@ -188,14 +182,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 info!("[SERVER] Updating player room");
 
-                let old_room = player.current_room;
-                player.current_room = content.room_number;
-
-                // Clone the player here to end the mutable borrow of map
-                let player_clone = player.clone();
-
                 // Send the updated character back to the client
-                Protocol::Character(author.clone(), player_clone.clone())
+                Protocol::Character(author.clone(), player.clone())
                     .send()
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send character packet: {}", e);
@@ -205,18 +193,18 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send all connections to the client
                 // ================================================================================
-                let connections = match map.exits(content.room_number) {
+                let connections = match game::exits(&rooms, nxt_room_id) {
                     Some(exits) => exits,
                     None => {
-                        error!("[SERVER] No exits for room {}", content.room_number);
+                        error!("[SERVER] No exits for room {}", nxt_room_id);
                         continue;
                     }
                 };
 
-                for new_room in connections {
+                for (_, new_room) in connections {
                     Protocol::Connection(
                         author.clone(),
-                        pkt_connection::Connection::from(new_room),
+                        pkt_connection::Connection::from(&new_room),
                     )
                     .send()
                     .unwrap_or_else(|e| {
@@ -228,20 +216,23 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Update info for all other connected clients
                 // ================================================================================
-                map.alert_room(old_room, &player_clone).unwrap_or_else(|e| {
+                let player = player.clone(); // End mutable borrow of player
+
+                game::alert_room(&players, &rooms, cur_room_id, &player).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
 
-                map.alert_room(content.room_number, &player_clone)
-                    .unwrap_or_else(|e| {
+                game::alert_room(&players, &rooms, content.room_number, &player).unwrap_or_else(
+                    |e| {
                         warn!("[SERVER] Failed to alert players: {}", e);
-                    });
+                    },
+                );
                 // ^ ============================================================================ ^
 
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|&idx| map.players.get(idx));
+                let players = room_players.iter().filter_map(|name| players.get(name));
 
                 debug!("[SERVER] Players: {:?}", players);
 
@@ -307,10 +298,10 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
-                let (player_idx, player) = match map.player_from_stream(&author) {
-                    Some((index, player)) => {
-                        info!("[SERVER] Found player at index: {}", index);
-                        (index, player)
+                let player = match game::player_from_stream(&mut players, author.clone()) {
+                    Some((_, player)) => {
+                        info!("[SERVER] Found player '{}'", player.name);
+                        player
                     }
                     None => {
                         error!("[SERVER] Unable to find player in map");
@@ -323,19 +314,19 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 player.flags.started = true;
 
-                let player_clone = player.clone();
+                let player = player.clone(); // End mutable borrow of player
 
-                Protocol::Character(author.clone(), player_clone.clone())
+                Protocol::Character(author.clone(), player.clone())
                     .send()
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send character packet: {}", e);
                     });
 
-                map.alert_room(0, &player_clone).unwrap_or_else(|e| {
+                game::alert_room(&players, &rooms, 0, &player).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
 
-                map.broadcast(format!("{} has started the game!", player_clone.name))
+                game::broadcast(&players, format!("{} has started the game!", player.name))
                     .unwrap_or_else(|e| {
                         warn!("[SERVER] Failed to broadcast message: {}", e);
                     });
@@ -344,7 +335,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send the starting room and connections to the client
                 // ================================================================================
-                let room = match map.rooms.iter_mut().find(|room| room.room_number == 0) {
+                let room = match rooms.get_mut(&0) {
                     Some(room) => room,
                     None => {
                         error!("[SERVER] Unable to find room in map");
@@ -354,8 +345,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
 
                 info!("[SERVER] Adding player to starting room");
 
-                room.players.push(player_idx);
+                room.players.push(player.name);
 
+                // End mutable borrow of room
                 let room_players = room.players.clone();
                 let room_monsters = room.monsters.clone();
 
@@ -365,7 +357,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                         error!("[SERVER] Failed to send room packet: {}", e);
                     });
 
-                let connections = match map.exits(0) {
+                let connections = match game::exits(&rooms, 0) {
                     Some(exits) => exits,
                     None => {
                         error!("[SERVER] Unable to find room in map");
@@ -373,8 +365,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
-                for room in connections {
-                    Protocol::Connection(author.clone(), pkt_connection::Connection::from(room))
+                for (_, room) in connections {
+                    Protocol::Connection(author.clone(), pkt_connection::Connection::from(&room))
                         .send()
                         .unwrap_or_else(|e| {
                             error!("[SERVER] Failed to send connection packet: {}", e);
@@ -385,7 +377,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|&idx| map.players.get(idx));
+                let players = room_players.iter().filter_map(|name| players.get(name));
 
                 debug!("[SERVER] Players: {:?}", players);
 
@@ -424,9 +416,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     .attack
                     .checked_add(content.defense)
                     .and_then(|sum| sum.checked_add(content.regen))
-                    .unwrap_or(map.init_points + 1); // This will cause the next check to fail
+                    .unwrap_or(config.initial_points + 1); // This will cause the next check to fail
 
-                if total_stats > map.init_points {
+                if total_stats > config.initial_points {
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
@@ -441,16 +433,16 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
 
                 let mut updated_content = content.clone();
 
-                if total_stats < map.init_points && content.attack < 1
+                if total_stats < config.initial_points && content.attack < 1
                     || content.defense < 1
                     || content.regen < 1
                 {
                     info!("[SERVER] Distributing remaining stat points");
 
                     // Distribute the remaining stat points equally
-                    updated_content.attack += (map.init_points - total_stats) / 3;
-                    updated_content.defense += (map.init_points - total_stats) / 3;
-                    updated_content.regen += (map.init_points - total_stats) / 3;
+                    updated_content.attack += (config.initial_points - total_stats) / 3;
+                    updated_content.defense += (config.initial_points - total_stats) / 3;
+                    updated_content.regen += (config.initial_points - total_stats) / 3;
                 }
                 // ^ ============================================================================ ^
 
@@ -460,8 +452,8 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // We ignore the flags from the client and set the correct ones accordingly.
                 // Store the old room so that we may remove the player later and set ignore input room
                 // ================================================================================
-                let player = match map.player_from_name(&content.name) {
-                    Some((_, player)) => {
+                let player = match players.get_mut(&content.name) {
+                    Some(player) => {
                         info!("[SERVER] Reactivating character.");
                         info!("[SERVER] Player left off in: {}", player.current_room);
 
@@ -470,12 +462,13 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     None => {
                         info!("[SERVER] Adding character to map.");
 
-                        map.add_player(pkt_character::Character::to_default(&updated_content));
+                        game::add_player(
+                            &mut players,
+                            pkt_character::Character::to_default(&updated_content),
+                        );
 
                         // Now get the newly added player
-                        map.players
-                            .last_mut()
-                            .expect("[SERVER] Player just added should exist") // Should never fail, the previous function would panic if we run out of memory
+                        players.get_mut(&updated_content.name).unwrap() // Should never panic because we JUST added this player to the map...
                     }
                 };
 
@@ -526,22 +519,9 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     continue;
                 }
 
-                let player_clone = player.clone(); // Borrow and mutability band-aids :smil:
-                let player_name = player.name.clone();
+                let player = player.clone(); // End mutable borrow of player
 
-                let player_idx = match map.players.iter().position(|p| p.name == player_name) {
-                    Some(idx) => idx,
-                    None => {
-                        warn!("[SERVER] Unable to find player in map");
-                        continue;
-                    }
-                };
-
-                let room = match map
-                    .rooms
-                    .iter_mut()
-                    .find(|room| room.room_number == old_room_number)
-                {
+                let room = match rooms.get_mut(&old_room_number) {
                     Some(room) => room,
                     None => {
                         warn!("[SERVER] Unable to find where the player left off in the map");
@@ -549,20 +529,21 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                     }
                 };
 
-                room.players.retain(|&idx| idx != player_idx);
+                room.players.retain(|name| name != &player.name);
 
-                map.message_room(
+                game::message_room(
+                    &players,
+                    &rooms,
                     old_room_number,
-                    format!("{}'s corpse disappeared into a puff of smoke.", player_name),
+                    format!("{}'s corpse disappeared into a puff of smoke.", player.name),
                 )
                 .unwrap_or_else(|e| {
                     error!("[SERVER] Failed to message room: {}", e);
                 });
 
-                map.alert_room(old_room_number, &player_clone)
-                    .unwrap_or_else(|e| {
-                        warn!("[SERVER] Failed to alert players: {}", e);
-                    });
+                game::alert_room(&players, &rooms, old_room_number, &player).unwrap_or_else(|e| {
+                    warn!("[SERVER] Failed to alert players: {}", e);
+                });
                 // ^ ============================================================================ ^
             }
             Protocol::Leave(author, content) => {
@@ -573,7 +554,7 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 // has been deactivated, but is technically still there.
                 // Shutdown the connection.
                 // ================================================================================
-                let player = match map.player_from_stream(&author) {
+                let player = match game::player_from_stream(&mut players, author.clone()) {
                     Some((_, player)) => player,
                     None => continue,
                 };
@@ -581,17 +562,18 @@ pub fn server(receiver: Arc<Mutex<Receiver<Protocol>>>, map: &mut Map) {
                 player.flags = CharacterFlags::deactivate(false);
                 player.author = None;
 
-                let player_clone = player.clone();
+                let player = player.clone(); // End mutable borrow of player
 
-                map.broadcast(format!("{} has left the game.", player_clone.name))
+                game::broadcast(&players, format!("{} has left the game.", player.name))
                     .unwrap_or_else(|e| {
                         warn!("[SERVER] Failed to broadcast message: {}", e);
                     });
 
-                map.alert_room(player_clone.current_room, &player_clone)
-                    .unwrap_or_else(|e| {
+                game::alert_room(&players, &rooms, player.current_room, &player).unwrap_or_else(
+                    |e| {
                         warn!("[SERVER] Failed to alert players: {}", e);
-                    });
+                    },
+                );
 
                 match author.shutdown(std::net::Shutdown::Both) {
                     Ok(_) => {

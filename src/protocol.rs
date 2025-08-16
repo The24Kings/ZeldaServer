@@ -9,7 +9,7 @@ pub type Stream = Arc<TcpStream>;
 
 pub mod client;
 pub mod error;
-pub mod map;
+pub mod game;
 pub mod packet;
 pub mod pcap;
 pub mod pkt_type;
