@@ -10,8 +10,8 @@
 || 
 ||           | Missing Feature | Status        |
 ||           | ----------------| ------------- |
-||           | Fighting        | Blocked       |
-||           | Looting         | Blocked       |
+||           | Fighting        | In Queue      |
+||           | Looting         | In Queue      |
 ||           | Dynamic Map     | Drafting      |
 || 
 ||        Please report any bugs you might find on Github!
