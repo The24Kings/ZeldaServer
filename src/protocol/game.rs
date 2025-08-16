@@ -66,12 +66,10 @@ pub fn player_from_stream(
     stream: Stream,
 ) -> Option<(&String, &mut pkt_character::Character)> {
     players.iter_mut().find(|(_, player)| {
-        let author = player.author.as_ref().ok_or_else(|| false);
-
-        match author {
-            Ok(author) => Arc::ptr_eq(&author, &stream),
-            Err(_) => false,
-        }
+        player
+            .author
+            .as_ref()
+            .map_or(false, |author| Arc::ptr_eq(&author, &stream))
     })
 }
 
