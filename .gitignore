@@ -2,5 +2,3 @@
 /logs
 .env
 /.vscode
-
-start.sh
