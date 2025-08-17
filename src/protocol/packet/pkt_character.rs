@@ -1,6 +1,6 @@
+use bitflags::bitflags;
 use std::io::Write;
-use std::os::fd::AsRawFd;
-use std::{fmt::LowerHex, os::fd::AsFd};
+use std::os::fd::{AsFd, AsRawFd};
 use tracing::debug;
 
 use crate::protocol::game::Monster;
@@ -50,7 +50,7 @@ impl Character {
             author: None,
             message_type: PktType::Character,
             name: incoming.name.clone(),
-            flags: CharacterFlags::activate(true),
+            flags: CharacterFlags::default() | CharacterFlags::MONSTER,
             attack: incoming.attack,
             defense: incoming.defense,
             regen: 0, // Monsters don't regenerate health
@@ -102,15 +102,11 @@ impl std::fmt::Display for Character {
 
         write!(
             f,
-            "{{\"author\":{{{}}},\"message_type\":\"{}\",\"name\":\"{}\",\"flags\":{{\"alive\":{},\"battle\":{},\"monster\":{},\"started\":{},\"ready\":{}}},\"attack\":{},\"defense\":{},\"regen\":{},\"health\":{},\"gold\":{},\"current_room\":{},\"description_len\":{},\"description\":\"{}\"}}",
+            "{{\"author\":{{{}}},\"message_type\":\"{}\",\"name\":\"{}\",\"flags\":\"0b{:08b}\",\"attack\":{},\"defense\":{},\"regen\":{},\"health\":{},\"gold\":{},\"current_room\":{},\"description_len\":{},\"description\":\"{}\"}}",
             author,
             self.message_type,
             self.name,
-            self.flags.alive,
-            self.flags.battle,
-            self.flags.monster,
-            self.flags.started,
-            self.flags.ready,
+            self.flags.bits(),
             self.attack,
             self.defense,
             self.regen,
@@ -123,70 +119,20 @@ impl std::fmt::Display for Character {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct CharacterFlags {
-    pub alive: bool,
-    pub battle: bool, // A.K.A. Join-Battle
-    pub monster: bool,
-    pub started: bool,
-    pub ready: bool,
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct CharacterFlags: u8 {
+        const ALIVE = 0b10000000;
+        const BATTLE = 0b01000000; // A.K.A. Join-Battle
+        const MONSTER = 0b00100000;
+        const STARTED = 0b00010000;
+        const READY = 0b00001000;
+    }
 }
 
 impl Default for CharacterFlags {
     fn default() -> Self {
-        CharacterFlags {
-            alive: true,
-            battle: true,
-            monster: false,
-            started: false,
-            ready: true,
-        }
-    }
-}
-
-impl LowerHex for CharacterFlags {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:02x}",
-            (self.alive as u8) << 7
-                | (self.battle as u8) << 6
-                | (self.monster as u8) << 5
-                | (self.started as u8) << 4
-                | (self.ready as u8) << 3
-        )
-    }
-}
-
-impl CharacterFlags {
-    pub fn deactivate(monster: bool) -> Self {
-        CharacterFlags {
-            alive: false,
-            battle: false,
-            monster,
-            started: false,
-            ready: false,
-        }
-    }
-
-    pub fn activate(monster: bool) -> Self {
-        CharacterFlags {
-            alive: true,
-            battle: true,
-            monster,
-            started: false,
-            ready: true,
-        }
-    }
-
-    pub fn dead(monster: bool) -> Self {
-        CharacterFlags {
-            alive: false,
-            battle: false,
-            monster,
-            started: false,
-            ready: true,
-        }
+        CharacterFlags::ALIVE | CharacterFlags::BATTLE | CharacterFlags::READY
     }
 }
 
@@ -203,16 +149,8 @@ impl<'a> Parser<'a> for Character {
 
         packet.extend(name_bytes);
 
-        // Serialize the flags byte in little-endian order
-        let mut flags: u8 = 0x00;
-
-        flags |= if self.flags.alive { 0b10000000 } else { 0x00 };
-        flags |= if self.flags.battle { 0b01000000 } else { 0x00 };
-        flags |= if self.flags.monster { 0b00100000 } else { 0x00 };
-        flags |= if self.flags.started { 0b00010000 } else { 0x00 };
-        flags |= if self.flags.ready { 0b00001000 } else { 0x00 };
-
-        packet.extend(flags.to_le_bytes());
+        // Serialize the flags byte
+        packet.extend([self.flags.bits()]);
 
         // Serialize the character stats
         packet.extend(self.attack.to_le_bytes());
@@ -252,14 +190,8 @@ impl<'a> Parser<'a> for Character {
         let description_len = u16::from_le_bytes([packet.body[45], packet.body[46]]);
         let description = String::from_utf8_lossy(&packet.body[47..]).to_string();
 
-        // Parse the flags byte in little-endian order
-        let flags = CharacterFlags {
-            alive: flags & 0b10000000 != 0,
-            battle: flags & 0b01000000 != 0,
-            monster: flags & 0b00100000 != 0,
-            started: flags & 0b00010000 != 0,
-            ready: flags & 0b00001000 != 0,
-        }; // Other bits are reserved for future use
+        // Parse the flags byte using bitflags API
+        let flags = CharacterFlags::from_bits_truncate(flags); // Other bits are reserved for future use
 
         Ok(Character {
             author: Some(packet.stream.clone()),

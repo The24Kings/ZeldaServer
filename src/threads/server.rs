@@ -312,7 +312,7 @@ pub fn server(
                 // ================================================================================
                 // Activate the character and send the information off to client
                 // ================================================================================
-                player.flags.started = true;
+                player.flags |= CharacterFlags::STARTED;
 
                 let player = player.clone(); // End mutable borrow of player
 
@@ -472,7 +472,7 @@ pub fn server(
                     }
                 };
 
-                if player.flags.started {
+                if player.flags.contains(CharacterFlags::STARTED) {
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(
@@ -490,7 +490,8 @@ pub fn server(
 
                 let old_room_number = player.current_room;
 
-                player.flags = CharacterFlags::activate(false);
+                player.flags =
+                    CharacterFlags::ALIVE | CharacterFlags::READY | CharacterFlags::BATTLE;
                 player.author = Some(author.clone());
                 player.current_room = 0; // Start in the first room
                 // ^ ============================================================================ ^
@@ -559,7 +560,7 @@ pub fn server(
                     None => continue,
                 };
 
-                player.flags = CharacterFlags::deactivate(false);
+                player.flags = CharacterFlags::empty();
                 player.author = None;
 
                 let player = player.clone(); // End mutable borrow of player
