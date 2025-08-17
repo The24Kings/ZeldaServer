@@ -1,33 +1,30 @@
-# Improved Lurk
+# ImprovedLurk
 
-> See my [WIKI](https://github.com/The24Kings/LurkProtocol/wiki) for more in depth information
+ImprovedLurk is a text-based multi-user dungeon (MUD)-style game written in Rust. It provides a foundation for building interactive multiplayer text adventures with a focus on room navigation, player communication, and expandable gameplay systems.
 
-A new and improved version of my [Lurk Server](https://github.com/The24Kings/lurk-server) written in the Rust programming language!
-
-This rewrite was from the ground up, implementing better data serialization and deserialization. Making it super easy to add new messages to the protocol
-or edit existing ones. Simply make a new struct, add it to the types and write the serializer and deserializer methods.
+This project builds on the original [Lurk Server](https://github.com/The24Kings/lurk-server) project, adding improvements, refactoring, and additional features to make the codebase more robust and developer-friendly.
 
 ```
- ______    _     _           _____ 
-|___  /   | |   | |         / ____|                         
-   / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __ 
+ ______    _     _           _____
+|___  /   | |   | |         / ____|
+   / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __
   / / / _ \ |/ _` |/ _` |   \___ \ / _ \ '__\ \ / / _ \ '__|
- / /_|  __/ | (_| | (_| |   ____) |  __/ |   \ V /  __/ |   
-/_____\___|_|\__,_|\__,_|  |_____/ \___|_|    \_/ \___|_|  
+ / /_|  __/ | (_| | (_| |   ____) |  __/ |   \ V /  __/ |
+/_____\___|_|\__,_|\__,_|  |_____/ \___|_|    \_/ \___|_|
 
 You find yourself standing in front of the gaping maw of a towering tree.
 You hear a booming voice from above telling you to enter, but beware for danger lay ahead!
 
          @@@@@@@@@@@@@@@@@@@@@@@@@@@@
-      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 
-     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 
-   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 
-  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  
-  @@@@@@@@@@@@@@  '.@@@@@@@@@@@@@@@@@.--.@@@@@@@@@ 
-    @@@@@@@@\   @@  ¯ @@@@@@@@@@@ '¯¯ ___..@@@@@@  
-     @@@@@@@@|                 @    .'@@@@@@@@@@   
-        @@@@@@\                    /@@@@@@@@  
-               \                  / 
+      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  @@@@@@@@@@@@@@  '.@@@@@@@@@@@@@@@@@.--.@@@@@@@@@
+    @@@@@@@@\   @@  ¯ @@@@@@@@@@@ '¯¯ ___..@@@@@@
+     @@@@@@@@|                 @    .'@@@@@@@@@@
+        @@@@@@\                    /@@@@@@@@
+               \                  /
                |   .--'|__|'--.   |
                |  /.--'/  \'--.\  |
    __  ___     /      /____\      \     ___
@@ -35,162 +32,96 @@ You hear a booming voice from above telling you to enter, but beware for danger 
 (           )_|    |__/    \__|    |_(        )(  )_   (
              /                      \__             )_(¯
 _______.---./    .'                    \_.--._ ___________
-  --''¯        _/    __                       '--..       
+  --''¯        _/    __                       '--..
              ''    .'
 ```
 
-> I've semi-learned how lifetimes work, which has made my life easier when implementing the packet stuct
+---
 
-## Packet Example
+## Features
 
-> One of the simplest packets in the protocol
+- **Room-based world navigation** — players can explore interconnected rooms
+- **Player management** — supports multiple players in a shared world
+- **Text-based interaction** — send and receive messages in real time
+- **Custom protocol** — communication happens over the **LURK protocol** (not plain telnet)
+- **Rust-powered** — built with safety, speed, and concurrency in mind
 
-```RUST
-#[derive(Debug, Clone)]
-pub struct Start {
-    pub author: Option<Arc<TcpStream>>, 
-    pub message_type: u8,
-}
+---
 
-impl Default for Start {
-    fn default() -> Self {
-        Start {
-            author: None,
-            message_type: 6
-        }
-    }
-}
+## Requirements
 
-impl<'a> Parser<'a> for Start {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
-        // Package into a byte array
-        let mut packet: Vec<u8> = Vec::new();
+- [Rust](https://www.rust-lang.org/) (latest stable recommended)
+- [Cargo](https://doc.rust-lang.org/cargo/) (comes with Rust)
+- A Unix-like shell (Linux, macOS, or WSL on Windows) to run the `start.sh` script
+- A **LURK-compatible client** (telnet or netcat alone will not work)
 
-        packet.push(self.message_type);
-        
-        // Send the packet to the author
-        writer.write_all(&packet).map_err(|_| {
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Failed to write packet to buffer",
-            )
-        })?;
+---
 
-        debug_packet!(&packet);
+## Getting Started
 
-        Ok(())
-    }
-    fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        Ok(Start {
-            author: packet.author,
-            message_type: packet.message_type,
-        })
-    }
-}
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/The24Kings/ImprovedLurk.git
+cd ImprovedLurk
 ```
 
-As you can see, a serialize method packs the struct into a byte stream to be sent off to the connect client.
-Deserialize will construct the data into the struct to be used later by the server.
-Later this can be called to read and write data to/ from the connected client.
+### 2. Build the project
 
-## Client Receive
-
-```RUST
-let mut buffer = vec!(0; 32);
-
-let packet = Packet::read_into(self.stream.clone(), packet_type[0], &mut buffer)?;
-
-let object = match Parser::deserialize(packet) {
-    Ok(deserialized) => Type::Loot(deserialized),
-    Err(e) => {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            format!("Failed to deserialize packet: {}", e),
-        ));
-    }
-};
-
-// Send the packet to the sender
-Some(object)
+```bash
+cargo build --release
 ```
 
-Once the packet has been successfully deserialized into our data structure, we can send it off via the MPSC channel.
+This produces an optimized binary in `target/release/`.
 
-## Hasta La Vista
+### 3. Start the server
 
-```RUST
-match packet {
-    Some(pkt) => {
-        self.sender.send(pkt.clone()).map_err(|e| { // If the send fails with SendError, it means the server thread has closed
-            std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                format!("Failed to send packet: {}", e),
-            )
-        })?;
+The recommended way to start the server is with the included script:
 
-        Ok(pkt)
-    },
-    None => {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "You tried to send the server a bad packet... naughty!",
-        ))
-    }
-}
+```bash
+./start.sh [PORT]
 ```
 
-If for whatever reason this fails, Rust gives us a nice way to handle these errors.
+For example, to run on port `5050`:
 
-## Error Handling
-
-> Done of the connection thread
-
-```RUST
-match client.read() {
-    Ok(_) => {
-        println!("[CONNECTION] Packet read successfully");
-    }
-    Err(e) => {
-        match e.kind() {
-            std::io::ErrorKind::ConnectionReset => {
-                eprintln!("[CONNECTION] Connection reset by peer. Terminating thread.");
-            }
-            std::io::ErrorKind::ConnectionAborted => {
-                eprintln!("[CONNECTION] Connection aborted. Terminating thread.");
-            }
-            std::io::ErrorKind::NotConnected => {
-                eprintln!("[CONNECTION] Not connected. Terminating thread.");
-            }
-            std::io::ErrorKind::BrokenPipe => {
-                eprintln!("[CONNECTION] Broken pipe. Terminating thread.");
-            }
-            std::io::ErrorKind::UnexpectedEof => {
-                eprintln!("[CONNECTION] Unexpected EOF. Terminating thread.");
-            }
-            std::io::ErrorKind::Unsupported => {
-                eprintln!("[CONNECTION] Unsupported operation. Terminating thread.");
-            }
-            _ => {
-                eprintln!("[CONNECTION] Non-terminal error: '{}'. Continuing.", e);
-                continue; // Continue processing other packets
-            }
-        }
-
-        // If we reach here, it means the connection was closed
-        // Ensure the server thread is notified of the disconnection
-        client
-            .sender
-            .send(Type::Leave(Leave {
-                author: Some(stream.clone()),
-                ..Leave::default()
-            }))
-            .unwrap_or_else(|_| {
-                eprintln!("[CONNECTION] Failed to send leave packet");
-            });
-
-        break;
-    }
-}    
+```bash
+./start.sh 5050
 ```
 
-If any other critical errors appear in production, a new ErrorKind will be added to close the connection!
+---
+
+## Playing the Game
+
+ImprovedLurk uses the **LURK protocol**, a custom message-based protocol designed specifically for this project.
+
+To connect and play, you will need a **LURK-compatible client** that implements the protocol:
+
+- The client is responsible for sending correctly formatted LURK messages.
+- The server will respond with structured LURK responses (room state, messages, etc.).
+- Plain-text clients like `telnet` will not work.
+
+👉 See the [LURK Protocol Documentation](https://github.com/The24Kings/LurkProtocol/wiki) for full details on message structure, commands, and expected behavior.
+
+---
+
+## Example Client
+
+If you don’t want to build your own client from scratch, you can try [**LURKMAN**](https://github.com/col1010/LURKMAN), a client that fully implements the LURK protocol.
+
+This is a great starting point to connect to an ImprovedLurk server and experience the game in action.
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/new-thing`)
+3. Commit changes (`git commit -m "Add new thing"`)
+4. Push to branch (`git push origin feature/new-thing`)
+5. Open a Pull Request
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
