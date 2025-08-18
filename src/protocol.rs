@@ -3,6 +3,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::info;
 
+use crate::commands;
 use crate::protocol::packet::*;
 
 pub type Stream = Arc<TcpStream>;
@@ -29,6 +30,7 @@ pub enum Protocol {
     Leave(Stream, pkt_leave::Leave),
     Connection(Stream, pkt_connection::Connection),
     Version(Stream, pkt_version::Version),
+    Command(commands::Action),
 }
 
 impl std::fmt::Display for Protocol {
@@ -48,6 +50,7 @@ impl std::fmt::Display for Protocol {
             Protocol::Leave(_, leave) => write!(f, "{}", leave),
             Protocol::Connection(_, connection) => write!(f, "{}", connection),
             Protocol::Version(_, version) => write!(f, "{}", version),
+            Protocol::Command(action) => write!(f, "{}", action),
         }
     }
 }
@@ -116,6 +119,7 @@ impl Protocol {
                 content.serialize(&mut byte_stream)?;
                 author
             }
+            _ => return Ok(()), // Ignore none LURK messages (Server stuff)
         };
 
         author.as_ref().write_all(&byte_stream)?;

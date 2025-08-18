@@ -586,6 +586,9 @@ pub fn server(
                 }
                 // ^ ============================================================================ ^
             }
+            Protocol::Command(action) => {
+                info!("[SERVER] Received: {}", action);
+            }
             Protocol::Error(_, _) => {}
             Protocol::Accept(_, _) => {}
             Protocol::Room(_, _) => {}
