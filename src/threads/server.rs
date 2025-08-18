@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use tracing::{debug, error, info, warn};
 
+use crate::commands::ActionKind;
 use crate::config::Config;
 use crate::protocol::game::{self, Room};
 use crate::protocol::packet::{
@@ -588,6 +589,24 @@ pub fn server(
             }
             Protocol::Command(action) => {
                 info!("[SERVER] Received: {}", action);
+
+                match action.kind {
+                    ActionKind::BROADCAST => {
+                        info!("Placeholder broadcast command!");
+                    }
+                    ActionKind::HELP => {
+                        info!("Placeholder help command!");
+                    }
+                    ActionKind::MESSAGE => {
+                        info!("Placeholder message command!");
+                    }
+                    ActionKind::NUKE => {
+                        info!("Placeholder nuke command!");
+                    }
+                    ActionKind::OTHER => {
+                        error!("Unsupported command!");
+                    }
+                }
             }
             Protocol::Error(_, _) => {}
             Protocol::Accept(_, _) => {}

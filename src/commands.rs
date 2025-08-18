@@ -1,7 +1,6 @@
+use serde::Serialize;
 use std::io;
 use std::sync::mpsc::Sender;
-
-use serde::Serialize;
 use tracing::{error, info};
 
 use crate::protocol::Protocol;
