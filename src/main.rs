@@ -5,10 +5,12 @@ use std::net::TcpListener;
 use std::sync::{Arc, Mutex, mpsc};
 use tracing::{debug, info, warn};
 
+use crate::commands::input;
 use crate::config::Config;
 use crate::protocol::game;
 use crate::threads::{processor::connection, server::server};
 
+pub mod commands;
 pub mod config;
 pub mod protocol;
 pub mod threads;
@@ -38,6 +40,7 @@ fn main() -> ! {
     // Create a channel for communication between threads
     let (tx, rx) = mpsc::channel();
     let receiver = Arc::new(Mutex::new(rx));
+    let sender = tx.clone();
 
     // Build the game map
     let path = env::var("MAP_FILEPATH").expect("[MAIN] MAP_FILEPATH must be set.");
@@ -48,7 +51,13 @@ fn main() -> ! {
     info!("[MAIN] Parsed map successfully");
 
     let _ = std::thread::spawn(move || {
+        info!("[MAIN] Started server thread!");
         server(receiver, server_config, &mut rooms);
+    });
+
+    let _ = std::thread::spawn(move || {
+        info!("[MAIN] Started input thread!");
+        input(tx.clone());
     });
 
     loop {
@@ -57,10 +66,12 @@ fn main() -> ! {
                 info!("[MAIN] New connection: {}", addr);
 
                 let stream = Arc::new(stream);
-                let sender = tx.clone();
+                let sender = sender.clone();
                 let client_config = client_config.clone();
 
                 // Handle the connection in a separate thread
+                info!("[MAIN] Started connection thread!");
+
                 let client_h = std::thread::spawn(move || {
                     connection(stream, sender, client_config);
                 });
