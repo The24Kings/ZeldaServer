@@ -15,7 +15,8 @@ pub enum ActionKind {
 #[derive(Serialize)]
 pub struct Action {
     pub kind: ActionKind,
-    pub args: Vec<String>,
+    pub argv: Vec<String>,
+    pub argc: usize,
 }
 
 impl std::fmt::Display for Action {
@@ -51,6 +52,7 @@ pub fn input(sender: Sender<Protocol>) -> ! {
         // Sanitize and Tokenize
         let input = input[1..].trim().to_string().to_ascii_lowercase();
         let argv: Vec<String> = input.split(' ').map(|s| s.to_string()).collect();
+        let argc = argv.len();
 
         let kind = match argv[0].as_str() {
             "message" => ActionKind::MESSAGE,
@@ -58,7 +60,7 @@ pub fn input(sender: Sender<Protocol>) -> ! {
         };
 
         sender
-            .send(Protocol::Command(Action { kind, args: argv }))
+            .send(Protocol::Command(Action { kind, argv, argc }))
             .unwrap_or_else(|_| {
                 error!("[COMMAND] Failed to send command packet");
             })
