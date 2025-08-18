@@ -8,7 +8,10 @@ use crate::protocol::Protocol;
 
 #[derive(Serialize)]
 pub enum ActionKind {
+    BROADCAST,
+    HELP,
     MESSAGE,
+    NUKE,
     OTHER,
 }
 
@@ -55,7 +58,10 @@ pub fn input(sender: Sender<Protocol>) -> ! {
         let argc = argv.len();
 
         let kind = match argv[0].as_str() {
+            "broadcast" => ActionKind::BROADCAST,
+            "help" => ActionKind::HELP,
             "message" => ActionKind::MESSAGE,
+            "nuke" => ActionKind::NUKE,
             _ => ActionKind::OTHER,
         };
 
