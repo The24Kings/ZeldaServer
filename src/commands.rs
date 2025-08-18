@@ -1,6 +1,6 @@
 use serde::Serialize;
-use std::io;
 use std::sync::mpsc::Sender;
+use std::{env, io};
 use tracing::{error, info};
 
 use crate::protocol::Protocol;
@@ -33,6 +33,10 @@ impl std::fmt::Display for Action {
 }
 
 pub fn input(sender: Sender<Protocol>) -> ! {
+    let prefix = env::var("CMD_PREFIX").expect("[INPUT] CMD_PREFIX must be set");
+
+    info!("[INPUT] Listening for commands with prefix: '{}'", prefix);
+
     loop {
         // Take input from the console.
         let mut input = String::new();
@@ -45,11 +49,11 @@ pub fn input(sender: Sender<Protocol>) -> ! {
             }
         }
 
-        if !input.starts_with("!") {
+        if !input.starts_with(prefix.as_str()) {
             continue;
         }
 
-        info!("[COMMAND] Parsing command.");
+        info!("[INPUT] Parsing command.");
 
         // Sanitize and Tokenize
         let input = input[1..].trim().to_string().to_ascii_lowercase();
@@ -67,7 +71,7 @@ pub fn input(sender: Sender<Protocol>) -> ! {
         sender
             .send(Protocol::Command(Action { kind, argv, argc }))
             .unwrap_or_else(|_| {
-                error!("[COMMAND] Failed to send command packet");
+                error!("[INPUT] Failed to send INPUT packet");
             })
     }
 }
