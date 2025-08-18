@@ -21,16 +21,23 @@ struct Args {
     /// Port to bind the TCP Connection
     #[arg(short, long, default_value_t = 5051)]
     port: u16,
+    #[command(flatten)]
+    verbosity: clap_verbosity_flag::Verbosity,
 }
 
 fn main() -> ! {
+    let args = Args::parse();
+
     dotenvy::dotenv().expect("[MAIN] Failed to load .env file");
-    tracing_config::init!();
+    tracing_subscriber::fmt()
+        .with_max_level(args.verbosity)
+        .with_target(false)
+        .with_ansi(true)
+        .compact()
+        .init();
 
     let server_config = Arc::new(Config::load());
     let client_config = server_config.clone(); // The Arc will handle all reference counting, it's not actually cloning all the data :)
-
-    let args = Args::parse();
 
     let address = format!("0.0.0.0:{}", args.port);
     let listener = TcpListener::bind(&address).expect("[MAIN] Failed to bind to address");
