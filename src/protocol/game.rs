@@ -92,7 +92,7 @@ pub fn broadcast(
         Protocol::Message(
             author.clone(),
             pkt_message::Message {
-                message_type: PktType::Message,
+                message_type: PktType::MESSAGE,
                 message_len: message.len() as u16,
                 recipient: player.name.clone(),
                 sender: "Server".to_string(),
@@ -149,7 +149,7 @@ pub fn message_room(
         Protocol::Message(
             author.clone(),
             pkt_message::Message {
-                message_type: PktType::Message,
+                message_type: PktType::MESSAGE,
                 message_len: message.len() as u16,
                 recipient: player.name.clone(),
                 sender: "Narrator".to_string(),

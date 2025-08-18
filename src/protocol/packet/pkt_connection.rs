@@ -22,7 +22,7 @@ impl From<&game::Connection> for Connection {
     /// Create a new connection from the game map to send to the client
     fn from(conn: &game::Connection) -> Self {
         Connection {
-            message_type: PktType::Connection,
+            message_type: PktType::CONNECTION,
             room_number: conn.room_number,
             room_name: conn.title.clone(),
             description_len: conn.desc_short.len() as u16,

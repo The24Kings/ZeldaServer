@@ -48,7 +48,7 @@ impl Character {
     pub fn from_monster(incoming: &Monster, current_room: u16) -> Self {
         Character {
             author: None,
-            message_type: PktType::Character,
+            message_type: PktType::CHARACTER,
             name: incoming.name.clone(),
             flags: CharacterFlags::default() | CharacterFlags::MONSTER,
             attack: incoming.attack,
@@ -67,7 +67,7 @@ impl Default for Character {
     fn default() -> Self {
         Character {
             author: None,
-            message_type: PktType::Character,
+            message_type: PktType::CHARACTER,
             name: "Error".to_string(),
             flags: CharacterFlags::default(),
             attack: 0,

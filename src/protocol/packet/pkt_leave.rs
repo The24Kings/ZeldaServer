@@ -16,7 +16,7 @@ pub struct Leave {
 impl Default for Leave {
     fn default() -> Self {
         Leave {
-            message_type: PktType::Leave,
+            message_type: PktType::LEAVE,
         }
     }
 }

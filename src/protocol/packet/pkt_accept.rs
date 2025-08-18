@@ -17,7 +17,7 @@ pub struct Accept {
 impl Accept {
     pub fn new(accept_type: PktType) -> Self {
         Accept {
-            message_type: PktType::Accept,
+            message_type: PktType::ACCEPT,
             accept_type: accept_type.into(),
         }
     }

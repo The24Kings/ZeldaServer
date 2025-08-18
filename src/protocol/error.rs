@@ -4,15 +4,15 @@ use serde::Serialize;
 #[repr(u8)]
 pub enum ErrorCode {
     #[default]
-    Other,
-    BadRoom,
-    PlayerExists,
-    BadMonster,
-    StatError,
-    NotReady,
-    NoTarget,
-    NoFight,
-    NoPlayerCombat,
+    OTHER,
+    BADROOM,
+    PLAYEREXISTS,
+    BADMONSTER,
+    STATERROR,
+    NOTREADY,
+    NOTARGET,
+    NOFIGHT,
+    NOPLAYERCOMBAT,
 }
 
 impl Into<u8> for ErrorCode {
@@ -24,16 +24,16 @@ impl Into<u8> for ErrorCode {
 impl From<u8> for ErrorCode {
     fn from(value: u8) -> Self {
         match value {
-            0 => ErrorCode::Other,
-            1 => ErrorCode::BadRoom,
-            2 => ErrorCode::PlayerExists,
-            3 => ErrorCode::BadMonster,
-            4 => ErrorCode::StatError,
-            5 => ErrorCode::NotReady,
-            6 => ErrorCode::NoTarget,
-            7 => ErrorCode::NoFight,
-            8 => ErrorCode::NoPlayerCombat,
-            _ => ErrorCode::Other, // Default case
+            0 => ErrorCode::OTHER,
+            1 => ErrorCode::BADROOM,
+            2 => ErrorCode::PLAYEREXISTS,
+            3 => ErrorCode::BADMONSTER,
+            4 => ErrorCode::STATERROR,
+            5 => ErrorCode::NOTREADY,
+            6 => ErrorCode::NOTARGET,
+            7 => ErrorCode::NOFIGHT,
+            8 => ErrorCode::NOPLAYERCOMBAT,
+            _ => ErrorCode::OTHER, // Default case
         }
     }
 }
@@ -41,15 +41,15 @@ impl From<u8> for ErrorCode {
 impl std::fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ErrorCode::Other => write!(f, "Other"),
-            ErrorCode::BadRoom => write!(f, "BadRoom"),
-            ErrorCode::PlayerExists => write!(f, "PlayerExists"),
-            ErrorCode::BadMonster => write!(f, "BadMonster"),
-            ErrorCode::StatError => write!(f, "StatError"),
-            ErrorCode::NotReady => write!(f, "NotReady"),
-            ErrorCode::NoTarget => write!(f, "NoTarget"),
-            ErrorCode::NoFight => write!(f, "NoFight"),
-            ErrorCode::NoPlayerCombat => write!(f, "NoPlayerCombat"),
+            ErrorCode::OTHER => write!(f, "Other"),
+            ErrorCode::BADROOM => write!(f, "BadRoom"),
+            ErrorCode::PLAYEREXISTS => write!(f, "PlayerExists"),
+            ErrorCode::BADMONSTER => write!(f, "BadMonster"),
+            ErrorCode::STATERROR => write!(f, "StatError"),
+            ErrorCode::NOTREADY => write!(f, "NotReady"),
+            ErrorCode::NOTARGET => write!(f, "NoTarget"),
+            ErrorCode::NOFIGHT => write!(f, "NoFight"),
+            ErrorCode::NOPLAYERCOMBAT => write!(f, "NoPlayerCombat"),
         }
     }
 }
