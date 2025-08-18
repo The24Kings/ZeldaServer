@@ -16,7 +16,7 @@ pub struct Start {
 impl Default for Start {
     fn default() -> Self {
         Start {
-            message_type: PktType::Start,
+            message_type: PktType::START,
         }
     }
 }

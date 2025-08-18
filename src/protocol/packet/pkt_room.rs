@@ -32,7 +32,7 @@ impl Room {
     /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
     pub fn new(room: u16, title: String, desc: String) -> Self {
         Room {
-            message_type: PktType::Room,
+            message_type: PktType::ROOM,
             room_number: room,
             room_name: title,
             description_len: desc.len() as u16,
@@ -44,7 +44,7 @@ impl Room {
 impl From<game::Room> for Room {
     fn from(room: game::Room) -> Self {
         Room {
-            message_type: PktType::Room,
+            message_type: PktType::ROOM,
             room_number: room.room_number,
             room_name: room.title.clone(),
             description_len: room.desc.len() as u16,

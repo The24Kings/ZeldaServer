@@ -16,7 +16,7 @@ pub struct Fight {
 impl Default for Fight {
     fn default() -> Self {
         Fight {
-            message_type: PktType::Fight,
+            message_type: PktType::FIGHT,
         }
     }
 }

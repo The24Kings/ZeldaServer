@@ -499,7 +499,7 @@ pub fn server(
                 // ================================================================================
                 // Send an Accept packet and updated character.
                 // ================================================================================
-                Protocol::Accept(author.clone(), pkt_accept::Accept::new(PktType::Character))
+                Protocol::Accept(author.clone(), pkt_accept::Accept::new(PktType::CHARACTER))
                     .send()
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send accept packet: {}", e);

@@ -15,7 +15,7 @@ pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>)
     Protocol::Version(
         stream.clone(),
         pkt_version::Version {
-            message_type: PktType::Version,
+            message_type: PktType::VERSION,
             major_rev: config.major_rev,
             minor_rev: config.minor_rev,
             extension_len: 0,
@@ -31,7 +31,7 @@ pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>)
     Protocol::Game(
         stream.clone(),
         pkt_game::Game {
-            message_type: PktType::Game,
+            message_type: PktType::GAME,
             initial_points: config.initial_points,
             stat_limit: config.stat_limit,
             description_len: description.len() as u16,

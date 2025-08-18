@@ -22,7 +22,7 @@ impl Error {
         error!("[SERVER] {}", message);
 
         Error {
-            message_type: PktType::Error,
+            message_type: PktType::ERROR,
             error,
             message_len: message.len() as u16,
             message: message.to_string(),
