@@ -37,7 +37,7 @@ pub fn server(
                     None => {
                         Protocol::Error(
                             author.clone(),
-                            pkt_error::Error::new(ErrorCode::Other, "Player not found"),
+                            pkt_error::Error::new(ErrorCode::OTHER, "Player not found"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
@@ -54,7 +54,7 @@ pub fn server(
                         Protocol::Error(
                             author.clone(),
                             pkt_error::Error::new(
-                                ErrorCode::Other,
+                                ErrorCode::OTHER,
                                 "Character does not have an active connection",
                             ),
                         )
@@ -96,7 +96,7 @@ pub fn server(
                 if cur_room_id == nxt_room_id {
                     Protocol::Error(
                         author.clone(),
-                        pkt_error::Error::new(ErrorCode::BadRoom, "Player is already in the room"),
+                        pkt_error::Error::new(ErrorCode::BADROOM, "Player is already in the room"),
                     )
                     .send()
                     .unwrap_or_else(|e| {
@@ -111,7 +111,7 @@ pub fn server(
                     None => {
                         Protocol::Error(
                             author.clone(),
-                            pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
+                            pkt_error::Error::new(ErrorCode::BADROOM, "Room not found!"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
@@ -129,7 +129,7 @@ pub fn server(
                     None => {
                         Protocol::Error(
                             author.clone(),
-                            pkt_error::Error::new(ErrorCode::BadRoom, "Invalid connection!"),
+                            pkt_error::Error::new(ErrorCode::BADROOM, "Invalid connection!"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
@@ -152,7 +152,7 @@ pub fn server(
                     None => {
                         Protocol::Error(
                             author.clone(),
-                            pkt_error::Error::new(ErrorCode::BadRoom, "Room not found!"),
+                            pkt_error::Error::new(ErrorCode::BADROOM, "Room not found!"),
                         )
                         .send()
                         .unwrap_or_else(|e| {
@@ -281,7 +281,7 @@ pub fn server(
 
                 Protocol::Error(
                     author.clone(),
-                    pkt_error::Error::new(ErrorCode::NoPlayerCombat, "No player combat allowed"),
+                    pkt_error::Error::new(ErrorCode::NOPLAYERCOMBAT, "No player combat allowed"),
                 )
                 .send()
                 .unwrap_or_else(|e| {
@@ -421,7 +421,7 @@ pub fn server(
                 if total_stats > config.initial_points {
                     Protocol::Error(
                         author.clone(),
-                        pkt_error::Error::new(ErrorCode::StatError, "Invalid stats"),
+                        pkt_error::Error::new(ErrorCode::STATERROR, "Invalid stats"),
                     )
                     .send()
                     .unwrap_or_else(|e| {
@@ -476,7 +476,7 @@ pub fn server(
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(
-                            ErrorCode::PlayerExists,
+                            ErrorCode::PLAYEREXISTS,
                             "Player is already in the game.",
                         ),
                     )
