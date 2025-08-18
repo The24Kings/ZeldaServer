@@ -4,7 +4,7 @@ ImprovedLurk is a text-based multi-user dungeon (MUD)-style game written in Rust
 
 This project builds on the original [Lurk Server](https://github.com/The24Kings/lurk-server) project, adding improvements, refactoring, and additional features to make the codebase more robust and developer-friendly.
 
-```
+```TXT
  ______    _     _           _____
 |___  /   | |   | |         / ____|
    / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __
@@ -79,13 +79,13 @@ This produces an optimized binary in `target/release/`.
 The recommended way to start the server is with the included script:
 
 ```bash
-./start.sh [PORT]
+./start.sh [PORT] [VERBOSITY]
 ```
 
-For example, to run on port `5050`:
+For example, to run on port `5050` with info debugging:
 
 ```bash
-./start.sh 5050
+./start.sh 5050 -vv
 ```
 
 ---
