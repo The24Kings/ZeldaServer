@@ -290,19 +290,73 @@ pub fn server(
                     error!("[SERVER] Failed to send error packet: {}", e);
                 });
             }
-            Protocol::Loot(_author, content) => {
+            Protocol::Loot(author, content) => {
                 info!("[SERVER] Received: {}", content);
-                //TODO: Loot logic
-                // Find the character in the map and the thing being looted
-                // Loot the thing and send both the updated character and the looted thing back to the client
+
+                // Find the player in the map
+                let player = match game::player_from_stream(&mut players, author.clone()) {
+                    Some((name, player)) => {
+                        info!("[SERVER] Found player '{}'", name);
+                        player
+                    }
+                    None => {
+                        error!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
+
+                let monsters = match rooms.get_mut(&player.current_room) {
+                    Some(room) => &mut room.monsters,
+                    None => {
+                        error!("[SERVER] Player isn't in a valid room");
+                        continue;
+                    }
+                };
+
+                let to_loot = match monsters {
+                    Some(monsters) => monsters.iter_mut().find(|m| m.name == content.target_name),
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(ErrorCode::OTHER, "No monsters to loot!"),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue;
+                    }
+                };
+
+                match to_loot {
+                    Some(m) => {
+                        let gold = m.gold;
+
+                        m.gold = 0;
+                        player.gold += gold;
+                    }
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(ErrorCode::BADMONSTER, "Monster doesn't exist!"),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue;
+                    }
+                }
             }
             Protocol::Start(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
-                    Some((_, player)) => {
-                        info!("[SERVER] Found player '{}'", player.name);
+                    Some((name, player)) => {
+                        info!("[SERVER] Found player '{}'", name);
                         player
                     }
                     None => {
