@@ -31,6 +31,8 @@ pub fn server(
             Protocol::Message(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
+                // TODO: Check to make sure the player is STARTED and READY
+
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
@@ -78,6 +80,8 @@ pub fn server(
             }
             Protocol::ChangeRoom(author, content) => {
                 info!("[SERVER] Received: {}", content);
+
+                // TODO: Check to make sure the player is STARTED and READY
 
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
@@ -265,6 +269,9 @@ pub fn server(
             }
             Protocol::Fight(_author, content) => {
                 info!("[SERVER] Received: {}", content);
+
+                // TODO: Check to make sure the player is STARTED and READY
+
                 //TODO: Fight logic
 
                 /*
@@ -281,6 +288,8 @@ pub fn server(
             Protocol::PVPFight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
+                // TODO: Check to make sure the player is STARTED and READY
+
                 Protocol::Error(
                     author.clone(),
                     pkt_error::Error::new(ErrorCode::NOPLAYERCOMBAT, "No player combat allowed"),
@@ -292,6 +301,8 @@ pub fn server(
             }
             Protocol::Loot(author, content) => {
                 info!("[SERVER] Received: {}", content);
+
+                // TODO: Check to make sure the player is STARTED and READY
 
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
@@ -352,6 +363,8 @@ pub fn server(
             }
             Protocol::Start(author, content) => {
                 info!("[SERVER] Received: {}", content);
+
+                // TODO: Check to make sure the player is READY
 
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
