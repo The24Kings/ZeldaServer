@@ -597,7 +597,7 @@ pub fn server(
                     }
                     ActionKind::BROADCAST => {
                         if action.argc < 2 {
-                            error!("Broadcast command requires at least 1 argument");
+                            error!("Broadcast command requires at least 2 arguments");
                             continue;
                         }
 
@@ -609,7 +609,7 @@ pub fn server(
                     }
                     ActionKind::MESSAGE => {
                         if action.argc < 3 {
-                            error!("Message command requires at least 2 arguments");
+                            error!("Message command requires at least 3 arguments");
                             continue;
                         }
 
