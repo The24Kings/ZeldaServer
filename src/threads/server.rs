@@ -2,10 +2,12 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use tracing::{debug, error, info, warn};
 
+use crate::commands::ActionKind;
 use crate::config::Config;
 use crate::protocol::game::{self, Room};
 use crate::protocol::packet::{
-    pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
+    pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error,
+    pkt_message, pkt_room,
 };
 use crate::protocol::{Protocol, error::ErrorCode, pkt_type::PktType};
 
@@ -585,6 +587,91 @@ pub fn server(
                     }
                 }
                 // ^ ============================================================================ ^
+            }
+            Protocol::Command(action) => {
+                info!("[SERVER] Received: {}", action);
+
+                match action.kind {
+                    ActionKind::HELP => {
+                        info!("{}", config.help_cmd);
+                    }
+                    ActionKind::BROADCAST => {
+                        if action.argc < 2 {
+                            error!("Broadcast command requires at least 1 argument");
+                            continue;
+                        }
+
+                        let message = action.argv[1..].join(" ");
+
+                        game::broadcast(&players, message).unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to broadcast message: {}", e);
+                        });
+                    }
+                    ActionKind::MESSAGE => {
+                        if action.argc < 3 {
+                            error!("Message command requires at least 2 arguments");
+                            continue;
+                        }
+
+                        let name = action.argv[1].clone();
+                        let content = action.argv[2..].join(" ");
+
+                        let recipient = players.get(&name).map(|p| p.author.clone()).flatten();
+
+                        match recipient {
+                            Some(recipient) => {
+                                Protocol::Message(
+                                    recipient.clone(),
+                                    pkt_message::Message {
+                                        message_type: PktType::MESSAGE,
+                                        message_len: content.len() as u16,
+                                        recipient: name,
+                                        sender: "Server".to_string(),
+                                        narration: false,
+                                        message: content,
+                                    },
+                                )
+                                .send()
+                                .unwrap_or_else(|e| {
+                                    error!("[SERVER] Failed to send message packet: {}", e);
+                                });
+                            }
+                            None => {
+                                error!("[SERVER] Player not found: {}", action.argv[1]);
+                            }
+                        }
+                    }
+                    ActionKind::NUKE => {
+                        info!("[SERVER] Nuke command received, removing disconnected players");
+
+                        let to_remove = players
+                            .iter()
+                            .filter(|(_, player)| player.author.is_none())
+                            .map(|(name, _)| name.clone())
+                            .collect::<Vec<String>>();
+
+                        // Remove from main list
+                        players.retain(|name, _| !to_remove.contains(name));
+
+                        // Remove from room list
+                        for room in rooms.values_mut() {
+                            room.players.retain(|name| !to_remove.contains(name));
+                        }
+
+                        info!("[SERVER] Removed {} disconnected players", to_remove.len());
+
+                        game::broadcast(
+                            &players,
+                            "Disconnected players have been removed; ChangeRoom to update player list!".to_string(),
+                        )
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to broadcast message: {}", e);
+                        });
+                    }
+                    ActionKind::OTHER => {
+                        error!("Unsupported command!");
+                    }
+                }
             }
             Protocol::Error(_, _) => {}
             Protocol::Accept(_, _) => {}
