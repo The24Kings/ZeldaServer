@@ -80,24 +80,21 @@ pub fn broadcast(
     info!("[BROADCAST] Sending message: {}", message);
 
     // Send the packet to the server
-    for (_, player) in players {
+    for (name, player) in players {
         let author = match player.author.as_ref() {
             Some(author) => author,
             None => continue,
         };
 
-        debug!("[BROADCAST] Sending message to {}", player.name);
+        debug!("[BROADCAST] Sending message to {}", name);
 
         Protocol::Message(
             author.clone(),
-            pkt_message::Message::server(player.name.clone(), message.clone()),
+            pkt_message::Message::server(name.clone(), message.clone()),
         )
         .send()
         .unwrap_or_else(|e| {
-            warn!(
-                "[BROADCAST] Failed to send message to {}: {}",
-                player.name, e
-            );
+            warn!("[BROADCAST] Failed to send message to {}: {}", name, e);
         });
     }
 
