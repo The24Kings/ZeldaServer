@@ -119,7 +119,12 @@ impl Protocol {
                 content.serialize(&mut byte_stream)?;
                 author
             }
-            _ => return Ok(()), // Ignore none LURK messages (Server stuff)
+            _ => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "Cannot send this Protocol type",
+                ));
+            }
         };
 
         author.as_ref().write_all(&byte_stream)?;

@@ -14,8 +14,8 @@ pub struct Action {
 
 #[derive(Serialize)]
 pub enum ActionKind {
-    BROADCAST,
     HELP,
+    BROADCAST,
     MESSAGE,
     NUKE,
     OTHER,

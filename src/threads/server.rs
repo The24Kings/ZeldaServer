@@ -592,6 +592,9 @@ pub fn server(
                 info!("[SERVER] Received: {}", action);
 
                 match action.kind {
+                    ActionKind::HELP => {
+                        info!("{}", config.help_cmd);
+                    }
                     ActionKind::BROADCAST => {
                         if action.argc < 2 {
                             error!("Broadcast command requires at least 1 argument");
@@ -603,9 +606,6 @@ pub fn server(
                         game::broadcast(&players, message).unwrap_or_else(|e| {
                             error!("[SERVER] Failed to broadcast message: {}", e);
                         });
-                    }
-                    ActionKind::HELP => {
-                        info!("{}", config.help_cmd);
                     }
                     ActionKind::MESSAGE => {
                         if action.argc < 3 {
