@@ -18,6 +18,30 @@ pub struct Message {
     pub message: String,
 }
 
+impl Message {
+    pub fn server(recipient: String, message: String) -> Self {
+        Message {
+            message_type: PktType::MESSAGE,
+            message_len: message.len() as u16,
+            recipient,
+            sender: "Server".to_string(),
+            narration: false,
+            message,
+        }
+    }
+
+    pub fn narrator(recipient: String, message: String) -> Self {
+        Message {
+            message_type: PktType::MESSAGE,
+            message_len: message.len() as u16,
+            recipient,
+            sender: "Narrator".to_string(),
+            narration: true,
+            message,
+        }
+    }
+}
+
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

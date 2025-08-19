@@ -5,7 +5,6 @@ use tracing::{debug, error, info, warn};
 use crate::protocol::{
     Protocol, Stream,
     packet::{pkt_character, pkt_message},
-    pkt_type::PktType,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -91,14 +90,7 @@ pub fn broadcast(
 
         Protocol::Message(
             author.clone(),
-            pkt_message::Message {
-                message_type: PktType::MESSAGE,
-                message_len: message.len() as u16,
-                recipient: player.name.clone(),
-                sender: "Server".to_string(),
-                narration: false,
-                message: message.clone(),
-            },
+            pkt_message::Message::server(player.name.clone(), message.clone()),
         )
         .send()
         .unwrap_or_else(|e| {
@@ -148,14 +140,7 @@ pub fn message_room(
 
         Protocol::Message(
             author.clone(),
-            pkt_message::Message {
-                message_type: PktType::MESSAGE,
-                message_len: message.len() as u16,
-                recipient: player.name.clone(),
-                sender: "Narrator".to_string(),
-                narration: true,
-                message: message.clone(),
-            },
+            pkt_message::Message::narrator(player.name.clone(), message.clone()),
         )
         .send()
         .unwrap_or_else(|e| {
