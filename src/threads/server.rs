@@ -593,7 +593,16 @@ pub fn server(
 
                 match action.kind {
                     ActionKind::BROADCAST => {
-                        info!("Placeholder broadcast command!");
+                        if action.argc < 2 {
+                            error!("Broadcast command requires at least 1 argument");
+                            continue;
+                        }
+
+                        let message = action.argv[1..].join(" ");
+
+                        game::broadcast(&players, message).unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to broadcast message: {}", e);
+                        });
                     }
                     ActionKind::HELP => {
                         info!("{}", config.help_cmd);
