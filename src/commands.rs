@@ -6,19 +6,19 @@ use tracing::{error, info};
 use crate::protocol::Protocol;
 
 #[derive(Serialize)]
+pub struct Action {
+    pub kind: ActionKind,
+    pub argv: Vec<String>,
+    pub argc: usize,
+}
+
+#[derive(Serialize)]
 pub enum ActionKind {
     BROADCAST,
     HELP,
     MESSAGE,
     NUKE,
     OTHER,
-}
-
-#[derive(Serialize)]
-pub struct Action {
-    pub kind: ActionKind,
-    pub argv: Vec<String>,
-    pub argc: usize,
 }
 
 impl std::fmt::Display for Action {
@@ -56,8 +56,11 @@ pub fn input(sender: Sender<Protocol>) -> ! {
         info!("[INPUT] Parsing command.");
 
         // Sanitize and Tokenize
-        let input = input[1..].trim().to_string().to_ascii_lowercase();
-        let argv: Vec<String> = input.split(' ').map(|s| s.to_string()).collect();
+        let input = input[prefix.len()..]
+            .trim()
+            .to_string()
+            .to_ascii_lowercase();
+        let argv: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
         let argc = argv.len();
 
         let kind = match argv[0].as_str() {

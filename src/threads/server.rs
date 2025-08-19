@@ -595,7 +595,7 @@ pub fn server(
                         info!("Placeholder broadcast command!");
                     }
                     ActionKind::HELP => {
-                        info!("Placeholder help command!");
+                        info!("{}", config.help_cmd);
                     }
                     ActionKind::MESSAGE => {
                         info!("Placeholder message command!");
