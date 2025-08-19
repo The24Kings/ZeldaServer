@@ -4,7 +4,7 @@ ImprovedLurk is a text-based multi-user dungeon (MUD)-style game written in Rust
 
 This project builds on the original [Lurk Server](https://github.com/The24Kings/lurk-server) project, adding improvements, refactoring, and additional features to make the codebase more robust and developer-friendly.
 
-```TXT
+```
  ______    _     _           _____
 |___  /   | |   | |         / ____|
    / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __
