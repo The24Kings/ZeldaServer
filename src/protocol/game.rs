@@ -5,7 +5,6 @@ use tracing::{debug, error, info, warn};
 use crate::protocol::{
     Protocol, Stream,
     packet::{pkt_character, pkt_message},
-    pkt_type::PktType,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -82,23 +81,16 @@ pub fn broadcast(
 
     // Send the packet to the server
     for (_, player) in players {
-        let author = player
-            .author
-            .as_ref()
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Author not found"))?;
+        let author = match player.author.as_ref() {
+            Some(author) => author,
+            None => continue,
+        };
 
         debug!("[BROADCAST] Sending message to {}", player.name);
 
         Protocol::Message(
             author.clone(),
-            pkt_message::Message {
-                message_type: PktType::MESSAGE,
-                message_len: message.len() as u16,
-                recipient: player.name.clone(),
-                sender: "Server".to_string(),
-                narration: false,
-                message: message.clone(),
-            },
+            pkt_message::Message::server(player.name.clone(), message.clone()),
         )
         .send()
         .unwrap_or_else(|e| {
@@ -118,10 +110,7 @@ pub fn message_room(
     room_number: u16,
     message: String,
 ) -> Result<(), std::io::Error> {
-    info!(
-        "[ROOM MESSAGE] Sending message to room {}: {}",
-        room_number, message
-    );
+    info!("[ROOM MESSAGE] Messaging room {}: {}", room_number, message);
 
     let room = rooms
         .get(&room_number)
@@ -130,32 +119,19 @@ pub fn message_room(
     room.players.iter().for_each(|name| {
         let player = match players.get(name) {
             Some(player) => player,
-            None => {
-                error!("[ROOM MESSAGE] Player '{}' doesn't exist!", name);
-                return;
-            }
+            None => return,
         };
 
         let author = match player.author.as_ref() {
             Some(author) => author,
-            None => {
-                warn!("[ROOM MESSAGE] Player '{}' is not connected", name);
-                return;
-            }
+            None => return,
         };
 
         debug!("[ROOM MESSAGE] Sending message to '{}'", name);
 
         Protocol::Message(
             author.clone(),
-            pkt_message::Message {
-                message_type: PktType::MESSAGE,
-                message_len: message.len() as u16,
-                recipient: player.name.clone(),
-                sender: "Narrator".to_string(),
-                narration: true,
-                message: message.clone(),
-            },
+            pkt_message::Message::narrator(player.name.clone(), message.clone()),
         )
         .send()
         .unwrap_or_else(|e| {
@@ -185,18 +161,12 @@ pub fn alert_room(
 
         let player = match players.get(name) {
             Some(player) => player,
-            None => {
-                error!("[ALERT] Player '{}' doesn't exist!", name);
-                return;
-            }
+            None => return,
         };
 
         let author = match player.author.as_ref() {
             Some(author) => author,
-            None => {
-                warn!("[ALERT] Player '{}' is not connected", player.name);
-                return;
-            }
+            None => return,
         };
 
         Protocol::Character(author.clone(), alert.clone())

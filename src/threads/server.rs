@@ -622,14 +622,7 @@ pub fn server(
                             Some(recipient) => {
                                 Protocol::Message(
                                     recipient.clone(),
-                                    pkt_message::Message {
-                                        message_type: PktType::MESSAGE,
-                                        message_len: content.len() as u16,
-                                        recipient: name,
-                                        sender: "Server".to_string(),
-                                        narration: false,
-                                        message: content,
-                                    },
+                                    pkt_message::Message::server(name, content),
                                 )
                                 .send()
                                 .unwrap_or_else(|e| {
