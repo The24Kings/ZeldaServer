@@ -6,7 +6,8 @@ use crate::commands::ActionKind;
 use crate::config::Config;
 use crate::protocol::game::{self, Room};
 use crate::protocol::packet::{
-    pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error, pkt_room,
+    pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error,
+    pkt_message, pkt_room,
 };
 use crate::protocol::{Protocol, error::ErrorCode, pkt_type::PktType};
 
@@ -598,7 +599,38 @@ pub fn server(
                         info!("{}", config.help_cmd);
                     }
                     ActionKind::MESSAGE => {
-                        info!("Placeholder message command!");
+                        if action.argc < 3 {
+                            error!("Message command requires at least 2 arguments");
+                            continue;
+                        }
+
+                        let name = action.argv[1].clone();
+                        let content = action.argv[2..].join(" ");
+
+                        let recipient = players.get(&name).map(|p| p.author.clone()).flatten();
+
+                        match recipient {
+                            Some(recipient) => {
+                                Protocol::Message(
+                                    recipient.clone(),
+                                    pkt_message::Message {
+                                        message_type: PktType::MESSAGE,
+                                        message_len: content.len() as u16,
+                                        recipient: name,
+                                        sender: "Server".to_string(),
+                                        narration: false,
+                                        message: content,
+                                    },
+                                )
+                                .send()
+                                .unwrap_or_else(|e| {
+                                    error!("[SERVER] Failed to send message packet: {}", e);
+                                });
+                            }
+                            None => {
+                                error!("[SERVER] Player not found: {}", action.argv[1]);
+                            }
+                        }
                     }
                     ActionKind::NUKE => {
                         info!("Placeholder nuke command!");

@@ -56,14 +56,11 @@ pub fn input(sender: Sender<Protocol>) -> ! {
         info!("[INPUT] Parsing command.");
 
         // Sanitize and Tokenize
-        let input = input[prefix.len()..]
-            .trim()
-            .to_string()
-            .to_ascii_lowercase();
+        let input = input[prefix.len()..].trim().to_string();
         let argv: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
         let argc = argv.len();
 
-        let kind = match argv[0].as_str() {
+        let kind = match argv[0].to_ascii_lowercase().as_str() {
             "broadcast" => ActionKind::BROADCAST,
             "help" => ActionKind::HELP,
             "message" => ActionKind::MESSAGE,
