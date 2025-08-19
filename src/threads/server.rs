@@ -316,6 +316,10 @@ pub fn server(
                     }
                 };
 
+                // ================================================================================
+                // Get the target monster, check if they exists and are dead, then shuffle the
+                // gold to the player.
+                // ================================================================================
                 let monsters = match rooms.get_mut(&player.current_room) {
                     Some(room) => &mut room.monsters,
                     None => {
@@ -340,13 +344,8 @@ pub fn server(
                     }
                 };
 
-                match to_loot {
-                    Some(m) => {
-                        let gold = m.gold;
-
-                        m.gold = 0;
-                        player.gold += gold;
-                    }
+                let to_loot = match to_loot {
+                    Some(m) => m,
                     None => {
                         Protocol::Error(
                             author.clone(),
@@ -359,7 +358,45 @@ pub fn server(
 
                         continue;
                     }
+                };
+
+                if to_loot.health > 0 {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::BADMONSTER, "Cannot loot alive monster!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
                 }
+
+                // Shuffle gold to player
+                let gold = to_loot.gold;
+
+                to_loot.gold = 0;
+                player.gold += gold;
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Send updated player and monster back to author
+                // ================================================================================
+                Protocol::Character(author.clone(), player.clone())
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send character packet: {}", e);
+                    });
+
+                Protocol::Character(
+                    author.clone(),
+                    pkt_character::Character::from_monster(to_loot, player.current_room),
+                )
+                .send()
+                .unwrap_or_else(|e| {
+                    error!("[SERVER] Failed to send character packet: {}", e);
+                });
+
+                // ^ ============================================================================ ^
             }
             Protocol::Start(author, content) => {
                 info!("[SERVER] Received: {}", content);
