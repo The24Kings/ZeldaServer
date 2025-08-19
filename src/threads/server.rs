@@ -642,7 +642,31 @@ pub fn server(
                         }
                     }
                     ActionKind::NUKE => {
-                        info!("Placeholder nuke command!");
+                        info!("[SERVER] Nuke command received, removing disconnected players");
+
+                        let to_remove = players
+                            .iter()
+                            .filter(|(_, player)| player.author.is_none())
+                            .map(|(name, _)| name.clone())
+                            .collect::<Vec<String>>();
+
+                        // Remove from main list
+                        players.retain(|name, _| !to_remove.contains(name));
+
+                        // Remove from room list
+                        for room in rooms.values_mut() {
+                            room.players.retain(|name| !to_remove.contains(name));
+                        }
+
+                        info!("[SERVER] Removed {} disconnected players", to_remove.len());
+
+                        game::broadcast(
+                            &players,
+                            "Disconnected players have been removed; ChangeRoom to update player list!".to_string(),
+                        )
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to broadcast message: {}", e);
+                        });
                     }
                     ActionKind::OTHER => {
                         error!("Unsupported command!");
