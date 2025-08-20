@@ -12,6 +12,7 @@ clap = { version = "4.5.42", features = ["derive"] }
 clap-verbosity-flag = { version = "3.0.3", default-features = false, features = ["tracing"] }
 dotenvy = "0.15.7"
 env_logger = "0.11.8"
+indoc = "2.0.6"
 log = "0.4.27"
 regex = "1.11.1"
 serde = { version = "1.0.219", features = ["derive"] }

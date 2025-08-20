@@ -12,6 +12,7 @@ dependencies = [
  "clap-verbosity-flag",
  "dotenvy",
  "env_logger",
+ "indoc",
  "log",
  "regex",
  "serde",
@@ -274,6 +275,12 @@ checksum = "f31827a206f56af32e590ba56d5d2d085f558508192593743f16b2306495269f"
 dependencies = [
  "cc",
 ]
+
+[[package]]
+name = "indoc"
+version = "2.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4c7245a08504955605670dbf141fceab975f15ca21570696aebe9d2e71576bd"
 
 [[package]]
 name = "is_terminal_polyfill"
