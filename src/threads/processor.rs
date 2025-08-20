@@ -1,3 +1,4 @@
+use std::io::ErrorKind::{BrokenPipe, UnexpectedEof, Unsupported};
 use std::sync::{Arc, mpsc::Sender};
 use tracing::{error, info, warn};
 
@@ -52,32 +53,16 @@ pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>)
             }
             Err(e) => {
                 match e.kind() {
-                    std::io::ErrorKind::ConnectionReset => {
-                        error!("[READ] Connection reset: {}. Terminating thread.", e);
-                    }
-                    std::io::ErrorKind::ConnectionAborted => {
-                        error!("[READ] Connection aborted: {}. Terminating thread.", e);
-                    }
-                    std::io::ErrorKind::NotConnected => {
-                        error!("[READ] Not connected: {}. Terminating thread.", e);
-                    }
-                    std::io::ErrorKind::BrokenPipe => {
-                        error!("[READ] Broken pipe: {}. Terminating thread.", e);
-                    }
-                    std::io::ErrorKind::UnexpectedEof => {
-                        error!("[READ] Unexpected EOF: {}. Terminating thread.", e);
-                    }
-                    std::io::ErrorKind::Unsupported => {
-                        error!("[READ] Unsupported operation: {}. Terminating thread.", e);
+                    BrokenPipe | UnexpectedEof | Unsupported => {
+                        error!("[READ] '{:?}' -> {}. Terminating.", e.kind(), e);
                     }
                     _ => {
-                        warn!("[READ] Non-terminal error: '{}'. Continuing.", e);
+                        warn!("[READ] '{:?}' -> {}. Continuing.", e.kind(), e);
                         continue; // Continue processing other packets
                     }
                 }
 
-                // If we reach here, it means the connection was closed
-                // Ensure the server thread is notified of the disconnection
+                // Exit gracefully
                 client
                     .sender
                     .send(Protocol::Leave(stream.clone(), pkt_leave::Leave::default()))
