@@ -289,23 +289,203 @@ pub fn server(
                 }
                 // ^ ============================================================================ ^
             }
-            Protocol::Fight(_author, content) => {
+            Protocol::Fight(author, content) => {
                 info!("[SERVER] Received: {}", content);
-
-                // TODO: Check to make sure the player is STARTED and READY
 
                 //TODO: Fight logic
 
                 /*
-                    Find the character in the map
+                    Get the monster with the lowest health and sort by name.
+                    Get all players in the room with BATTLE flag
 
-                    Get all the monsters in the room, when fight it called you are
-                    challenging all the monsters in the room...
+                    Action Phase:
+                        Players always attack first!
+                        Calculate collective damage:
+                            -> attack sum - monster defense = total damage
 
-                    Commence the fight; damage is calculated and sent back to the client
-                    If the character is dead, send a message to the client and mark the character as dead and broadcast
-                    the message to all players in the room
+                    Defense Phase:
+                        If the monster doesn't immediately die, it attacks the player who initiated the attack.
+
+                        Calculate damage taken by the player:
+                        -> attack - defense = damage
+
+                    End Phase:
+                        If the player didn't die, regen health
+
+                    Send all updated character to the client
                 */
+
+                // Find the player in the map
+                let player = match game::player_from_stream(&mut players, author.clone()) {
+                    Some((_, player)) => player,
+                    None => {
+                        error!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
+
+                if !player.flags.is_started() && !player.flags.is_ready() {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::NOTREADY, "Start the game first!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue;
+                }
+
+                // ================================================================================
+                // Collect all players that will join us in battle, then get the target monster,
+                // check if they exists and are dead
+                // ================================================================================
+                let mut attacker = player.clone();
+                let current_room = player.current_room;
+
+                let in_battle: Vec<String> = players
+                    .iter()
+                    .filter(|(_, p)| p.flags.is_battle() && p.current_room == current_room)
+                    .map(|(name, _)| name.clone())
+                    .collect();
+
+                let monsters = match rooms.get_mut(&current_room) {
+                    Some(room) => &mut room.monsters,
+                    None => {
+                        error!("[SERVER] Player isn't in a valid room");
+                        continue;
+                    }
+                };
+
+                let to_attack = match monsters {
+                    Some(monsters) => monsters
+                        .iter_mut()
+                        .filter(|m| m.health > 0)
+                        .min_by_key(|m| (m.health, m.name.clone())),
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(
+                                ErrorCode::NOFIGHT,
+                                "The room is eerily quiet...",
+                            ),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue;
+                    }
+                };
+
+                let to_attack = match to_attack {
+                    Some(m) => m,
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(ErrorCode::NOFIGHT, "Let the dead rest."),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue;
+                    }
+                };
+
+                debug!("[SERVER] {} players are in battle", in_battle.len());
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Calculate the fight logic: Action Phase!
+                // ================================================================================
+                let players_in_battle = in_battle.iter().filter_map(|name| players.get(name));
+                let mut victory = false;
+
+                let damage = players_in_battle
+                    .map(|player| player.attack)
+                    .sum::<u16>()
+                    .saturating_sub(to_attack.defense);
+                let damage = damage.try_into().unwrap_or(i16::MAX); // We went out of bounds on damage, cap to i16 MAX int
+
+                to_attack.health = to_attack.health.saturating_sub(damage);
+
+                debug!(
+                    "[SERVER] {} dealt {} damage to {}",
+                    attacker.name, damage, to_attack.name
+                );
+
+                if to_attack.health <= 0 {
+                    info!("[SERVER] {} has defeated {}", attacker.name, to_attack.name);
+                    victory = true;
+                }
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Calculate the fight logic: Defense Phase!
+                // ================================================================================
+                if !victory {
+                    let damage = to_attack.attack.saturating_sub(attacker.defense);
+                    let damage = damage.try_into().unwrap_or(i16::MAX); // We went out of bounds on damage, cap to i16 MAX int
+
+                    attacker.health = attacker.health.saturating_sub(damage);
+
+                    debug!(
+                        "[SERVER] {} took {} damage from {}",
+                        attacker.name, damage, to_attack.name
+                    );
+
+                    if attacker.health <= 0 {
+                        info!("[SERVER] {} killed {}", to_attack.name, attacker.name);
+                    }
+                }
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Calculate the fight logic: End Phase!
+                // ================================================================================
+                if attacker.flags.is_alive() {
+                    let regen = attacker.regen.try_into().unwrap_or(i16::MAX);
+
+                    info!("[SERVER] {} regenerated: {}", attacker.name, regen);
+
+                    attacker.health = attacker.health.saturating_add(regen); // We went out of bounds on regen, cap to i16 MAX int
+                }
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Update player HashMap with new stats and send all the updated players/ monster
+                // to client
+                // ================================================================================
+                for name in &in_battle {
+                    if let Some(player) = players.get(name) {
+                        let _ = players.insert(name.clone(), player.clone());
+                    }
+                }
+
+                let to_update = in_battle.iter().filter_map(|name| players.get(name));
+
+                for player in to_update {
+                    Protocol::Character(author.clone(), player.clone())
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send character packet: {}", e);
+                        });
+                }
+
+                // Send the updated monster information to the client
+                Protocol::Character(
+                    author.clone(),
+                    pkt_character::Character::from_monster(to_attack, current_room),
+                )
+                .send()
+                .unwrap_or_else(|e| {
+                    error!("[SERVER] Failed to send character packet: {}", e);
+                });
+                // ^ ============================================================================ ^
             }
             Protocol::PVPFight(author, content) => {
                 info!("[SERVER] Received: {}", content);
