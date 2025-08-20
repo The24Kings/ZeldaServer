@@ -292,27 +292,6 @@ pub fn server(
             Protocol::Fight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                /*
-                    Get the monster with the lowest health and sort by name.
-                    Get all players in the room with BATTLE flag
-
-                    Action Phase:
-                        Players always attack first!
-                        Calculate collective damage:
-                            -> attack sum - monster defense = total damage
-
-                    Defense Phase:
-                        If the monster doesn't immediately die, it attacks the player who initiated the attack.
-
-                        Calculate damage taken by the player:
-                        -> attack - defense = damage
-
-                    End Phase:
-                        If the player didn't die, regen health
-
-                    Send all updated character to the client
-                */
-
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
                     Some((_, player)) => player,
