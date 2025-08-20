@@ -69,10 +69,13 @@ impl Client {
                 // Send the packet to the sender
                 Some(object)
             }
-            PktType::FIGHT => Some(Protocol::Fight(
-                self.stream.clone(),
-                pkt_fight::Fight::default(),
-            )),
+            PktType::FIGHT => {
+                // Only 1 byte; no need to consume buffer
+                Some(Protocol::Fight(
+                    self.stream.clone(),
+                    pkt_fight::Fight::default(),
+                ))
+            }
             PktType::PVPFIGHT => {
                 let mut buffer = vec![0; 32];
 
@@ -109,10 +112,13 @@ impl Client {
                 // Send the packet to the sender
                 Some(object)
             }
-            PktType::START => Some(Protocol::Start(
-                self.stream.clone(),
-                pkt_start::Start::default(),
-            )),
+            PktType::START => {
+                // Only 1 byte; no need to consume buffer
+                Some(Protocol::Start(
+                    self.stream.clone(),
+                    pkt_start::Start::default(),
+                ))
+            }
             PktType::ERROR => {
                 let mut buffer = vec![0; 3];
 
