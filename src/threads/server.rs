@@ -31,8 +31,6 @@ pub fn server(
             Protocol::Message(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                // TODO: Check to make sure the player is STARTED and READY
-
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
@@ -51,6 +49,19 @@ pub fn server(
                         continue;
                     }
                 };
+
+                if !player.flags.is_started() && !player.flags.is_ready() {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::NOTREADY, "Start the game first!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue;
+                }
 
                 let author = match &player.author {
                     Some(author) => author,
@@ -81,8 +92,6 @@ pub fn server(
             Protocol::ChangeRoom(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                // TODO: Check to make sure the player is STARTED and READY
-
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
                     Some((_, player)) => player,
@@ -91,6 +100,19 @@ pub fn server(
                         continue;
                     }
                 };
+
+                if !player.flags.is_started() && !player.flags.is_ready() {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::NOTREADY, "Start the game first!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue;
+                }
 
                 let cur_room_id = player.current_room;
                 let nxt_room_id = content.room_number;
@@ -288,8 +310,6 @@ pub fn server(
             Protocol::PVPFight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                // TODO: Check to make sure the player is STARTED and READY
-
                 Protocol::Error(
                     author.clone(),
                     pkt_error::Error::new(ErrorCode::NOPLAYERCOMBAT, "No player combat allowed"),
@@ -302,8 +322,6 @@ pub fn server(
             Protocol::Loot(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                // TODO: Check to make sure the player is STARTED and READY
-
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
                     Some((name, player)) => {
@@ -315,6 +333,19 @@ pub fn server(
                         continue;
                     }
                 };
+
+                if !player.flags.is_started() && !player.flags.is_ready() {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::NOTREADY, "Start the game first!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue;
+                }
 
                 // ================================================================================
                 // Get the target monster, check if they exists and are dead, then shuffle the
@@ -414,8 +445,6 @@ pub fn server(
             Protocol::Start(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                // TODO: Check to make sure the player is READY
-
                 // Find the player in the map
                 let player = match game::player_from_stream(&mut players, author.clone()) {
                     Some((name, player)) => {
@@ -427,6 +456,19 @@ pub fn server(
                         continue;
                     }
                 };
+
+                if !player.flags.is_ready() {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::NOTREADY, "Supply of valid player first!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue;
+                }
 
                 // ================================================================================
                 // Activate the character and send the information off to client
