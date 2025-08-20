@@ -48,7 +48,7 @@ impl Character {
     pub fn from_monster(incoming: &Monster, current_room: u16) -> Self {
         let mut flags = CharacterFlags::MONSTER;
 
-        if incoming.health == 0 {
+        if incoming.health <= 0 {
             flags |= CharacterFlags::dead();
         } else {
             flags |= CharacterFlags::alive();

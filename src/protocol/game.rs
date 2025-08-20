@@ -103,15 +103,14 @@ pub fn broadcast(
 
 pub fn message_room(
     players: &HashMap<String, pkt_character::Character>,
-    rooms: &HashMap<u16, Room>,
-    room_number: u16,
+    room: &Room,
     message: String,
+    narration: bool,
 ) -> Result<(), std::io::Error> {
-    info!("[ROOM MESSAGE] Messaging room {}: {}", room_number, message);
-
-    let room = rooms
-        .get(&room_number)
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Room not found"))?;
+    info!(
+        "[ROOM MESSAGE] Messaging room {}: {}",
+        room.room_number, message
+    );
 
     room.players.iter().for_each(|name| {
         let player = match players.get(name) {
@@ -126,14 +125,17 @@ pub fn message_room(
 
         debug!("[ROOM MESSAGE] Sending message to '{}'", name);
 
-        Protocol::Message(
-            author.clone(),
-            pkt_message::Message::narrator(player.name.clone(), message.clone()),
-        )
-        .send()
-        .unwrap_or_else(|e| {
-            error!("[ROOM MESSAGE] Failed to send message to '{}': {}", name, e);
-        });
+        let message = if narration {
+            pkt_message::Message::narrator(player.name.clone(), message.clone())
+        } else {
+            pkt_message::Message::server(player.name.clone(), message.clone())
+        };
+
+        Protocol::Message(author.clone(), message)
+            .send()
+            .unwrap_or_else(|e| {
+                error!("[ROOM MESSAGE] Failed to send message to '{}': {}", name, e);
+            });
     });
 
     Ok(())
@@ -143,15 +145,10 @@ pub fn message_room(
 /// to each player in the room.
 pub fn alert_room(
     players: &HashMap<String, pkt_character::Character>,
-    rooms: &HashMap<u16, Room>,
-    room_number: u16,
+    room: &Room,
     alert: &pkt_character::Character,
 ) -> Result<(), std::io::Error> {
     info!("[ALERT] Alerting players about: '{}'", alert.name);
-
-    let room = rooms
-        .get(&room_number)
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Room not found"))?;
 
     room.players.iter().for_each(|name| {
         debug!("[ALERT] Alerting player: '{}'", name);

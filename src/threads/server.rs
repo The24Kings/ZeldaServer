@@ -31,6 +31,8 @@ pub fn server(
             Protocol::Message(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
+                // TODO: If they message a monster... like the deku under the tree, it might open the door
+
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
@@ -174,6 +176,8 @@ pub fn server(
                 info!("[SERVER] Removing player from old room");
                 cur_room.players.retain(|name| *name != player.name);
 
+                let cur_room = cur_room.clone(); // End mutable borrow of cur_room
+
                 // Find the next room in the map, add the player, and send it off
                 let new_room = match rooms.get_mut(&nxt_room_id) {
                     Some(room) => room,
@@ -200,9 +204,7 @@ pub fn server(
                         error!("[SERVER] Failed to send room packet: {}", e);
                     });
 
-                // Ends mutable borrow of new_room
-                let room_players = new_room.players.clone();
-                let room_monsters = new_room.monsters.clone();
+                let new_room = new_room.clone(); // End mutable borrow of new_room
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -246,25 +248,23 @@ pub fn server(
                 // ================================================================================
                 let player = player.clone(); // End mutable borrow of player
 
-                game::alert_room(&players, &rooms, cur_room_id, &player).unwrap_or_else(|e| {
+                game::alert_room(&players, &cur_room, &player).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
 
-                game::alert_room(&players, &rooms, content.room_number, &player).unwrap_or_else(
-                    |e| {
-                        warn!("[SERVER] Failed to alert players: {}", e);
-                    },
-                );
+                game::alert_room(&players, &new_room, &player).unwrap_or_else(|e| {
+                    warn!("[SERVER] Failed to alert players: {}", e);
+                });
                 // ^ ============================================================================ ^
 
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|name| players.get(name));
+                let players = new_room.players.iter().filter_map(|name| players.get(name));
 
                 debug!("[SERVER] Players: {:?}", players);
 
-                let monsters = match &room_monsters {
+                let monsters = match &new_room.monsters {
                     Some(monsters) => monsters.iter(),
                     None => [].iter(),
                 };
@@ -289,23 +289,240 @@ pub fn server(
                 }
                 // ^ ============================================================================ ^
             }
-            Protocol::Fight(_author, content) => {
+            Protocol::Fight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                // TODO: Check to make sure the player is STARTED and READY
-
-                //TODO: Fight logic
-
                 /*
-                    Find the character in the map
+                    Get the monster with the lowest health and sort by name.
+                    Get all players in the room with BATTLE flag
 
-                    Get all the monsters in the room, when fight it called you are
-                    challenging all the monsters in the room...
+                    Action Phase:
+                        Players always attack first!
+                        Calculate collective damage:
+                            -> attack sum - monster defense = total damage
 
-                    Commence the fight; damage is calculated and sent back to the client
-                    If the character is dead, send a message to the client and mark the character as dead and broadcast
-                    the message to all players in the room
+                    Defense Phase:
+                        If the monster doesn't immediately die, it attacks the player who initiated the attack.
+
+                        Calculate damage taken by the player:
+                        -> attack - defense = damage
+
+                    End Phase:
+                        If the player didn't die, regen health
+
+                    Send all updated character to the client
                 */
+
+                // Find the player in the map
+                let player = match game::player_from_stream(&mut players, author.clone()) {
+                    Some((_, player)) => player,
+                    None => {
+                        error!("[SERVER] Unable to find player in map");
+                        continue;
+                    }
+                };
+
+                if !player.flags.is_started() && !player.flags.is_ready() {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::NOTREADY, "Start the game first!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue;
+                }
+
+                // ================================================================================
+                // Collect all players that will join us in battle, then get the target monster,
+                // check if they exists and are dead
+                // ================================================================================
+                let mut attacker = player.clone();
+                let current_room = player.current_room;
+
+                let mut room = match rooms.get_mut(&current_room) {
+                    Some(room) => room.clone(), // To allow me to message the whole room without borrow checker issues
+                    None => {
+                        error!("[SERVER] Room not found");
+                        continue;
+                    }
+                };
+
+                room.players.retain(|player| player != &attacker.name); // Remove attacker for narration purposes
+
+                let in_battle: Vec<String> = players
+                    .iter()
+                    .filter(|(_, p)| p.flags.is_battle() && p.current_room == current_room)
+                    .map(|(name, _)| name.clone())
+                    .collect();
+
+                let monsters = match rooms.get_mut(&current_room) {
+                    Some(room) => &mut room.monsters,
+                    None => {
+                        error!("[SERVER] Player isn't in a valid room");
+                        continue;
+                    }
+                };
+
+                let to_attack = match monsters {
+                    Some(monsters) => monsters
+                        .iter_mut()
+                        .filter(|m| m.health > 0)
+                        .min_by_key(|m| (m.health, m.name.clone())),
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(
+                                ErrorCode::NOFIGHT,
+                                "The room is eerily quiet...",
+                            ),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue;
+                    }
+                };
+
+                let to_attack = match to_attack {
+                    Some(m) => m,
+                    None => {
+                        Protocol::Error(
+                            author.clone(),
+                            pkt_error::Error::new(ErrorCode::NOFIGHT, "Let the dead rest."),
+                        )
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send error packet: {}", e);
+                        });
+
+                        continue;
+                    }
+                };
+
+                info!("[SERVER] Battling '{}'", to_attack.name);
+                info!("[SERVER] {} player(s) joining the battle", in_battle.len());
+
+                game::message_room(
+                    &players,
+                    &room,
+                    format!("{} is attacking {}", attacker.name, to_attack.name),
+                    false,
+                )
+                .unwrap_or_else(|e| {
+                    warn!("[SERVER] Failed to send message: {}", e);
+                });
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Calculate the fight logic: Action Phase!
+                // ================================================================================
+                let players_in_battle: Vec<_> = in_battle
+                    .iter()
+                    .filter_map(|name| players.get(name))
+                    .collect();
+                let mut victory = false;
+
+                game::message_room(
+                    &players,
+                    &room,
+                    format!(
+                        "Joining '{}' in attacking '{}'",
+                        attacker.name, to_attack.name
+                    ),
+                    false,
+                )
+                .unwrap_or_else(|e| {
+                    warn!("[SERVER] Failed to send message: {}", e);
+                });
+
+                let damage = players_in_battle
+                    .iter()
+                    .map(|player| player.attack)
+                    .sum::<u16>()
+                    .saturating_sub(to_attack.defense);
+                let damage = damage.try_into().unwrap_or(i16::MAX); // We went out of bounds on damage, cap to i16 MAX int
+
+                to_attack.health = to_attack.health.saturating_sub(damage);
+
+                info!("[SERVER] '{}' dealt {} damage", attacker.name, damage);
+
+                if to_attack.health <= 0 {
+                    victory = true;
+
+                    info!("[SERVER] '{}' defeated '{}'", attacker.name, to_attack.name);
+                }
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Calculate the fight logic: Defense Phase!
+                // ================================================================================
+                if !victory {
+                    let damage = to_attack.attack.saturating_sub(attacker.defense);
+                    let damage = damage.try_into().unwrap_or(i16::MAX); // We went out of bounds on damage, cap to i16 MAX int
+
+                    attacker.health = attacker.health.saturating_sub(damage);
+
+                    info!(
+                        "[SERVER] '{}' took {} damage from '{}'",
+                        attacker.name, damage, to_attack.name
+                    );
+
+                    if attacker.health <= 0 {
+                        info!("[SERVER] '{}' killed '{}'", to_attack.name, attacker.name);
+                    }
+                }
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Calculate the fight logic: End Phase!
+                // ================================================================================
+                if attacker.flags.is_alive() {
+                    let regen = attacker.regen.try_into().unwrap_or(i16::MAX);
+
+                    info!("[SERVER] '{}' regenerated: {}", attacker.name, regen);
+
+                    attacker.health = attacker.health.saturating_add(regen); // We went out of bounds on regen, cap to i16 MAX int
+                }
+                // ^ ============================================================================ ^
+
+                // ================================================================================
+                // Update player HashMap with new stats and send all the updated players/ monster
+                // to client
+                // ================================================================================
+                info!("[SERVER] Updating players in fight");
+
+                let _ = players.insert(attacker.name.clone(), attacker.clone());
+
+                for name in &in_battle {
+                    if let Some(player) = players.get(name) {
+                        let _ = players.insert(name.clone(), player.clone());
+                    }
+                }
+
+                let to_update = in_battle.iter().filter_map(|name| players.get(name));
+
+                room.players.push(attacker.name.clone()); // Add the name back so the attacker gets updated
+
+                for player in to_update {
+                    game::alert_room(&players, &room, player).unwrap_or_else(|e| {
+                        warn!("[SERVER] Failed to alert players: {}", e);
+                    });
+                }
+
+                game::alert_room(
+                    &players,
+                    &room,
+                    &pkt_character::Character::from_monster(&to_attack, current_room),
+                )
+                .unwrap_or_else(|e| {
+                    warn!("[SERVER] Failed to alert players: {}", e);
+                });
+                // ^ ============================================================================ ^
             }
             Protocol::PVPFight(author, content) => {
                 info!("[SERVER] Received: {}", content);
@@ -482,15 +699,6 @@ pub fn server(
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send character packet: {}", e);
                     });
-
-                game::alert_room(&players, &rooms, 0, &player).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
-
-                game::broadcast(&players, format!("{} has started the game!", player.name))
-                    .unwrap_or_else(|e| {
-                        warn!("[SERVER] Failed to broadcast message: {}", e);
-                    });
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -503,6 +711,15 @@ pub fn server(
                         continue;
                     }
                 };
+
+                game::alert_room(&players, &room, &player).unwrap_or_else(|e| {
+                    warn!("[SERVER] Failed to alert players: {}", e);
+                });
+
+                game::broadcast(&players, format!("{} has started the game!", player.name))
+                    .unwrap_or_else(|e| {
+                        warn!("[SERVER] Failed to broadcast message: {}", e);
+                    });
 
                 info!("[SERVER] Adding player to starting room");
 
@@ -695,15 +912,15 @@ pub fn server(
 
                 game::message_room(
                     &players,
-                    &rooms,
-                    old_room_number,
+                    &room,
                     format!("{}'s corpse disappeared into a puff of smoke.", player.name),
+                    true,
                 )
                 .unwrap_or_else(|e| {
                     error!("[SERVER] Failed to message room: {}", e);
                 });
 
-                game::alert_room(&players, &rooms, old_room_number, &player).unwrap_or_else(|e| {
+                game::alert_room(&players, &room, &player).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
                 // ^ ============================================================================ ^
@@ -726,16 +943,22 @@ pub fn server(
 
                 let player = player.clone(); // End mutable borrow of player
 
+                let room = match rooms.get(&player.current_room) {
+                    Some(room) => room,
+                    None => {
+                        warn!("[SERVER] Unable to find where the player left off in the map");
+                        continue;
+                    }
+                };
+
                 game::broadcast(&players, format!("{} has left the game.", player.name))
                     .unwrap_or_else(|e| {
                         warn!("[SERVER] Failed to broadcast message: {}", e);
                     });
 
-                game::alert_room(&players, &rooms, player.current_room, &player).unwrap_or_else(
-                    |e| {
-                        warn!("[SERVER] Failed to alert players: {}", e);
-                    },
-                );
+                game::alert_room(&players, &room, &player).unwrap_or_else(|e| {
+                    warn!("[SERVER] Failed to alert players: {}", e);
+                });
 
                 match author.shutdown(std::net::Shutdown::Both) {
                     Ok(_) => {
