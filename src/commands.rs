@@ -60,6 +60,8 @@ pub fn input(sender: Sender<Protocol>) -> ! {
         let argv: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
         let argc = argv.len();
 
+        // TODO: Add a revive command that brings all dead monsters back to life
+
         let kind = match argv[0].to_ascii_lowercase().as_str() {
             "broadcast" => ActionKind::BROADCAST,
             "help" => ActionKind::HELP,
