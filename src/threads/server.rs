@@ -15,7 +15,7 @@ pub fn server(
     receiver: Arc<Mutex<Receiver<Protocol>>>,
     config: Arc<Config>,
     rooms: &mut HashMap<u16, Room>,
-) {
+) -> ! {
     let mut players: HashMap<String, pkt_character::Character> = HashMap::new();
 
     loop {
@@ -1010,6 +1010,10 @@ pub fn server(
                         // Remove from room list
                         for room in rooms.values_mut() {
                             room.players.retain(|name| !to_remove.contains(name));
+                        }
+
+                        if to_remove.len() == 0 {
+                            continue;
                         }
 
                         info!("[SERVER] Removed {} disconnected players", to_remove.len());
