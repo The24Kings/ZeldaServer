@@ -394,7 +394,8 @@ pub fn server(
                     }
                 };
 
-                debug!("[SERVER] {} players are in battle", in_battle.len());
+                info!("[SERVER] Battling '{}'", to_attack.name);
+                info!("[SERVER] {} player(s) joining the battle", in_battle.len());
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -411,14 +412,12 @@ pub fn server(
 
                 to_attack.health = to_attack.health.saturating_sub(damage);
 
-                debug!(
-                    "[SERVER] {} dealt {} damage to {}",
-                    attacker.name, damage, to_attack.name
-                );
+                info!("[SERVER] '{}' dealt {} damage", attacker.name, damage);
 
                 if to_attack.health <= 0 {
-                    info!("[SERVER] {} has defeated {}", attacker.name, to_attack.name);
                     victory = true;
+
+                    info!("[SERVER] '{}' defeated '{}'", attacker.name, to_attack.name);
                 }
                 // ^ ============================================================================ ^
 
@@ -431,8 +430,8 @@ pub fn server(
 
                     attacker.health = attacker.health.saturating_sub(damage);
 
-                    debug!(
-                        "[SERVER] {} took {} damage from {}",
+                    info!(
+                        "[SERVER] '{}' took {} damage from '{}'",
                         attacker.name, damage, to_attack.name
                     );
 
@@ -458,11 +457,12 @@ pub fn server(
                 // Update player HashMap with new stats and send all the updated players/ monster
                 // to client
                 // ================================================================================
+                info!("[SERVER] Updating players in fight");
+
                 let _ = players.insert(attacker.name.clone(), attacker.clone());
 
                 for name in &in_battle {
                     if let Some(player) = players.get(name) {
-                        debug!("[SERVER] Updating player '{}' in master list", player.name);
                         let _ = players.insert(name.clone(), player.clone());
                     }
                 }
@@ -470,16 +470,13 @@ pub fn server(
                 let to_update = in_battle.iter().filter_map(|name| players.get(name));
 
                 for player in to_update {
-                    debug!("[SERVER] Updating player: {}", player.name);
-
                     Protocol::Character(author.clone(), player.clone())
                         .send()
                         .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send character packet: '{}'", e);
+                            error!("[SERVER] Failed to send character packet: {}", e);
                         });
                 }
 
-                // Send the updated monster information to the client
                 Protocol::Character(
                     author.clone(),
                     pkt_character::Character::from_monster(to_attack, current_room),
