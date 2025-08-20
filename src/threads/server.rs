@@ -437,7 +437,7 @@ pub fn server(
                     );
 
                     if attacker.health <= 0 {
-                        info!("[SERVER] {} killed {}", to_attack.name, attacker.name);
+                        info!("[SERVER] '{}' killed '{}'", to_attack.name, attacker.name);
                     }
                 }
                 // ^ ============================================================================ ^
@@ -448,7 +448,7 @@ pub fn server(
                 if attacker.flags.is_alive() {
                     let regen = attacker.regen.try_into().unwrap_or(i16::MAX);
 
-                    info!("[SERVER] {} regenerated: {}", attacker.name, regen);
+                    info!("[SERVER] '{}' regenerated: {}", attacker.name, regen);
 
                     attacker.health = attacker.health.saturating_add(regen); // We went out of bounds on regen, cap to i16 MAX int
                 }
@@ -458,8 +458,11 @@ pub fn server(
                 // Update player HashMap with new stats and send all the updated players/ monster
                 // to client
                 // ================================================================================
+                let _ = players.insert(attacker.name.clone(), attacker.clone());
+
                 for name in &in_battle {
                     if let Some(player) = players.get(name) {
+                        debug!("[SERVER] Updating player '{}' in master list", player.name);
                         let _ = players.insert(name.clone(), player.clone());
                     }
                 }
@@ -467,10 +470,12 @@ pub fn server(
                 let to_update = in_battle.iter().filter_map(|name| players.get(name));
 
                 for player in to_update {
+                    debug!("[SERVER] Updating player: {}", player.name);
+
                     Protocol::Character(author.clone(), player.clone())
                         .send()
                         .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send character packet: {}", e);
+                            error!("[SERVER] Failed to send character packet: '{}'", e);
                         });
                 }
 
