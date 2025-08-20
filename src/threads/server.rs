@@ -292,8 +292,6 @@ pub fn server(
             Protocol::Fight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
-                //TODO: Fight logic
-
                 /*
                     Get the monster with the lowest health and sort by name.
                     Get all players in the room with BATTLE flag
