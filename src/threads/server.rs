@@ -363,12 +363,25 @@ pub fn server(
                 if to_loot.health > 0 {
                     Protocol::Error(
                         author.clone(),
-                        pkt_error::Error::new(ErrorCode::BADMONSTER, "Cannot loot alive monster!"),
+                        pkt_error::Error::new(ErrorCode::BADMONSTER, "Monster is still alive!"),
                     )
                     .send()
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send error packet: {}", e);
                     });
+                }
+
+                if to_loot.gold == 0 {
+                    Protocol::Error(
+                        author.clone(),
+                        pkt_error::Error::new(ErrorCode::BADMONSTER, "Monster already looted!"),
+                    )
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send error packet: {}", e);
+                    });
+
+                    continue;
                 }
 
                 // Shuffle gold to player
@@ -578,7 +591,7 @@ pub fn server(
                     }
                 };
 
-                if player.flags.contains(CharacterFlags::STARTED) {
+                if player.flags.is_started() {
                     Protocol::Error(
                         author.clone(),
                         pkt_error::Error::new(

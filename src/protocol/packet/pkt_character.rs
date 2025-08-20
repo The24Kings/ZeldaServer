@@ -33,7 +33,7 @@ impl Character {
             author: incoming.author.clone(),
             message_type: incoming.message_type,
             name: incoming.name.clone(),
-            flags: CharacterFlags::default(),
+            flags: CharacterFlags::alive(),
             attack: incoming.attack,
             defense: incoming.defense,
             regen: incoming.regen,
@@ -46,11 +46,19 @@ impl Character {
     }
 
     pub fn from_monster(incoming: &Monster, current_room: u16) -> Self {
+        let mut flags = CharacterFlags::MONSTER;
+
+        if incoming.health == 0 {
+            flags |= CharacterFlags::dead();
+        } else {
+            flags |= CharacterFlags::alive();
+        };
+
         Character {
             author: None,
             message_type: PktType::CHARACTER,
             name: incoming.name.clone(),
-            flags: CharacterFlags::default() | CharacterFlags::MONSTER,
+            flags,
             attack: incoming.attack,
             defense: incoming.defense,
             regen: 0, // Monsters don't regenerate health
@@ -69,7 +77,7 @@ impl Default for Character {
             author: None,
             message_type: PktType::CHARACTER,
             name: "Error".to_string(),
-            flags: CharacterFlags::default(),
+            flags: CharacterFlags::alive(),
             attack: 0,
             defense: 0,
             regen: 0,
@@ -130,8 +138,32 @@ bitflags! {
     }
 }
 
-impl Default for CharacterFlags {
-    fn default() -> Self {
+impl CharacterFlags {
+    pub fn is_alive(&self) -> bool {
+        self.contains(CharacterFlags::ALIVE)
+    }
+
+    pub fn is_battle(&self) -> bool {
+        self.contains(CharacterFlags::BATTLE)
+    }
+
+    pub fn is_monster(&self) -> bool {
+        self.contains(CharacterFlags::MONSTER)
+    }
+
+    pub fn is_started(&self) -> bool {
+        self.contains(CharacterFlags::STARTED)
+    }
+
+    pub fn is_ready(&self) -> bool {
+        self.contains(CharacterFlags::READY)
+    }
+
+    pub fn dead() -> Self {
+        CharacterFlags::BATTLE | CharacterFlags::READY
+    }
+
+    pub fn alive() -> Self {
         CharacterFlags::ALIVE | CharacterFlags::BATTLE | CharacterFlags::READY
     }
 }
