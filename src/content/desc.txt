@@ -6,17 +6,6 @@
  / /_|  __/ | (_| | (_| |   ____) |  __/ |   \ V /  __/ |   
 /_____\___|_|\__,_|\__,_|  |_____/ \___|_|    \_/ \___|_|  
 
-|| ^ WARNING ^        Under Construction!        ^ WARNING ^
-|| 
-||           | Missing Feature | Status        |
-||           | ----------------| ------------- |
-||           | Fighting        | In Queue      |
-||           | Dynamic Map     | Drafting      |
-|| 
-||        Please report any bugs you might find on Github!
-||           https://github.com/The24Kings/ImprovedLurk
-||                         Thank you!
-
 You find yourself standing in front of the gaping maw of a towering tree.
 You hear a booming voice from above telling you to enter, but beware for danger lies ahead!
 
@@ -39,3 +28,7 @@ You hear a booming voice from above telling you to enter, but beware for danger 
 _______.---./    .'                    \_.--._ ___________
   --''¯        _/    __                       '--..       
              ''    .'
+
+   Please report any bugs you might find on Github!
+      https://github.com/The24Kings/ImprovedLurk
+                    Thank you!
