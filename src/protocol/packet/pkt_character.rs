@@ -166,6 +166,10 @@ impl CharacterFlags {
     pub fn alive() -> Self {
         CharacterFlags::ALIVE | CharacterFlags::BATTLE | CharacterFlags::READY
     }
+
+    pub fn reset() -> Self {
+        CharacterFlags::ALIVE | CharacterFlags::BATTLE
+    }
 }
 
 impl<'a> Parser<'a> for Character {

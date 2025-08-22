@@ -789,6 +789,7 @@ pub fn server(
                 }
 
                 let mut updated_content = content.clone();
+                let name = content.name.clone();
 
                 if total_stats < config.initial_points && content.attack < 1
                     || content.defense < 1
@@ -801,31 +802,25 @@ pub fn server(
                     updated_content.defense += (config.initial_points - total_stats) / 3;
                     updated_content.regen += (config.initial_points - total_stats) / 3;
                 }
+
+                updated_content.flags = CharacterFlags::reset(); // Ignore player provided stats
                 // ^ ============================================================================ ^
 
                 // ================================================================================
-                // Check if the player has already been created (Primary Key -> Name).
-                // Create a new player and return it if not.
+                // Add the player to the map and get a mutable ref to it
                 // We ignore the flags from the client and set the correct ones accordingly.
                 // Store the old room so that we may remove the player later and set ignore input room
                 // ================================================================================
-                let player = match players.get_mut(&content.name) {
+                let player = match players.get_mut(&name) {
                     Some(player) => {
-                        info!("[SERVER] Reactivating character.");
-                        info!("[SERVER] Player left off in: {}", player.current_room);
-
+                        info!("[SERVER] Obtained player");
                         player
                     }
                     None => {
-                        info!("[SERVER] Adding character to map.");
+                        info!("[SERVER] Could not find player; inserting and trying again");
+                        let _ = players.insert(name.clone(), updated_content.clone());
 
-                        game::add_player(
-                            &mut players,
-                            pkt_character::Character::to_default(&updated_content),
-                        );
-
-                        // Now get the newly added player
-                        players.get_mut(&updated_content.name).unwrap() // Should never panic because we JUST added this player to the map...
+                        players.get_mut(&name).unwrap() // We just inserted so this is okay; we want to panic if insert fails
                     }
                 };
 
