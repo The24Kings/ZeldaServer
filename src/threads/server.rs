@@ -15,7 +15,7 @@ pub fn server(
     receiver: Arc<Mutex<Receiver<Protocol>>>,
     config: Arc<Config>,
     rooms: &mut HashMap<u16, Room>,
-) {
+) -> ! {
     let mut players: HashMap<String, pkt_character::Character> = HashMap::new();
 
     loop {
@@ -90,7 +90,7 @@ pub fn server(
                         error!("[SERVER] Failed to send message packet: {}", e);
                     });
                 // ^ ============================================================================ ^
-            }
+            } // Protocol::MESSAGE
             Protocol::ChangeRoom(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
@@ -288,7 +288,7 @@ pub fn server(
                     });
                 }
                 // ^ ============================================================================ ^
-            }
+            } // Protocol::CHANGEROOM
             Protocol::Fight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
@@ -502,7 +502,7 @@ pub fn server(
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
                 // ^ ============================================================================ ^
-            }
+            } // Protocol::FIGHT
             Protocol::PVPFight(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
@@ -514,7 +514,7 @@ pub fn server(
                 .unwrap_or_else(|e| {
                     error!("[SERVER] Failed to send error packet: {}", e);
                 });
-            }
+            } // Protocol::PVPFIGHT
             Protocol::Loot(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
@@ -637,7 +637,7 @@ pub fn server(
                 });
 
                 // ^ ============================================================================ ^
-            }
+            } // Protocol::LOOT
             Protocol::Start(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
@@ -762,7 +762,7 @@ pub fn server(
                     });
                 }
                 // ^ ============================================================================ ^
-            }
+            } // Protocol::START
             Protocol::Character(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
@@ -903,7 +903,7 @@ pub fn server(
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
                 // ^ ============================================================================ ^
-            }
+            } // Protocol::CHARACTER
             Protocol::Leave(author, content) => {
                 info!("[SERVER] Received: {}", content);
 
@@ -948,7 +948,7 @@ pub fn server(
                     }
                 }
                 // ^ ============================================================================ ^
-            }
+            } // Protocol::LEAVE
             Protocol::Command(action) => {
                 info!("[SERVER] Received: {}", action);
 
@@ -1012,6 +1012,10 @@ pub fn server(
                             room.players.retain(|name| !to_remove.contains(name));
                         }
 
+                        if to_remove.len() == 0 {
+                            continue;
+                        }
+
                         info!("[SERVER] Removed {} disconnected players", to_remove.len());
 
                         game::broadcast(
@@ -1026,7 +1030,7 @@ pub fn server(
                         error!("[SERVER] Unsupported command!");
                     }
                 }
-            }
+            } // Protocol::COMMAND
             Protocol::Error(_, _) => {}
             Protocol::Accept(_, _) => {}
             Protocol::Room(_, _) => {}

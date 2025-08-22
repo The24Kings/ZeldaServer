@@ -1,3 +1,4 @@
+use indoc::indoc;
 use std::env;
 use tracing::info;
 
@@ -37,13 +38,13 @@ impl Config {
             .expect("[CONFIG] MINOR_REV must be set.")
             .parse()
             .expect("[CONFIG] Failed to parse MINOR_REV");
-        let help_cmd = "
-Usage:
-    ${CMD_PREFIX}help                           - Display this help message
-    ${CMD_PREFIX}broadcast <content>            - Send a message to all players
-    ${CMD_PREFIX}message <recipient> <content>  - Send a private message to a player
-    ${CMD_PREFIX}nuke                           - Remove all disconnected players on the map"
-            .replace("${CMD_PREFIX}", &cmd_prefix);
+        let help_cmd = indoc! {"Lurk Server CLI:
+            Usage:
+                ${CMD_PREFIX}help                           - Display this help message
+                ${CMD_PREFIX}broadcast <content>            - Send a message to all players
+                ${CMD_PREFIX}message <recipient> <content>  - Send a private message to a player
+                ${CMD_PREFIX}nuke                           - Remove all disconnected players on the map"
+        }.replace("${CMD_PREFIX}", &cmd_prefix);
 
         info!("[CONFIG] Successfully loaded configuration!");
 
