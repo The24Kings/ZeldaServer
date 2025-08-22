@@ -53,13 +53,6 @@ pub fn exits(rooms: &HashMap<u16, Room>, room_number: u16) -> Option<HashMap<u16
     rooms.get(&room_number).map(|room| room.connections.clone())
 }
 
-pub fn add_player(
-    players: &mut HashMap<String, pkt_character::Character>,
-    player: pkt_character::Character,
-) {
-    players.insert(player.name.clone(), player);
-}
-
 pub fn player_from_stream(
     players: &mut HashMap<String, pkt_character::Character>,
     stream: Stream,
