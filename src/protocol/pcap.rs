@@ -1,5 +1,3 @@
-use std::iter::repeat;
-
 use tabled::{
     Table, Tabled,
     settings::{Remove, Style, object::Rows},
@@ -13,30 +11,28 @@ struct PCapLine {
 }
 
 impl PCapLine {
-    fn new(address: String, hex: Vec<u8>) -> Self {
-        let hex_str = hex
+    fn new(address: String, bytes: &[u8]) -> Self {
+        let hex: String = bytes
             .iter()
-            .map(|b| format!("{:02x}", b))
-            .collect::<Vec<String>>()
-            .join(" ");
-
-        let mut ascii_str = hex
-            .iter()
-            .map(|b| {
-                if *b >= 32 && *b <= 126 {
-                    *b as char
+            .enumerate()
+            .map(|(i, b)| {
+                if i < 8 {
+                    format!("{:02x} ", b)
                 } else {
-                    '.'
+                    format!(" {:02x}", b)
                 }
             })
-            .collect::<String>();
+            .collect();
 
-        ascii_str.extend(repeat('.').take(16 - hex.len()));
+        let ascii = bytes
+            .iter()
+            .map(|&b| if b >= 32 && b <= 126 { b as char } else { '.' })
+            .collect::<String>();
 
         PCapLine {
             address,
-            hex: hex_str,
-            ascii: ascii_str,
+            hex,
+            ascii,
         }
     }
 }
@@ -47,14 +43,14 @@ pub struct PCap {}
 impl PCap {
     pub fn build(data: Vec<u8>) -> String {
         let mut lines = Vec::new();
-        let chunks: Vec<&[u8]> = data.chunks(16).collect();
+        let chunks = data.chunks(16);
 
-        for (i, chunk) in chunks.iter().enumerate() {
+        chunks.enumerate().for_each(|(i, bytes)| {
             let address = format!("{:08x}", i * 16);
-            let line = PCapLine::new(address, chunk.to_vec());
+            let line = PCapLine::new(address, bytes);
 
             lines.push(line);
-        }
+        });
 
         Table::new(lines)
             .with(Remove::row(Rows::first()))
