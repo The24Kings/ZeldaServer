@@ -264,11 +264,6 @@ pub fn server(
 
                 debug!("[SERVER] Players: {:?}", players);
 
-                let monsters = match &new_room.monsters {
-                    Some(monsters) => monsters.iter(),
-                    None => [].iter(),
-                };
-
                 players.for_each(|player| {
                     Protocol::Character(author.clone(), player.clone())
                         .send()
@@ -276,6 +271,11 @@ pub fn server(
                             error!("[SERVER] Failed to send character packet: {}", e);
                         });
                 });
+
+                let monsters = match &new_room.monsters {
+                    Some(monsters) => monsters.iter(),
+                    None => [].iter(),
+                };
 
                 for monster in monsters {
                     Protocol::Character(
