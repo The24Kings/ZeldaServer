@@ -213,7 +213,7 @@ impl<'a> Parser<'a> for Character {
             .split('\0')
             .take(1)
             .collect::<String>();
-        let flags = packet.body[32];
+        let flags = CharacterFlags::from_bits_truncate(packet.body[32]); // Other bits are reserved for future use
         let attack = u16::from_le_bytes([packet.body[33], packet.body[34]]);
         let defense = u16::from_le_bytes([packet.body[35], packet.body[36]]);
         let regen = u16::from_le_bytes([packet.body[37], packet.body[38]]);
@@ -222,9 +222,6 @@ impl<'a> Parser<'a> for Character {
         let current_room = u16::from_le_bytes([packet.body[43], packet.body[44]]);
         let description_len = u16::from_le_bytes([packet.body[45], packet.body[46]]);
         let description = String::from_utf8_lossy(&packet.body[47..]).into();
-
-        // Parse the flags byte using bitflags API
-        let flags = CharacterFlags::from_bits_truncate(flags); // Other bits are reserved for future use
 
         Ok(Character {
             author: Some(packet.stream.clone()),
