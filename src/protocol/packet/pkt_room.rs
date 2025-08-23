@@ -11,9 +11,9 @@ use crate::protocol::{
 pub struct Room {
     pub message_type: PktType,
     pub room_number: u16, // Same as room_number in ChangeRoom
-    pub room_name: String,
+    pub room_name: Box<str>,
     pub description_len: u16,
-    pub description: String,
+    pub description: Box<str>,
 }
 
 impl std::fmt::Display for Room {
@@ -28,13 +28,13 @@ impl std::fmt::Display for Room {
 
 impl Room {
     /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
-    pub fn new(room: u16, title: String, desc: String) -> Self {
+    pub fn new(room: u16, title: &str, desc: &str) -> Self {
         Room {
             message_type: PktType::ROOM,
             room_number: room,
-            room_name: title,
+            room_name: Box::from(title),
             description_len: desc.len() as u16,
-            description: desc,
+            description: Box::from(desc),
         }
     }
 }
@@ -44,9 +44,9 @@ impl From<game::Room> for Room {
         Room {
             message_type: PktType::ROOM,
             room_number: room.room_number,
-            room_name: room.title.clone(),
+            room_name: room.title,
             description_len: room.desc.len() as u16,
-            description: room.desc.clone(),
+            description: room.desc,
         }
     }
 }
@@ -82,9 +82,9 @@ impl<'a> Parser<'a> for Room {
         let room_number = u16::from_le_bytes([packet.body[0], packet.body[1]]);
         let room_name = String::from_utf8_lossy(&packet.body[2..34])
             .trim_end_matches('\0')
-            .to_string();
+            .into();
         let description_len = u16::from_le_bytes([packet.body[34], packet.body[35]]);
-        let description = String::from_utf8_lossy(&packet.body[36..]).to_string();
+        let description = String::from_utf8_lossy(&packet.body[36..]).into();
 
         Ok(Room {
             message_type,

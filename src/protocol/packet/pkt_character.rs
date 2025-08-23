@@ -23,7 +23,7 @@ pub struct Character {
     pub gold: u16,
     pub current_room: u16,
     pub description_len: u16,
-    pub description: String,
+    pub description: Box<str>,
 }
 
 impl Character {
@@ -84,7 +84,7 @@ impl Default for Character {
             gold: 0,
             current_room: 0,
             description_len: 60,
-            description: "Something went wrong, please close the client and try again!".to_string(),
+            description: Box::from("Something went wrong, please close the client and try again!"),
         }
     }
 }
@@ -221,7 +221,7 @@ impl<'a> Parser<'a> for Character {
         let gold = u16::from_le_bytes([packet.body[41], packet.body[42]]);
         let current_room = u16::from_le_bytes([packet.body[43], packet.body[44]]);
         let description_len = u16::from_le_bytes([packet.body[45], packet.body[46]]);
-        let description = String::from_utf8_lossy(&packet.body[47..]).to_string();
+        let description = String::from_utf8_lossy(&packet.body[47..]).into();
 
         // Parse the flags byte using bitflags API
         let flags = CharacterFlags::from_bits_truncate(flags); // Other bits are reserved for future use

@@ -36,7 +36,7 @@ pub fn server(
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
-                let player = match players.get(content.recipient.as_str()) {
+                let player = match players.get(content.recipient.as_ref()) {
                     Some(player) => player,
                     None => {
                         Protocol::Error(
@@ -234,7 +234,7 @@ pub fn server(
                 for (_, new_room) in connections {
                     Protocol::Connection(
                         author.clone(),
-                        pkt_connection::Connection::from(&new_room),
+                        pkt_connection::Connection::from(new_room),
                     )
                     .send()
                     .unwrap_or_else(|e| {
@@ -558,7 +558,7 @@ pub fn server(
                 let to_loot = match monsters {
                     Some(monsters) => monsters
                         .iter_mut()
-                        .find(|m| m.name.as_ref() == content.target_name.as_str()),
+                        .find(|m| m.name.as_ref() == content.target_name.as_ref()),
                     None => {
                         Protocol::Error(
                             author.clone(),
@@ -725,7 +725,7 @@ pub fn server(
                 };
 
                 for (_, room) in connections {
-                    Protocol::Connection(author.clone(), pkt_connection::Connection::from(&room))
+                    Protocol::Connection(author.clone(), pkt_connection::Connection::from(room))
                         .send()
                         .unwrap_or_else(|e| {
                             error!("[SERVER] Failed to send connection packet: {}", e);

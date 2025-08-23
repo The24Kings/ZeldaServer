@@ -9,7 +9,7 @@ use crate::protocol::{
 #[derive(Default, Serialize, Debug, Clone)]
 pub struct Loot {
     pub message_type: PktType,
-    pub target_name: String,
+    pub target_name: Box<str>,
 }
 
 impl std::fmt::Display for Loot {
@@ -48,7 +48,7 @@ impl<'a> Parser<'a> for Loot {
         let message_type = packet.message_type;
         let target_name = String::from_utf8_lossy(&packet.body[0..32])
             .trim_end_matches('\0')
-            .to_string();
+            .into();
 
         Ok(Loot {
             message_type,

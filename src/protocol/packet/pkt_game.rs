@@ -12,7 +12,7 @@ pub struct Game {
     pub initial_points: u16,
     pub stat_limit: u16,
     pub description_len: u16,
-    pub description: String,
+    pub description: Box<str>,
 }
 
 impl std::fmt::Display for Game {
@@ -51,19 +51,14 @@ impl<'a> Parser<'a> for Game {
         let initial_points = u16::from_le_bytes([packet.body[0], packet.body[1]]);
         let stat_limit = u16::from_le_bytes([packet.body[2], packet.body[3]]);
         let description_len = u16::from_le_bytes([packet.body[4], packet.body[5]]);
+        let description = String::from_utf8_lossy(&packet.body[6..]).into();
 
         Ok(Game {
             message_type: packet.message_type,
             initial_points,
             stat_limit,
             description_len,
-            description: String::from_utf8(packet.body[6..(6 + description_len as usize)].to_vec())
-                .map_err(|e| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("Failed to parse description: {}", e),
-                    )
-                })?,
+            description,
         })
     }
 }

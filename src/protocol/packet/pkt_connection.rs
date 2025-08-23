@@ -11,20 +11,20 @@ use crate::protocol::{
 pub struct Connection {
     pub message_type: PktType,
     pub room_number: u16,
-    pub room_name: String,
+    pub room_name: Box<str>,
     pub description_len: u16,
-    pub description: String,
+    pub description: Box<str>,
 }
 
-impl From<&game::Connection> for Connection {
+impl From<game::Connection> for Connection {
     /// Create a new connection from the game map to send to the client
-    fn from(conn: &game::Connection) -> Self {
+    fn from(conn: game::Connection) -> Self {
         Connection {
             message_type: PktType::CONNECTION,
             room_number: conn.room_number,
-            room_name: conn.title.clone(),
+            room_name: conn.title,
             description_len: conn.desc_short.len() as u16,
-            description: conn.desc_short.clone(),
+            description: conn.desc_short,
         }
     }
 }
@@ -71,9 +71,9 @@ impl<'a> Parser<'a> for Connection {
         let room_number = u16::from_le_bytes([packet.body[0], packet.body[1]]);
         let room_name = String::from_utf8_lossy(&packet.body[2..34])
             .trim_end_matches('\0')
-            .to_string();
+            .into();
         let description_len = u16::from_le_bytes([packet.body[34], packet.body[35]]);
-        let description = String::from_utf8_lossy(&packet.body[36..]).to_string();
+        let description = String::from_utf8_lossy(&packet.body[36..]).into();
 
         Ok(Connection {
             message_type,

@@ -36,7 +36,7 @@ pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>)
             initial_points: config.initial_points,
             stat_limit: config.stat_limit,
             description_len: description.len() as u16,
-            description,
+            description: Box::from(description),
         },
     )
     .send()

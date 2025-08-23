@@ -10,9 +10,9 @@ use crate::protocol::{
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Room {
     pub room_number: u16,
-    pub title: String,
+    pub title: Box<str>,
     pub connections: HashMap<u16, Connection>,
-    pub desc: String,
+    pub desc: Box<str>,
     pub players: Vec<Arc<str>>,
     pub monsters: Option<Vec<Monster>>,
 }
@@ -20,8 +20,8 @@ pub struct Room {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Connection {
     pub room_number: u16,
-    pub title: String,
-    pub desc_short: String,
+    pub title: Box<str>,
+    pub desc_short: Box<str>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -31,7 +31,7 @@ pub struct Monster {
     pub attack: u16,
     pub defense: u16,
     pub gold: u16,
-    pub desc: String,
+    pub desc: Box<str>,
 }
 
 pub fn build(data: File) -> Result<HashMap<u16, Room>, serde_json::Error> {

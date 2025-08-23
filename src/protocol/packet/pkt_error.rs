@@ -13,7 +13,7 @@ pub struct Error {
     pub message_type: PktType,
     pub error: ErrorCode,
     pub message_len: u16,
-    pub message: String,
+    pub message: Box<str>,
 }
 
 impl Error {
@@ -24,7 +24,7 @@ impl Error {
             message_type: PktType::ERROR,
             error,
             message_len: message.len() as u16,
-            message: message.to_string(),
+            message: Box::from(message),
         }
     }
 }
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> for Error {
         let message_len = u16::from_le_bytes([packet.body[1], packet.body[2]]);
         let message = String::from_utf8_lossy(&packet.body[3..])
             .trim_end_matches('\0')
-            .to_string();
+            .into();
 
         Ok(Error {
             message_type,
