@@ -10,10 +10,10 @@ use crate::protocol::{
 pub struct Message {
     pub message_type: PktType,
     pub message_len: u16,
-    pub recipient: String,
-    pub sender: String,
+    pub recipient: Box<str>,
+    pub sender: Box<str>,
     pub narration: bool,
-    pub message: String,
+    pub message: Box<str>,
 }
 
 impl Message {
@@ -21,10 +21,10 @@ impl Message {
         Message {
             message_type: PktType::MESSAGE,
             message_len: message.len() as u16,
-            recipient: recipient.to_string(),
-            sender: "Server".to_string(),
+            recipient: Box::from(recipient),
+            sender: Box::from("Server"),
             narration: false,
-            message: message.to_string(),
+            message: Box::from(message),
         }
     }
 
@@ -32,10 +32,10 @@ impl Message {
         Message {
             message_type: PktType::MESSAGE,
             message_len: message.len() as u16,
-            recipient: recipient.to_string(),
-            sender: "Narrator".to_string(),
+            recipient: Box::from(recipient),
+            sender: Box::from("Narrator"),
             narration: true,
-            message: message.to_string(),
+            message: Box::from(message),
         }
     }
 }
@@ -108,12 +108,12 @@ impl<'a> Parser<'a> for Message {
         let recipient = String::from_utf8_lossy(&r_bytes)
             .split('\0')
             .take(1)
-            .collect::<String>();
+            .collect();
         let sender = String::from_utf8_lossy(&s_bytes)
             .split('\0')
             .take(1)
-            .collect::<String>();
-        let message = String::from_utf8_lossy(&packet.body[66..]).to_string();
+            .collect();
+        let message = String::from_utf8_lossy(&packet.body[66..]).into();
 
         Ok(Message {
             message_type: packet.message_type,
