@@ -1,13 +1,11 @@
 use bitflags::bitflags;
 use std::io::Write;
 use std::os::fd::{AsFd, AsRawFd};
-use tracing::debug;
 
 use crate::protocol::game::Monster;
 use crate::protocol::{
     Stream,
     packet::{Packet, Parser},
-    pcap::PCap,
     pkt_type::PktType,
 };
 
@@ -205,8 +203,6 @@ impl<'a> Parser<'a> for Character {
                 "Failed to write packet to buffer",
             )
         })?;
-
-        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }

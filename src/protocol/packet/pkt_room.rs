@@ -1,11 +1,9 @@
 use serde::Serialize;
 use std::io::Write;
-use tracing::debug;
 
 use crate::protocol::{
     game,
     packet::{Packet, Parser},
-    pcap::PCap,
     pkt_type::PktType,
 };
 
@@ -75,8 +73,6 @@ impl<'a> Parser<'a> for Room {
                 "Failed to write packet to buffer",
             )
         })?;
-
-        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }
