@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use std::io::Write;
 use std::os::fd::{AsFd, AsRawFd};
+use std::sync::Arc;
 
 use crate::protocol::game::Monster;
 use crate::protocol::{
@@ -13,7 +14,7 @@ use crate::protocol::{
 pub struct Character {
     pub author: Option<Stream>,
     pub message_type: PktType,
-    pub name: String,
+    pub name: Arc<str>,
     pub flags: CharacterFlags,
     pub attack: u16,
     pub defense: u16,
@@ -55,7 +56,7 @@ impl Character {
         Character {
             author: None,
             message_type: PktType::CHARACTER,
-            name: incoming.name.clone(),
+            name: Arc::from(incoming.name.clone()),
             flags,
             attack: incoming.attack,
             defense: incoming.defense,
@@ -74,7 +75,7 @@ impl Default for Character {
         Character {
             author: None,
             message_type: PktType::CHARACTER,
-            name: "Error".to_string(),
+            name: Arc::from("Error"),
             flags: CharacterFlags::alive(),
             attack: 0,
             defense: 0,
@@ -228,7 +229,7 @@ impl<'a> Parser<'a> for Character {
         Ok(Character {
             author: Some(packet.stream.clone()),
             message_type: packet.message_type,
-            name,
+            name: Arc::from(name),
             flags,
             attack,
             defense,
