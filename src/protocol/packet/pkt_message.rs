@@ -17,25 +17,25 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn server(recipient: String, message: String) -> Self {
+    pub fn server(recipient: &str, message: &str) -> Self {
         Message {
             message_type: PktType::MESSAGE,
             message_len: message.len() as u16,
-            recipient,
+            recipient: recipient.to_string(),
             sender: "Server".to_string(),
             narration: false,
-            message,
+            message: message.to_string(),
         }
     }
 
-    pub fn narrator(recipient: String, message: String) -> Self {
+    pub fn narrator(recipient: &str, message: &str) -> Self {
         Message {
             message_type: PktType::MESSAGE,
             message_len: message.len() as u16,
-            recipient,
+            recipient: recipient.to_string(),
             sender: "Narrator".to_string(),
             narration: true,
-            message,
+            message: message.to_string(),
         }
     }
 }

@@ -16,7 +16,7 @@ pub fn server(
     config: Arc<Config>,
     rooms: &mut HashMap<u16, Room>,
 ) -> ! {
-    let mut players: HashMap<String, pkt_character::Character> = HashMap::new();
+    let mut players: HashMap<Arc<str>, pkt_character::Character> = HashMap::new();
 
     loop {
         let packet = match receiver.lock().unwrap().recv() {
@@ -36,7 +36,7 @@ pub fn server(
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
-                let player = match players.get(&content.recipient) {
+                let player = match players.get(content.recipient.as_str()) {
                     Some(player) => player,
                     None => {
                         Protocol::Error(
@@ -331,7 +331,7 @@ pub fn server(
 
                 room.players.retain(|player| player != &attacker.name); // Remove attacker for narration purposes
 
-                let in_battle: Vec<String> = players
+                let in_battle: Vec<Arc<str>> = players
                     .iter()
                     .filter(|(_, p)| p.flags.is_battle() && p.current_room == current_room)
                     .map(|(name, _)| name.clone())
@@ -556,7 +556,9 @@ pub fn server(
                 };
 
                 let to_loot = match monsters {
-                    Some(monsters) => monsters.iter_mut().find(|m| m.name == content.target_name),
+                    Some(monsters) => monsters
+                        .iter_mut()
+                        .find(|m| m.name.as_ref() == content.target_name.as_str()),
                     None => {
                         Protocol::Error(
                             author.clone(),
@@ -972,13 +974,16 @@ pub fn server(
                         let name = action.argv[1].clone();
                         let content = action.argv[2..].join(" ");
 
-                        let recipient = players.get(&name).map(|p| p.author.clone()).flatten();
+                        let recipient = players
+                            .get(name.as_str())
+                            .map(|p| p.author.clone())
+                            .flatten();
 
                         match recipient {
                             Some(recipient) => {
                                 Protocol::Message(
                                     recipient.clone(),
-                                    pkt_message::Message::server(name, content),
+                                    pkt_message::Message::server(&name, &content),
                                 )
                                 .send()
                                 .unwrap_or_else(|e| {
@@ -993,11 +998,11 @@ pub fn server(
                     ActionKind::NUKE => {
                         info!("[SERVER] Nuke command received, removing disconnected players");
 
-                        let to_remove = players
+                        let to_remove: Vec<Arc<str>> = players
                             .iter()
                             .filter(|(_, player)| player.author.is_none())
                             .map(|(name, _)| name.clone())
-                            .collect::<Vec<String>>();
+                            .collect();
 
                         // Remove from main list
                         players.retain(|name, _| !to_remove.contains(name));
