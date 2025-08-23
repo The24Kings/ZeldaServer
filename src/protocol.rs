@@ -1,10 +1,11 @@
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::commands;
 use crate::protocol::packet::*;
+use crate::protocol::pcap::PCap;
 
 pub type Stream = Arc<TcpStream>;
 
@@ -126,6 +127,8 @@ impl Protocol {
                 ));
             }
         };
+
+        debug!("[PROTOCOL] Packet:\n{}", PCap::build(byte_stream.clone()));
 
         author.as_ref().write_all(&byte_stream)?;
 

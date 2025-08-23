@@ -1,10 +1,8 @@
 use serde::Serialize;
 use std::io::Write;
-use tracing::debug;
 
 use crate::protocol::{
     packet::{Packet, Parser},
-    pcap::PCap,
     pkt_type::PktType,
 };
 
@@ -45,8 +43,6 @@ impl<'a> Parser<'a> for Leave {
                 "Failed to write packet to buffer",
             )
         })?;
-
-        debug!("[DEBUG] Packet body:\n{}", PCap::build(packet.clone()));
 
         Ok(())
     }
