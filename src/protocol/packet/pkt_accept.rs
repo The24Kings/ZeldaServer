@@ -6,7 +6,7 @@ use crate::protocol::{
     pkt_type::PktType,
 };
 
-#[derive(Default, Serialize, Debug, Clone)]
+#[derive(Serialize)]
 pub struct Accept {
     pub message_type: PktType,
     pub accept_type: u8,
@@ -33,7 +33,7 @@ impl std::fmt::Display for Accept {
 }
 
 impl<'a> Parser<'a> for Accept {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 

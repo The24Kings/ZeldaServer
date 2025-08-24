@@ -10,7 +10,7 @@ use crate::protocol::{
     pkt_type::PktType,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Character {
     pub author: Option<Stream>,
     pub message_type: PktType,
@@ -100,7 +100,7 @@ impl std::fmt::Display for Character {
 }
 
 bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash)]
     pub struct CharacterFlags: u8 {
         const ALIVE = 0b10000000;
         const BATTLE = 0b01000000; // A.K.A. Join-Battle
@@ -141,7 +141,7 @@ impl CharacterFlags {
 }
 
 impl<'a> Parser<'a> for Character {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
