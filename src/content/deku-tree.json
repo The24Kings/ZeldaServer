@@ -14,6 +14,7 @@
         "monsters": [
             {
                 "name": "Deku Baba",
+                "current_room": 0,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -42,6 +43,7 @@
         "monsters": [
             {
                 "name": "Deku Baba 1",
+                "current_room": 1,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -50,6 +52,7 @@
             },
             {
                 "name": "Deku Baba 2",
+                "current_room": 1,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -58,6 +61,7 @@
             },
             {
                 "name": "Deku Baba 3",
+                "current_room": 1,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -109,6 +113,7 @@
         "monsters": [
             {
                 "name": "Skullwalltula 1",
+                "current_room": 3,
                 "health": 2,
                 "attack": 1,
                 "defense": 0,
@@ -117,6 +122,7 @@
             },
             {
                 "name": "Skullwalltula 2",
+                "current_room": 3,
                 "health": 2,
                 "attack": 1,
                 "defense": 0,
@@ -125,6 +131,7 @@
             },
             {
                 "name": "Skullwalltula 3",
+                "current_room": 3,
                 "health": 2,
                 "attack": 1,
                 "defense": 0,
@@ -153,6 +160,7 @@
         "monsters": [
             {
                 "name": "Deku Baba",
+                "current_room": 4,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -161,6 +169,7 @@
             },
             {
                 "name": "Deku Scrub",
+                "current_room": 4,
                 "health": 15,
                 "attack": 5,
                 "defense": 20,
@@ -194,6 +203,7 @@
         "monsters": [
             {
                 "name": "Skulltula 1",
+                "current_room": 5,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -202,6 +212,7 @@
             },
             {
                 "name": "Skulltula 2",
+                "current_room": 5,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -210,6 +221,7 @@
             },
             {
                 "name": "Skulltula 3",
+                "current_room": 5,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -238,6 +250,7 @@
         "monsters": [
             {
                 "name": "Deku Baba 1",
+                "current_room": 6,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -246,6 +259,7 @@
             },
             {
                 "name": "Deku Baba 2",
+                "current_room": 6,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -274,6 +288,7 @@
         "monsters": [
             {
                 "name": "Gold Skulltula",
+                "current_room": 7,
                 "health": 1,
                 "attack": 1,
                 "defense": 0,
@@ -297,6 +312,7 @@
         "monsters": [
             {
                 "name": "Treasure Chest",
+                "current_room": 8,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -361,6 +377,7 @@
         "monsters": [
             {
                 "name": "Gold Skulltula",
+                "current_room": 11,
                 "health": 1,
                 "attack": 1,
                 "defense": 0,
@@ -369,6 +386,7 @@
             },
             {
                 "name": "Small Treasure Chest",
+                "current_room": 11,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -392,6 +410,7 @@
         "monsters": [
             {
                 "name": "Treasure Chest",
+                "current_room": 12,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -443,6 +462,7 @@
         "monsters": [
             {
                 "name": "Skulltula",
+                "current_room": 14,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -484,6 +504,7 @@
         "monsters": [
             {
                 "name": "Deku Baba 1",
+                "current_room": 16,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -492,6 +513,7 @@
             },
             {
                 "name": "Deku Baba 2",
+                "current_room": 16,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -500,6 +522,7 @@
             },
             {
                 "name": "Deku Baba 3",
+                "current_room": 16,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -508,6 +531,7 @@
             },
             {
                 "name": "Fire Keese",
+                "current_room": 16,
                 "health": 10,
                 "attack": 20,
                 "defense": 2,
@@ -541,6 +565,7 @@
         "monsters": [
             {
                 "name": "Skulltula",
+                "current_room": 17,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -549,6 +574,7 @@
             },
             {
                 "name": "Deku Baba",
+                "current_room": 17,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -557,6 +583,7 @@
             },
             {
                 "name": "Gohma Larva 1",
+                "current_room": 17,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -565,6 +592,7 @@
             },
             {
                 "name": "Gohma Larva 2",
+                "current_room": 17,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -573,6 +601,7 @@
             },
             {
                 "name": "Gohma Larva 3",
+                "current_room": 17,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -596,6 +625,7 @@
         "monsters": [
             {
                 "name": "Skulltula",
+                "current_room": 18,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -604,6 +634,7 @@
             },
             {
                 "name": "Gold Skulltula",
+                "current_room": 18,
                 "health": 1,
                 "attack": 1,
                 "defense": 0,
@@ -655,6 +686,7 @@
         "monsters": [
             {
                 "name": "Deku Baba 1",
+                "current_room": 20,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -663,6 +695,7 @@
             },
             {
                 "name": "Deku Baba 2",
+                "current_room": 20,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -671,6 +704,7 @@
             },
             {
                 "name": "Keese",
+                "current_room": 20,
                 "health": 10,
                 "attack": 5,
                 "defense": 2,
@@ -699,6 +733,7 @@
         "monsters": [
             {
                 "name": "Scrub 1",
+                "current_room": 21,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -707,6 +742,7 @@
             },
             {
                 "name": "Scrub 2",
+                "current_room": 21,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -715,6 +751,7 @@
             },
             {
                 "name": "Scrub 3",
+                "current_room": 21,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -723,6 +760,7 @@
             },
             {
                 "name": "Scrub 4",
+                "current_room": 21,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -746,6 +784,7 @@
         "monsters": [
             {
                 "name": "Queen Gohma",
+                "current_room": 22,
                 "health": 100,
                 "attack": 25,
                 "defense": 15,
@@ -754,6 +793,7 @@
             },
             {
                 "name": "Gohma Larva 1",
+                "current_room": 22,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -762,6 +802,7 @@
             },
             {
                 "name": "Gohma Larva 2",
+                "current_room": 22,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -770,6 +811,7 @@
             },
             {
                 "name": "Gohma Larva 3",
+                "current_room": 22,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -778,6 +820,7 @@
             },
             {
                 "name": "Gohma Larva 4",
+                "current_room": 22,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,

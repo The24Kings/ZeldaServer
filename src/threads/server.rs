@@ -4,17 +4,16 @@ use tracing::{debug, error, info, warn};
 
 use crate::commands::ActionKind;
 use crate::config::Config;
-use crate::protocol::game::{self, Room};
 use crate::protocol::packet::{
     pkt_accept, pkt_character, pkt_character::CharacterFlags, pkt_connection, pkt_error,
     pkt_message, pkt_room,
 };
-use crate::protocol::{Protocol, error::ErrorCode, pkt_type::PktType};
+use crate::protocol::{Protocol, error::ErrorCode, game, pkt_type::PktType};
 
 pub fn server(
     receiver: Arc<Mutex<Receiver<Protocol>>>,
     config: Arc<Config>,
-    rooms: &mut HashMap<u16, Room>,
+    rooms: &mut HashMap<u16, game::Room>,
 ) -> ! {
     let mut players: HashMap<Arc<str>, pkt_character::Character> = HashMap::new();
 
@@ -278,14 +277,11 @@ pub fn server(
                 };
 
                 for monster in monsters {
-                    Protocol::Character(
-                        author.clone(),
-                        pkt_character::Character::from_monster(monster, 0),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send character packet: {}", e);
-                    });
+                    Protocol::Character(author.clone(), monster.into())
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send character packet: {}", e);
+                        });
                 }
                 // ^ ============================================================================ ^
             } // Protocol::CHANGEROOM
@@ -493,12 +489,7 @@ pub fn server(
                     });
                 }
 
-                game::alert_room(
-                    &players,
-                    &room,
-                    &pkt_character::Character::from_monster(&to_attack, current_room),
-                )
-                .unwrap_or_else(|e| {
+                game::alert_room(&players, &room, &to_attack.into()).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
                 // ^ ============================================================================ ^
@@ -629,14 +620,11 @@ pub fn server(
                         error!("[SERVER] Failed to send character packet: {}", e);
                     });
 
-                Protocol::Character(
-                    author.clone(),
-                    pkt_character::Character::from_monster(to_loot, player.current_room),
-                )
-                .send()
-                .unwrap_or_else(|e| {
-                    error!("[SERVER] Failed to send character packet: {}", e);
-                });
+                Protocol::Character(author.clone(), to_loot.into())
+                    .send()
+                    .unwrap_or_else(|e| {
+                        error!("[SERVER] Failed to send character packet: {}", e);
+                    });
 
                 // ^ ============================================================================ ^
             } // Protocol::LOOT
@@ -754,14 +742,11 @@ pub fn server(
                 });
 
                 for monster in monsters {
-                    Protocol::Character(
-                        author.clone(),
-                        pkt_character::Character::from_monster(monster, 0),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send character packet: {}", e);
-                    });
+                    Protocol::Character(author.clone(), monster.into())
+                        .send()
+                        .unwrap_or_else(|e| {
+                            error!("[SERVER] Failed to send character packet: {}", e);
+                        });
                 }
                 // ^ ============================================================================ ^
             } // Protocol::START
@@ -769,7 +754,7 @@ pub fn server(
                 info!("[SERVER] Received: {}", content);
 
                 // ================================================================================
-                // Check the given stats are valid, if not all points have been allocated, do so equally.
+                // Check the given stats are valid
                 // ================================================================================
                 let total_stats = content
                     .attack
@@ -789,23 +774,6 @@ pub fn server(
 
                     continue;
                 }
-
-                let mut updated_content = content.clone();
-                let name = content.name.clone();
-
-                if total_stats < config.initial_points && content.attack < 1
-                    || content.defense < 1
-                    || content.regen < 1
-                {
-                    info!("[SERVER] Distributing remaining stat points");
-
-                    // Distribute the remaining stat points equally
-                    updated_content.attack += (config.initial_points - total_stats) / 3;
-                    updated_content.defense += (config.initial_points - total_stats) / 3;
-                    updated_content.regen += (config.initial_points - total_stats) / 3;
-                }
-
-                updated_content.flags = CharacterFlags::reset(); // Ignore player provided stats
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -813,16 +781,19 @@ pub fn server(
                 // We ignore the flags from the client and set the correct ones accordingly.
                 // Store the old room so that we may remove the player later and set ignore input room
                 // ================================================================================
-                let player = match players.get_mut(&name) {
+                let player = match players.get_mut(&content.name) {
                     Some(player) => {
                         info!("[SERVER] Obtained player");
                         player
                     }
                     None => {
                         info!("[SERVER] Could not find player; inserting and trying again");
-                        let _ = players.insert(name.clone(), updated_content.clone());
+                        let _ = players.insert(
+                            content.name.clone(),
+                            pkt_character::Character::with_defaults_from(&content),
+                        );
 
-                        players.get_mut(&name).unwrap() // We just inserted so this is okay; we want to panic if insert fails
+                        players.get_mut(&content.name).unwrap() // We just inserted so this is okay; we want to panic if insert fails
                     }
                 };
 
@@ -844,8 +815,7 @@ pub fn server(
 
                 let old_room_number = player.current_room;
 
-                player.flags =
-                    CharacterFlags::ALIVE | CharacterFlags::READY | CharacterFlags::BATTLE;
+                player.flags = CharacterFlags::alive();
                 player.author = Some(author.clone());
                 player.current_room = 0; // Start in the first room
                 // ^ ============================================================================ ^

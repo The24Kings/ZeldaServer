@@ -27,6 +27,7 @@ pub struct Connection {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Monster {
     pub name: Arc<str>,
+    pub current_room: u16,
     pub health: i16,
     pub attack: u16,
     pub defense: u16,
