@@ -83,7 +83,7 @@ pub fn server(
                     }
                 };
 
-                Protocol::Message(author.clone(), content.clone())
+                Protocol::Message(author.clone(), content)
                     .send()
                     .unwrap_or_else(|e| {
                         error!("[SERVER] Failed to send message packet: {}", e);

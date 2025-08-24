@@ -7,7 +7,7 @@ use crate::protocol::{
     packet::{pkt_character, pkt_message},
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Room {
     pub room_number: u16,
     pub title: Box<str>,
@@ -17,14 +17,14 @@ pub struct Room {
     pub monsters: Option<Vec<Monster>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Connection {
     pub room_number: u16,
     pub title: Box<str>,
     pub desc_short: Box<str>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Monster {
     pub name: Arc<str>,
     pub current_room: u16,

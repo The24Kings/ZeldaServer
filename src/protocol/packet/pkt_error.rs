@@ -8,7 +8,7 @@ use crate::protocol::{
     pkt_type::PktType,
 };
 
-#[derive(Default, Serialize, Debug, Clone)]
+#[derive(Serialize)]
 pub struct Error {
     pub message_type: PktType,
     pub error: ErrorCode,
@@ -40,12 +40,12 @@ impl std::fmt::Display for Error {
 }
 
 impl<'a> Parser<'a> for Error {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
         packet.push(self.message_type.into());
-        packet.push(self.error.clone().into());
+        packet.push(self.error.into());
         packet.extend(self.message_len.to_le_bytes());
         packet.extend(self.message.as_bytes());
 

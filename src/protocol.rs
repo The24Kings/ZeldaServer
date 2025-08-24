@@ -57,7 +57,7 @@ impl std::fmt::Display for Protocol {
 }
 
 impl Protocol {
-    pub fn send(&self) -> Result<(), std::io::Error> {
+    pub fn send(self) -> Result<(), std::io::Error> {
         let mut byte_stream: Vec<u8> = Vec::new();
 
         info!("[PROTOCOL] Sending packet: {}", self);

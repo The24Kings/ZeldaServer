@@ -6,7 +6,7 @@ use crate::protocol::{
     pkt_type::PktType,
 };
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Serialize)]
 pub struct Fight {
     pub message_type: PktType,
 }
@@ -30,7 +30,7 @@ impl std::fmt::Display for Fight {
 }
 
 impl<'a> Parser<'a> for Fight {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 

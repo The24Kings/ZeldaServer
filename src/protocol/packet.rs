@@ -19,7 +19,7 @@ pub mod pkt_start;
 pub mod pkt_version;
 
 pub trait Parser<'a>: Sized + 'a {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error>;
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error>;
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error>;
 }
 

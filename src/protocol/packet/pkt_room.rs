@@ -7,7 +7,7 @@ use crate::protocol::{
     pkt_type::PktType,
 };
 
-#[derive(Default, Serialize, Debug, Clone)]
+#[derive(Serialize)]
 pub struct Room {
     pub message_type: PktType,
     pub room_number: u16, // Same as room_number in ChangeRoom
@@ -26,19 +26,6 @@ impl std::fmt::Display for Room {
     }
 }
 
-impl Room {
-    /// Create a new room for the game map (Not to be confused with the Room packet sent to the client)
-    pub fn new(room: u16, title: &str, desc: &str) -> Self {
-        Room {
-            message_type: PktType::ROOM,
-            room_number: room,
-            room_name: Box::from(title),
-            description_len: desc.len() as u16,
-            description: Box::from(desc),
-        }
-    }
-}
-
 impl From<game::Room> for Room {
     fn from(room: game::Room) -> Self {
         Room {
@@ -52,7 +39,7 @@ impl From<game::Room> for Room {
 }
 
 impl<'a> Parser<'a> for Room {
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
