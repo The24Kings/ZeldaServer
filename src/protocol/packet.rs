@@ -18,6 +18,11 @@ pub mod pkt_room;
 pub mod pkt_start;
 pub mod pkt_version;
 
+pub trait Parser<'a>: Sized + 'a {
+    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error>;
+    fn deserialize(packet: Packet) -> Result<Self, std::io::Error>;
+}
+
 #[derive(Debug, Clone)]
 pub struct Packet<'a> {
     pub stream: &'a Stream,
@@ -109,35 +114,5 @@ impl<'a> Packet<'a> {
         let packet = Packet::new(stream, message_type, buffer);
 
         Ok(packet)
-    }
-}
-
-/**
- * Trait implementation for the packet
- * Serialize: Serialize the packet to a byte array
- * Deserialize: Deserialize the packet from a byte array
- * Display: Display the packet in a human readable format
- */
-pub trait Parser<'a>: Sized + 'a + Default {
-    fn serialize<W: Write>(&self, _writer: &mut W) -> Result<(), std::io::Error> {
-        Ok(())
-    }
-    fn deserialize(_packet: Packet) -> Result<Self, std::io::Error> {
-        Ok(Self::default())
-    }
-}
-
-impl<'a> std::fmt::Display for Packet<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{{message_type: {}, body: [{}]}}",
-            self.message_type,
-            self.body
-                .iter()
-                .map(|b| format!("{:02x}", b))
-                .collect::<Vec<String>>()
-                .join(" ")
-        )
     }
 }

@@ -1,11 +1,11 @@
 use bitflags::bitflags;
 use std::io::Write;
-use std::os::fd::{AsFd, AsRawFd};
+use std::os::fd::AsRawFd;
 use std::sync::Arc;
 
-use crate::protocol::game::Monster;
 use crate::protocol::{
     Stream,
+    game::Monster,
     packet::{Packet, Parser},
     pkt_type::PktType,
 };
@@ -27,90 +27,63 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn to_default(incoming: &Character) -> Self {
+    pub fn with_defaults_from(incoming: &Character) -> Self {
         Character {
-            author: incoming.author.clone(),
-            message_type: incoming.message_type,
-            name: incoming.name.clone(),
-            flags: CharacterFlags::alive(),
-            attack: incoming.attack,
-            defense: incoming.defense,
-            regen: incoming.regen,
             health: 100,
             gold: 0,
             current_room: 0,
-            description_len: incoming.description_len,
-            description: incoming.description.clone(),
+            flags: CharacterFlags::reset(),
+            ..incoming.clone()
         }
     }
+}
 
-    pub fn from_monster(incoming: &Monster, current_room: u16) -> Self {
-        let mut flags = CharacterFlags::MONSTER;
+impl<T> From<T> for Character
+where
+    T: std::ops::Deref<Target = Monster>,
+{
+    fn from(monster: T) -> Self {
+        let mut flags = CharacterFlags::MONSTER | CharacterFlags::BATTLE;
 
-        if incoming.health <= 0 {
+        if monster.health <= 0 {
             flags |= CharacterFlags::dead();
         } else {
             flags |= CharacterFlags::alive();
         };
 
-        Character {
+        Self {
             author: None,
             message_type: PktType::CHARACTER,
-            name: Arc::from(incoming.name.clone()),
+            name: Arc::from(monster.name.clone()),
             flags,
-            attack: incoming.attack,
-            defense: incoming.defense,
+            attack: monster.attack,
+            defense: monster.defense,
             regen: 0, // Monsters don't regenerate health
-            health: incoming.health,
-            gold: incoming.gold,
-            current_room,
-            description_len: incoming.desc.len() as u16,
-            description: incoming.desc.clone(),
-        }
-    }
-}
-
-impl Default for Character {
-    fn default() -> Self {
-        Character {
-            author: None,
-            message_type: PktType::CHARACTER,
-            name: Arc::from("Error"),
-            flags: CharacterFlags::alive(),
-            attack: 0,
-            defense: 0,
-            regen: 0,
-            health: 100,
-            gold: 0,
-            current_room: 0,
-            description_len: 60,
-            description: Box::from("Something went wrong, please close the client and try again!"),
+            health: monster.health,
+            gold: monster.gold,
+            current_room: monster.current_room,
+            description_len: monster.desc.len() as u16,
+            description: monster.desc.clone(),
         }
     }
 }
 
 impl std::fmt::Display for Character {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let author = match &self.author {
-            Some(stream) => format!(
+        let author = self.author.as_ref().map_or("None".to_string(), |stream| {
+            format!(
                 "\"addr\":\"{}\",\"peer\":\"{}\",\"fd\":{}",
-                stream
-                    .as_ref()
-                    .peer_addr()
-                    .unwrap_or_else(|_| std::net::SocketAddr::from(([0, 0, 0, 0], 0))),
-                stream
-                    .as_ref()
-                    .local_addr()
-                    .unwrap_or_else(|_| std::net::SocketAddr::from(([0, 0, 0, 0], 0))),
-                stream.as_fd().as_raw_fd()
-            ),
-            None => "None".to_string(),
-        };
+                stream.peer_addr().unwrap_or(([0, 0, 0, 0], 0).into()),
+                stream.local_addr().unwrap_or(([0, 0, 0, 0], 0).into()),
+                stream.as_raw_fd()
+            )
+        });
 
         write!(
             f,
-            "{{\"author\":{{{}}},\"message_type\":\"{}\",\"name\":\"{}\",\"flags\":\"0b{:08b}\",\"attack\":{},\"defense\":{},\"regen\":{},\"health\":{},\"gold\":{},\"current_room\":{},\"description_len\":{},\"description\":\"{}\"}}",
-            author,
+            "{{\"author\":{{{author}}},\"message_type\":\"{}\",\"name\":\"{}\",\"flags\":\"0b{:08b}\",\
+            \"attack\":{},\"defense\":{},\"regen\":{},\"health\":{},\"gold\":{},\"current_room\":{},\
+            \"description_len\":{},\"description\":\"{}\"}}",
             self.message_type,
             self.name,
             self.flags.bits(),
@@ -144,10 +117,6 @@ impl CharacterFlags {
 
     pub fn is_battle(&self) -> bool {
         self.contains(CharacterFlags::BATTLE)
-    }
-
-    pub fn is_monster(&self) -> bool {
-        self.contains(CharacterFlags::MONSTER)
     }
 
     pub fn is_started(&self) -> bool {
