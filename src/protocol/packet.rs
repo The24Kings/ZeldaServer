@@ -23,7 +23,6 @@ pub trait Parser<'a>: Sized + 'a {
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error>;
 }
 
-#[derive(Debug, Clone)]
 pub struct Packet<'a> {
     pub stream: &'a Stream,
     pub message_type: PktType,
