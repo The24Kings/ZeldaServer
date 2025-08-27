@@ -7,36 +7,36 @@ use crate::protocol::{
 };
 
 #[derive(Serialize)]
-pub struct Fight {
+pub struct PktLeave {
     pub message_type: PktType,
 }
 
-impl Default for Fight {
+impl Default for PktLeave {
     fn default() -> Self {
-        Fight {
-            message_type: PktType::FIGHT,
+        PktLeave {
+            message_type: PktType::LEAVE,
         }
     }
 }
 
-impl std::fmt::Display for Fight {
+impl std::fmt::Display for PktLeave {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
-            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Fight".to_string())
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Leave".to_string())
         )
     }
 }
 
-impl<'a> Parser<'a> for Fight {
+impl<'a> Parser<'a> for PktLeave {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
         packet.push(self.message_type.into());
 
-        // Send the packet to the author
+        // Write the packet to the buffer
         writer.write_all(&packet).map_err(|_| {
             std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -48,7 +48,7 @@ impl<'a> Parser<'a> for Fight {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        Ok(Fight {
+        Ok(PktLeave {
             message_type: packet.message_type,
         })
     }

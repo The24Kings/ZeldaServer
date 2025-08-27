@@ -3,34 +3,34 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{debug, info};
 
-use crate::commands;
-use crate::protocol::packet::*;
-use crate::protocol::pcap::PCap;
-
+use crate::logic::{commands, pcap::PCap};
 pub type Stream = Arc<TcpStream>;
 
-pub mod client;
-pub mod error;
-pub mod game;
+pub use packet::{
+    Packet, Parser, accept, change_room, character, connection, error, fight, game, leave, loot,
+    message, pvp_fight, room, start, version,
+};
+
+pub mod flags;
+pub mod lurk_error;
 pub mod packet;
-pub mod pcap;
 pub mod pkt_type;
 
 pub enum Protocol {
-    Message(Stream, pkt_message::Message),
-    ChangeRoom(Stream, pkt_change_room::ChangeRoom),
-    Fight(Stream, pkt_fight::Fight),
-    PVPFight(Stream, pkt_pvp_fight::PVPFight),
-    Loot(Stream, pkt_loot::Loot),
-    Start(Stream, pkt_start::Start),
-    Error(Stream, pkt_error::Error),
-    Accept(Stream, pkt_accept::Accept),
-    Room(Stream, pkt_room::Room),
-    Character(Stream, pkt_character::Character),
-    Game(Stream, pkt_game::Game),
-    Leave(Stream, pkt_leave::Leave),
-    Connection(Stream, pkt_connection::Connection),
-    Version(Stream, pkt_version::Version),
+    Message(Stream, message::PktMessage),
+    ChangeRoom(Stream, change_room::PktChangeRoom),
+    Fight(Stream, fight::PktFight),
+    PVPFight(Stream, pvp_fight::PktPVPFight),
+    Loot(Stream, loot::PktLoot),
+    Start(Stream, start::PktStart),
+    Error(Stream, error::PktError),
+    Accept(Stream, accept::PktAccept),
+    Room(Stream, room::PktRoom),
+    Character(Stream, character::PktCharacter),
+    Game(Stream, game::PktGame),
+    Leave(Stream, leave::PktLeave),
+    Connection(Stream, connection::PktConnection),
+    Version(Stream, version::PktVersion),
     Command(commands::Action),
 }
 

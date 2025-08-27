@@ -1,17 +1,16 @@
-use bitflags::bitflags;
 use std::io::Write;
 use std::os::fd::AsRawFd;
 use std::sync::Arc;
 
 use crate::protocol::{
     Stream,
-    game::Monster,
+    flags::CharacterFlags,
     packet::{Packet, Parser},
     pkt_type::PktType,
 };
 
 #[derive(Clone)]
-pub struct Character {
+pub struct PktCharacter {
     pub author: Option<Stream>,
     pub message_type: PktType,
     pub name: Arc<str>,
@@ -26,9 +25,9 @@ pub struct Character {
     pub description: Box<str>,
 }
 
-impl Character {
-    pub fn with_defaults_from(incoming: &Character) -> Self {
-        Character {
+impl PktCharacter {
+    pub fn with_defaults_from(incoming: &PktCharacter) -> Self {
+        PktCharacter {
             health: 100,
             gold: 0,
             current_room: 0,
@@ -38,37 +37,7 @@ impl Character {
     }
 }
 
-impl<T> From<T> for Character
-where
-    T: std::ops::Deref<Target = Monster>,
-{
-    fn from(monster: T) -> Self {
-        let mut flags = CharacterFlags::MONSTER | CharacterFlags::BATTLE;
-
-        if monster.health <= 0 {
-            flags |= CharacterFlags::dead();
-        } else {
-            flags |= CharacterFlags::alive();
-        };
-
-        Self {
-            author: None,
-            message_type: PktType::CHARACTER,
-            name: Arc::from(monster.name.clone()),
-            flags,
-            attack: monster.attack,
-            defense: monster.defense,
-            regen: 0, // Monsters don't regenerate health
-            health: monster.health,
-            gold: monster.gold,
-            current_room: monster.current_room,
-            description_len: monster.desc.len() as u16,
-            description: monster.desc.clone(),
-        }
-    }
-}
-
-impl std::fmt::Display for Character {
+impl std::fmt::Display for PktCharacter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let author = self.author.as_ref().map_or("None".to_string(), |stream| {
             format!(
@@ -99,48 +68,7 @@ impl std::fmt::Display for Character {
     }
 }
 
-bitflags! {
-    #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-    pub struct CharacterFlags: u8 {
-        const ALIVE = 0b10000000;
-        const BATTLE = 0b01000000; // A.K.A. Join-Battle
-        const MONSTER = 0b00100000;
-        const STARTED = 0b00010000;
-        const READY = 0b00001000;
-    }
-}
-
-impl CharacterFlags {
-    pub fn is_alive(&self) -> bool {
-        self.contains(CharacterFlags::ALIVE)
-    }
-
-    pub fn is_battle(&self) -> bool {
-        self.contains(CharacterFlags::BATTLE)
-    }
-
-    pub fn is_started(&self) -> bool {
-        self.contains(CharacterFlags::STARTED)
-    }
-
-    pub fn is_ready(&self) -> bool {
-        self.contains(CharacterFlags::READY)
-    }
-
-    pub fn dead() -> Self {
-        CharacterFlags::BATTLE | CharacterFlags::READY
-    }
-
-    pub fn alive() -> Self {
-        CharacterFlags::ALIVE | CharacterFlags::BATTLE | CharacterFlags::READY
-    }
-
-    pub fn reset() -> Self {
-        CharacterFlags::ALIVE | CharacterFlags::BATTLE
-    }
-}
-
-impl<'a> Parser<'a> for Character {
+impl<'a> Parser<'a> for PktCharacter {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
@@ -192,7 +120,7 @@ impl<'a> Parser<'a> for Character {
         let description_len = u16::from_le_bytes([packet.body[45], packet.body[46]]);
         let description = String::from_utf8_lossy(&packet.body[47..]).into();
 
-        Ok(Character {
+        Ok(PktCharacter {
             author: Some(packet.stream.clone()),
             message_type: packet.message_type,
             name: Arc::from(name),

@@ -7,12 +7,12 @@ use crate::protocol::{
 };
 
 #[derive(Serialize)]
-pub struct Loot {
+pub struct PktLoot {
     pub message_type: PktType,
     pub target_name: Box<str>,
 }
 
-impl std::fmt::Display for Loot {
+impl std::fmt::Display for PktLoot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -22,7 +22,7 @@ impl std::fmt::Display for Loot {
     }
 }
 
-impl<'a> Parser<'a> for Loot {
+impl<'a> Parser<'a> for PktLoot {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
@@ -50,7 +50,7 @@ impl<'a> Parser<'a> for Loot {
             .trim_end_matches('\0')
             .into();
 
-        Ok(Loot {
+        Ok(PktLoot {
             message_type,
             target_name,
         })

@@ -7,34 +7,32 @@ use crate::protocol::{
 };
 
 #[derive(Serialize)]
-pub struct Start {
+pub struct PktPVPFight {
     pub message_type: PktType,
+    pub target_name: String,
 }
 
-impl Default for Start {
-    fn default() -> Self {
-        Start {
-            message_type: PktType::START,
-        }
-    }
-}
-
-impl std::fmt::Display for Start {
+impl std::fmt::Display for PktPVPFight {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
-            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Start".to_string())
+            serde_json::to_string(self)
+                .unwrap_or_else(|_| "Failed to serialize PVPFight".to_string())
         )
     }
 }
 
-impl<'a> Parser<'a> for Start {
+impl<'a> Parser<'a> for PktPVPFight {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
         packet.push(self.message_type.into());
+
+        let mut target_name_bytes = self.target_name.as_bytes().to_vec();
+        target_name_bytes.resize(32, 0x00); // Pad the name to 32 bytes
+        packet.extend(target_name_bytes);
 
         // Send the packet to the author
         writer.write_all(&packet).map_err(|_| {
@@ -47,8 +45,14 @@ impl<'a> Parser<'a> for Start {
         Ok(())
     }
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        Ok(Start {
-            message_type: packet.message_type,
+        let message_type = packet.message_type;
+        let target_name = String::from_utf8_lossy(&packet.body[0..32])
+            .trim_end_matches('\0')
+            .to_string();
+
+        Ok(PktPVPFight {
+            message_type,
+            target_name,
         })
     }
 }

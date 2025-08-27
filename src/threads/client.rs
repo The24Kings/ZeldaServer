@@ -2,8 +2,8 @@ use std::io::Read;
 use std::sync::mpsc::Sender;
 use tracing::info;
 
-use super::packet::{Packet, Parser, pkt_fight, pkt_leave, pkt_start};
-use super::{Protocol, Stream, pkt_type::PktType};
+use crate::protocol::packet::{Packet, Parser, fight, leave, start};
+use crate::protocol::{Protocol, Stream, pkt_type::PktType};
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -73,7 +73,7 @@ impl Client {
                 // Only 1 byte; no need to consume buffer
                 Some(Protocol::Fight(
                     self.stream.clone(),
-                    pkt_fight::Fight::default(),
+                    fight::PktFight::default(),
                 ))
             }
             PktType::PVPFIGHT => {
@@ -116,7 +116,7 @@ impl Client {
                 // Only 1 byte; no need to consume buffer
                 Some(Protocol::Start(
                     self.stream.clone(),
-                    pkt_start::Start::default(),
+                    start::PktStart::default(),
                 ))
             }
             PktType::ERROR => {
@@ -174,7 +174,7 @@ impl Client {
                 // LEAVE
                 Some(Protocol::Leave(
                     self.stream.clone(),
-                    pkt_leave::Leave::default(),
+                    leave::PktLeave::default(),
                 ))
             }
             PktType::CONNECTION => {

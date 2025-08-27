@@ -3,24 +3,24 @@ use std::io::Write;
 use tracing::error;
 
 use crate::protocol::{
-    error::ErrorCode,
+    lurk_error::LurkError,
     packet::{Packet, Parser},
     pkt_type::PktType,
 };
 
 #[derive(Serialize)]
-pub struct Error {
+pub struct PktError {
     pub message_type: PktType,
-    pub error: ErrorCode,
+    pub error: LurkError,
     pub message_len: u16,
     pub message: Box<str>,
 }
 
-impl Error {
-    pub fn new(error: ErrorCode, message: &str) -> Self {
+impl PktError {
+    pub fn new(error: LurkError, message: &str) -> Self {
         error!("[SERVER] {}", message);
 
-        Error {
+        PktError {
             message_type: PktType::ERROR,
             error,
             message_len: message.len() as u16,
@@ -29,7 +29,7 @@ impl Error {
     }
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for PktError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -39,7 +39,7 @@ impl std::fmt::Display for Error {
     }
 }
 
-impl<'a> Parser<'a> for Error {
+impl<'a> Parser<'a> for PktError {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
@@ -62,13 +62,13 @@ impl<'a> Parser<'a> for Error {
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
         let message_type = packet.message_type;
-        let error = ErrorCode::from(packet.body[0]);
+        let error = LurkError::from(packet.body[0]);
         let message_len = u16::from_le_bytes([packet.body[1], packet.body[2]]);
         let message = String::from_utf8_lossy(&packet.body[3..])
             .trim_end_matches('\0')
             .into();
 
-        Ok(Error {
+        Ok(PktError {
             message_type,
             error,
             message_len,

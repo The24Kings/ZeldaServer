@@ -7,34 +7,31 @@ use crate::protocol::{
 };
 
 #[derive(Serialize)]
-pub struct PVPFight {
+pub struct PktChangeRoom {
     pub message_type: PktType,
-    pub target_name: String,
+    pub room_number: u16,
 }
 
-impl std::fmt::Display for PVPFight {
+impl std::fmt::Display for PktChangeRoom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             serde_json::to_string(self)
-                .unwrap_or_else(|_| "Failed to serialize PVPFight".to_string())
+                .unwrap_or_else(|_| "Failed to serialize ChangeRoom".to_string())
         )
     }
 }
 
-impl<'a> Parser<'a> for PVPFight {
+impl<'a> Parser<'a> for PktChangeRoom {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
         packet.push(self.message_type.into());
+        packet.extend(self.room_number.to_le_bytes());
 
-        let mut target_name_bytes = self.target_name.as_bytes().to_vec();
-        target_name_bytes.resize(32, 0x00); // Pad the name to 32 bytes
-        packet.extend(target_name_bytes);
-
-        // Send the packet to the author
+        // Write the packet to the buffer
         writer.write_all(&packet).map_err(|_| {
             std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -44,15 +41,14 @@ impl<'a> Parser<'a> for PVPFight {
 
         Ok(())
     }
-    fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        let message_type = packet.message_type;
-        let target_name = String::from_utf8_lossy(&packet.body[0..32])
-            .trim_end_matches('\0')
-            .to_string();
 
-        Ok(PVPFight {
-            message_type,
-            target_name,
+    fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
+        let room_number = u16::from_le_bytes([packet.body[0], packet.body[1]]);
+
+        // Implement deserialization logic here
+        Ok(PktChangeRoom {
+            message_type: packet.message_type,
+            room_number,
         })
     }
 }

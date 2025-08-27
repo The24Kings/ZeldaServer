@@ -4,7 +4,12 @@ use tracing::{debug, error, info, warn};
 
 use crate::protocol::{
     Protocol, Stream,
-    packet::{pkt_character, pkt_message},
+    character::PktCharacter,
+    connection::PktConnection,
+    flags::CharacterFlags,
+    packet::{character, message},
+    pkt_type::PktType,
+    room::PktRoom,
 };
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -17,11 +22,36 @@ pub struct Room {
     pub monsters: Option<Vec<Monster>>,
 }
 
+impl From<Room> for PktRoom {
+    fn from(room: Room) -> Self {
+        PktRoom {
+            message_type: PktType::ROOM,
+            room_number: room.room_number,
+            room_name: room.title,
+            description_len: room.desc.len() as u16,
+            description: room.desc,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Connection {
     pub room_number: u16,
     pub title: Box<str>,
     pub desc_short: Box<str>,
+}
+
+impl From<Connection> for PktConnection {
+    /// Create a new connection from the game map to send to the client
+    fn from(conn: Connection) -> Self {
+        PktConnection {
+            message_type: PktType::CONNECTION,
+            room_number: conn.room_number,
+            room_name: conn.title,
+            description_len: conn.desc_short.len() as u16,
+            description: conn.desc_short,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -33,6 +63,36 @@ pub struct Monster {
     pub defense: u16,
     pub gold: u16,
     pub desc: Box<str>,
+}
+
+impl<T> From<T> for PktCharacter
+where
+    T: std::ops::Deref<Target = Monster>,
+{
+    fn from(monster: T) -> Self {
+        let mut flags = CharacterFlags::MONSTER | CharacterFlags::BATTLE;
+
+        if monster.health <= 0 {
+            flags |= CharacterFlags::dead();
+        } else {
+            flags |= CharacterFlags::alive();
+        };
+
+        Self {
+            author: None,
+            message_type: PktType::CHARACTER,
+            name: Arc::from(monster.name.clone()),
+            flags,
+            attack: monster.attack,
+            defense: monster.defense,
+            regen: 0, // Monsters don't regenerate health
+            health: monster.health,
+            gold: monster.gold,
+            current_room: monster.current_room,
+            description_len: monster.desc.len() as u16,
+            description: monster.desc.clone(),
+        }
+    }
 }
 
 pub fn build(data: File) -> Result<HashMap<u16, Room>, serde_json::Error> {
@@ -55,9 +115,9 @@ pub fn exits(rooms: &HashMap<u16, Room>, room_number: u16) -> Option<HashMap<u16
 }
 
 pub fn player_from_stream(
-    players: &mut HashMap<Arc<str>, pkt_character::Character>,
+    players: &mut HashMap<Arc<str>, character::PktCharacter>,
     stream: Stream,
-) -> Option<(&Arc<str>, &mut pkt_character::Character)> {
+) -> Option<(&Arc<str>, &mut character::PktCharacter)> {
     players.iter_mut().find(|(_, player)| {
         player
             .author
@@ -68,7 +128,7 @@ pub fn player_from_stream(
 
 /// Broadcast a message to all players in the game via Message packets.
 pub fn broadcast(
-    players: &HashMap<Arc<str>, pkt_character::Character>,
+    players: &HashMap<Arc<str>, character::PktCharacter>,
     message: String,
 ) -> Result<(), std::io::Error> {
     info!("[BROADCAST] Sending message: {}", message);
@@ -82,21 +142,18 @@ pub fn broadcast(
 
         debug!("[BROADCAST] Sending message to {}", name);
 
-        Protocol::Message(
-            author.clone(),
-            pkt_message::Message::server(&name, &message),
-        )
-        .send()
-        .unwrap_or_else(|e| {
-            warn!("[BROADCAST] Failed to send message to {}: {}", name, e);
-        });
+        Protocol::Message(author.clone(), message::PktMessage::server(&name, &message))
+            .send()
+            .unwrap_or_else(|e| {
+                warn!("[BROADCAST] Failed to send message to {}: {}", name, e);
+            });
     }
 
     Ok(())
 }
 
 pub fn message_room(
-    players: &HashMap<Arc<str>, pkt_character::Character>,
+    players: &HashMap<Arc<str>, character::PktCharacter>,
     room: &Room,
     message: String,
     narration: bool,
@@ -120,9 +177,9 @@ pub fn message_room(
         debug!("[ROOM MESSAGE] Sending message to '{}'", name);
 
         let message = if narration {
-            pkt_message::Message::narrator(&player.name, &message)
+            message::PktMessage::narrator(&player.name, &message)
         } else {
-            pkt_message::Message::server(&player.name, &message)
+            message::PktMessage::server(&player.name, &message)
         };
 
         Protocol::Message(author.clone(), message)
@@ -138,9 +195,9 @@ pub fn message_room(
 /// Alert all players in the current room of a character change by sending a Character packet
 /// to each player in the room.
 pub fn alert_room(
-    players: &HashMap<Arc<str>, pkt_character::Character>,
+    players: &HashMap<Arc<str>, character::PktCharacter>,
     room: &Room,
-    alert: &pkt_character::Character,
+    alert: &character::PktCharacter,
 ) -> Result<(), std::io::Error> {
     info!("[ALERT] Alerting players about: '{}'", alert.name);
 

@@ -7,29 +7,38 @@ use crate::protocol::{
 };
 
 #[derive(Serialize)]
-pub struct ChangeRoom {
+pub struct PktAccept {
     pub message_type: PktType,
-    pub room_number: u16,
+    pub accept_type: u8,
 }
 
-impl std::fmt::Display for ChangeRoom {
+impl PktAccept {
+    pub fn new(accept_type: PktType) -> Self {
+        PktAccept {
+            message_type: PktType::ACCEPT,
+            accept_type: accept_type.into(),
+        }
+    }
+}
+
+impl std::fmt::Display for PktAccept {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             serde_json::to_string(self)
-                .unwrap_or_else(|_| "Failed to serialize ChangeRoom".to_string())
+                .unwrap_or_else(|_| "Failed to serialize Accept".to_string())
         )
     }
 }
 
-impl<'a> Parser<'a> for ChangeRoom {
+impl<'a> Parser<'a> for PktAccept {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
         packet.push(self.message_type.into());
-        packet.extend(self.room_number.to_le_bytes());
+        packet.extend(self.accept_type.to_le_bytes());
 
         // Write the packet to the buffer
         writer.write_all(&packet).map_err(|_| {
@@ -43,12 +52,9 @@ impl<'a> Parser<'a> for ChangeRoom {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        let room_number = u16::from_le_bytes([packet.body[0], packet.body[1]]);
-
-        // Implement deserialization logic here
-        Ok(ChangeRoom {
+        Ok(PktAccept {
             message_type: packet.message_type,
-            room_number,
+            accept_type: packet.body[0],
         })
     }
 }

@@ -7,7 +7,7 @@ use crate::protocol::{
 };
 
 #[derive(Serialize)]
-pub struct Message {
+pub struct PktMessage {
     pub message_type: PktType,
     pub message_len: u16,
     pub recipient: Box<str>,
@@ -16,9 +16,9 @@ pub struct Message {
     pub message: Box<str>,
 }
 
-impl Message {
+impl PktMessage {
     pub fn server(recipient: &str, message: &str) -> Self {
-        Message {
+        PktMessage {
             message_type: PktType::MESSAGE,
             message_len: message.len() as u16,
             recipient: Box::from(recipient),
@@ -29,7 +29,7 @@ impl Message {
     }
 
     pub fn narrator(recipient: &str, message: &str) -> Self {
-        Message {
+        PktMessage {
             message_type: PktType::MESSAGE,
             message_len: message.len() as u16,
             recipient: Box::from(recipient),
@@ -40,7 +40,7 @@ impl Message {
     }
 }
 
-impl std::fmt::Display for Message {
+impl std::fmt::Display for PktMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -51,7 +51,7 @@ impl std::fmt::Display for Message {
     }
 }
 
-impl<'a> Parser<'a> for Message {
+impl<'a> Parser<'a> for PktMessage {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
@@ -115,7 +115,7 @@ impl<'a> Parser<'a> for Message {
             .collect();
         let message = String::from_utf8_lossy(&packet.body[66..]).into();
 
-        Ok(Message {
+        Ok(PktMessage {
             message_type: packet.message_type,
             message_len,
             recipient,

@@ -1,22 +1,23 @@
 use std::io::{Read, Write};
 use tracing::debug;
 
-use crate::protocol::{Stream, pcap::PCap, pkt_type::PktType};
+use crate::logic::pcap::PCap;
+use crate::protocol::{Stream, pkt_type::PktType};
 
-pub mod pkt_accept;
-pub mod pkt_change_room;
-pub mod pkt_character;
-pub mod pkt_connection;
-pub mod pkt_error;
-pub mod pkt_fight;
-pub mod pkt_game;
-pub mod pkt_leave;
-pub mod pkt_loot;
-pub mod pkt_message;
-pub mod pkt_pvp_fight;
-pub mod pkt_room;
-pub mod pkt_start;
-pub mod pkt_version;
+pub mod accept;
+pub mod change_room;
+pub mod character;
+pub mod connection;
+pub mod error;
+pub mod fight;
+pub mod game;
+pub mod leave;
+pub mod loot;
+pub mod message;
+pub mod pvp_fight;
+pub mod room;
+pub mod start;
+pub mod version;
 
 pub trait Parser<'a>: Sized + 'a {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error>;

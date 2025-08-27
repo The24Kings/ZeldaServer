@@ -7,40 +7,36 @@ use crate::protocol::{
 };
 
 #[derive(Serialize)]
-pub struct Accept {
+pub struct PktFight {
     pub message_type: PktType,
-    pub accept_type: u8,
 }
 
-impl Accept {
-    pub fn new(accept_type: PktType) -> Self {
-        Accept {
-            message_type: PktType::ACCEPT,
-            accept_type: accept_type.into(),
+impl Default for PktFight {
+    fn default() -> Self {
+        PktFight {
+            message_type: PktType::FIGHT,
         }
     }
 }
 
-impl std::fmt::Display for Accept {
+impl std::fmt::Display for PktFight {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
-            serde_json::to_string(self)
-                .unwrap_or_else(|_| "Failed to serialize Accept".to_string())
+            serde_json::to_string(self).unwrap_or_else(|_| "Failed to serialize Fight".to_string())
         )
     }
 }
 
-impl<'a> Parser<'a> for Accept {
+impl<'a> Parser<'a> for PktFight {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), std::io::Error> {
         // Package into a byte array
         let mut packet: Vec<u8> = Vec::new();
 
         packet.push(self.message_type.into());
-        packet.extend(self.accept_type.to_le_bytes());
 
-        // Write the packet to the buffer
+        // Send the packet to the author
         writer.write_all(&packet).map_err(|_| {
             std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -52,9 +48,8 @@ impl<'a> Parser<'a> for Accept {
     }
 
     fn deserialize(packet: Packet) -> Result<Self, std::io::Error> {
-        Ok(Accept {
+        Ok(PktFight {
             message_type: packet.message_type,
-            accept_type: packet.body[0],
         })
     }
 }
