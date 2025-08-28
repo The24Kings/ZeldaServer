@@ -4,6 +4,8 @@ ZeldaServer is a text-based multi-user dungeon (MUD)-style game written in Rust.
 
 This project builds on the original [Lurk Server](https://github.com/The24Kings/lurk-server) project, adding improvements, refactoring, and additional features to make the codebase more robust and developer-friendly.
 
+> Now with its own dedicated library for the [Lurk Protocol](https://crates.io/crates/lurk_lcsc)!
+
 ```
  ______    _     _           _____
 |___  /   | |   | |         / ____|
