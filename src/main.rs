@@ -1,15 +1,13 @@
 use clap::Parser;
-use std::env;
-use std::fs::File;
-use std::net::TcpListener;
+use lurk_lcsc::commands::input;
 use std::sync::{Arc, Mutex, mpsc};
+use std::{env, fs::File, net::TcpListener};
 use tracing::{debug, info, warn};
 
-use crate::logic::{commands::input, config::Config, map};
+use crate::logic::{config::Config, map};
 use crate::threads::{connection::connection, server::server};
 
 pub mod logic;
-pub mod protocol;
 pub mod threads;
 
 #[derive(Parser, Debug)]
