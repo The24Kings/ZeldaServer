@@ -1,12 +1,13 @@
+use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol};
 use std::io::ErrorKind::{BrokenPipe, UnexpectedEof, Unsupported};
+use std::net::TcpStream;
 use std::sync::{Arc, mpsc::Sender};
 use tracing::{error, info, warn};
 
-use crate::config::Config;
-use crate::protocol::packet::{pkt_game, pkt_leave, pkt_version};
-use crate::protocol::{Protocol, Stream, client::Client, pkt_type::PktType};
+use crate::logic::config::Config;
+use crate::threads::client::Client;
 
-pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>) {
+pub fn connection(stream: Arc<TcpStream>, sender: Sender<Protocol>, config: Arc<Config>) {
     let client = Client::new(stream.clone(), sender);
 
     let description = std::fs::read_to_string(&config.description_path)
@@ -14,8 +15,8 @@ pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>)
 
     // Send the initial game info to the client
     Protocol::Version(
-        stream.clone(),
-        pkt_version::Version {
+        client.stream.clone(),
+        PktVersion {
             message_type: PktType::VERSION,
             major_rev: config.major_rev,
             minor_rev: config.minor_rev,
@@ -30,8 +31,8 @@ pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>)
     });
 
     Protocol::Game(
-        stream.clone(),
-        pkt_game::Game {
+        client.stream.clone(),
+        PktGame {
             message_type: PktType::GAME,
             initial_points: config.initial_points,
             stat_limit: config.stat_limit,
@@ -65,7 +66,7 @@ pub fn connection(stream: Stream, sender: Sender<Protocol>, config: Arc<Config>)
                 // Exit gracefully
                 client
                     .sender
-                    .send(Protocol::Leave(stream.clone(), pkt_leave::Leave::default()))
+                    .send(Protocol::Leave(stream.clone(), PktLeave::default()))
                     .unwrap_or_else(|_| {
                         error!("[CONNECT] Failed to send leave packet");
                     });

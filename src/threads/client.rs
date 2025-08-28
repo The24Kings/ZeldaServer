@@ -1,18 +1,16 @@
-use std::io::Read;
-use std::sync::mpsc::Sender;
+use lurk_lcsc::{Packet, Parser, PktFight, PktLeave, PktStart, PktType, Protocol};
+use std::sync::{Arc, mpsc::Sender};
+use std::{io::Read, net::TcpStream};
 use tracing::info;
-
-use super::packet::{Packet, Parser, pkt_fight, pkt_leave, pkt_start};
-use super::{Protocol, Stream, pkt_type::PktType};
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    pub stream: Stream,
+    pub stream: Arc<TcpStream>,
     pub sender: Sender<Protocol>,
 }
 
 impl Client {
-    pub fn new(stream: Stream, sender: Sender<Protocol>) -> Self {
+    pub fn new(stream: Arc<TcpStream>, sender: Sender<Protocol>) -> Self {
         Client { stream, sender }
     }
 
@@ -71,10 +69,7 @@ impl Client {
             }
             PktType::FIGHT => {
                 // Only 1 byte; no need to consume buffer
-                Some(Protocol::Fight(
-                    self.stream.clone(),
-                    pkt_fight::Fight::default(),
-                ))
+                Some(Protocol::Fight(self.stream.clone(), PktFight::default()))
             }
             PktType::PVPFIGHT => {
                 let mut buffer = vec![0; 32];
@@ -114,10 +109,7 @@ impl Client {
             }
             PktType::START => {
                 // Only 1 byte; no need to consume buffer
-                Some(Protocol::Start(
-                    self.stream.clone(),
-                    pkt_start::Start::default(),
-                ))
+                Some(Protocol::Start(self.stream.clone(), PktStart::default()))
             }
             PktType::ERROR => {
                 let mut buffer = vec![0; 3];
@@ -172,10 +164,7 @@ impl Client {
             }
             PktType::LEAVE => {
                 // LEAVE
-                Some(Protocol::Leave(
-                    self.stream.clone(),
-                    pkt_leave::Leave::default(),
-                ))
+                Some(Protocol::Leave(self.stream.clone(), PktLeave::default()))
             }
             PktType::CONNECTION => {
                 let mut buffer = vec![0; 36];
