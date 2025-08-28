@@ -1,6 +1,6 @@
-# ImprovedLurk
+# ZeldaServer
 
-ImprovedLurk is a text-based multi-user dungeon (MUD)-style game written in Rust. It provides a foundation for building interactive multiplayer text adventures with a focus on room navigation, player communication, and expandable gameplay systems.
+ZeldaServer is a text-based multi-user dungeon (MUD)-style game written in Rust. It provides a foundation for building interactive multiplayer text adventures with a focus on room navigation, player communication, and expandable gameplay systems.
 
 This project builds on the original [Lurk Server](https://github.com/The24Kings/lurk-server) project, adding improvements, refactoring, and additional features to make the codebase more robust and developer-friendly.
 
@@ -62,8 +62,8 @@ _______.---./    .'                    \_.--._ ___________
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/The24Kings/ImprovedLurk.git
-cd ImprovedLurk
+git clone https://github.com/The24Kings/ZeldaServer.git
+cd ZeldaServer
 ```
 
 ### 2. Build the project
@@ -92,7 +92,7 @@ For example, to run on port `5050` with info debugging:
 
 ## Playing the Game
 
-ImprovedLurk uses the **LURK protocol**, a custom message-based protocol designed specifically for this project.
+ZeldaServer uses the **LURK protocol**, a custom message-based protocol designed specifically for this project.
 
 To connect and play, you will need a **LURK-compatible client** that implements the protocol:
 
@@ -108,7 +108,7 @@ To connect and play, you will need a **LURK-compatible client** that implements 
 
 If you don’t want to build your own client from scratch, you can try [**LURKMAN**](https://github.com/col1010/LURKMAN), a client that fully implements the LURK protocol.
 
-This is a great starting point to connect to an ImprovedLurk server and experience the game in action.
+This is a great starting point to connect to ZeldaServer and experience the game in action.
 
 ---
 
