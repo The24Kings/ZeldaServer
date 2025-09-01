@@ -4,10 +4,10 @@ use std::net::TcpStream;
 use std::sync::{Arc, mpsc::Sender};
 use tracing::{error, info, warn};
 
-use crate::logic::config::Config;
+use crate::logic::{ExtendedProtocol, config::Config};
 use crate::threads::client::Client;
 
-pub fn connection(stream: Arc<TcpStream>, sender: Sender<Protocol>, config: Arc<Config>) {
+pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, config: Arc<Config>) {
     let client = Client::new(stream.clone(), sender);
 
     let description = std::fs::read_to_string(&config.description_path)
@@ -66,7 +66,10 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<Protocol>, config: Arc<
                 // Exit gracefully
                 client
                     .sender
-                    .send(Protocol::Leave(stream.clone(), PktLeave::default()))
+                    .send(ExtendedProtocol::Base(Protocol::Leave(
+                        stream.clone(),
+                        PktLeave::default(),
+                    )))
                     .unwrap_or_else(|_| {
                         error!("[CONNECT] Failed to send leave packet");
                     });

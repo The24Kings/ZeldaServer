@@ -1,15 +1,15 @@
 use lurk_lcsc::{
-    ActionKind, CharacterFlags, LurkError, PktAccept, PktCharacter, PktConnection, PktError,
-    PktMessage, PktRoom, PktType, Protocol,
+    CharacterFlags, LurkError, PktAccept, PktCharacter, PktConnection, PktError, PktMessage,
+    PktRoom, PktType, Protocol,
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use tracing::{debug, error, info, warn};
 
-use crate::logic::{config::Config, map};
+use crate::logic::{ExtendedProtocol, config::Config, map};
 
 pub fn server(
-    receiver: Arc<Mutex<Receiver<Protocol>>>,
+    receiver: Arc<Mutex<Receiver<ExtendedProtocol>>>,
     config: Arc<Config>,
     rooms: &mut HashMap<u16, map::Room>,
 ) -> ! {
@@ -25,7 +25,7 @@ pub fn server(
         };
 
         match packet {
-            Protocol::Message(author, content) => {
+            ExtendedProtocol::Base(Protocol::Message(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 // TODO: If they message a monster... like the deku under the tree, it might open the door
@@ -88,7 +88,7 @@ pub fn server(
                     });
                 // ^ ============================================================================ ^
             } // Protocol::MESSAGE
-            Protocol::ChangeRoom(author, content) => {
+            ExtendedProtocol::Base(Protocol::ChangeRoom(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
@@ -280,7 +280,7 @@ pub fn server(
                 }
                 // ^ ============================================================================ ^
             } // Protocol::CHANGEROOM
-            Protocol::Fight(author, content) => {
+            ExtendedProtocol::Base(Protocol::Fight(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
@@ -486,7 +486,7 @@ pub fn server(
                 });
                 // ^ ============================================================================ ^
             } // Protocol::FIGHT
-            Protocol::PVPFight(author, content) => {
+            ExtendedProtocol::Base(Protocol::PVPFight(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 Protocol::Error(
@@ -498,7 +498,7 @@ pub fn server(
                     error!("[SERVER] Failed to send error packet: {}", e);
                 });
             } // Protocol::PVPFIGHT
-            Protocol::Loot(author, content) => {
+            ExtendedProtocol::Base(Protocol::Loot(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
@@ -620,7 +620,7 @@ pub fn server(
 
                 // ^ ============================================================================ ^
             } // Protocol::LOOT
-            Protocol::Start(author, content) => {
+            ExtendedProtocol::Base(Protocol::Start(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 // Find the player in the map
@@ -742,7 +742,7 @@ pub fn server(
                 }
                 // ^ ============================================================================ ^
             } // Protocol::START
-            Protocol::Character(author, content) => {
+            ExtendedProtocol::Base(Protocol::Character(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 // ================================================================================
@@ -860,7 +860,7 @@ pub fn server(
                 });
                 // ^ ============================================================================ ^
             } // Protocol::CHARACTER
-            Protocol::Leave(author, content) => {
+            ExtendedProtocol::Base(Protocol::Leave(author, content)) => {
                 info!("[SERVER] Received: {}", content);
 
                 // ================================================================================
@@ -905,14 +905,15 @@ pub fn server(
                 }
                 // ^ ============================================================================ ^
             } // Protocol::LEAVE
-            Protocol::Command(action) => {
+            ExtendedProtocol::Base(_) => {} // Ignore all other packets
+            ExtendedProtocol::Command(action) => {
                 info!("[SERVER] Received: {}", action);
 
-                match action.kind {
-                    ActionKind::HELP => {
+                match action.kind.as_ref() {
+                    "help" => {
                         info!("{}", config.help_cmd);
                     }
-                    ActionKind::BROADCAST => {
+                    "broadcast" => {
                         if action.argc < 2 {
                             error!("[SERVER] Broadcast command requires at least 2 arguments");
                             continue;
@@ -924,7 +925,7 @@ pub fn server(
                             error!("[SERVER] Failed to broadcast message: {}", e);
                         });
                     }
-                    ActionKind::MESSAGE => {
+                    "message" => {
                         if action.argc < 3 {
                             error!("[SERVER] Message command requires at least 3 arguments");
                             continue;
@@ -954,7 +955,7 @@ pub fn server(
                             }
                         }
                     }
-                    ActionKind::NUKE => {
+                    "nuke" => {
                         info!("[SERVER] Nuke command received, removing disconnected players");
 
                         let to_remove: Vec<Arc<str>> = players
@@ -985,17 +986,11 @@ pub fn server(
                             error!("[SERVER] Failed to broadcast message: {}", e);
                         });
                     }
-                    ActionKind::OTHER => {
+                    _ => {
                         error!("[SERVER] Unsupported command!");
                     }
                 }
             } // Protocol::COMMAND
-            Protocol::Error(_, _) => {}
-            Protocol::Accept(_, _) => {}
-            Protocol::Room(_, _) => {}
-            Protocol::Game(_, _) => {}
-            Protocol::Connection(_, _) => {}
-            Protocol::Version(_, _) => {}
         }
     }
 }

@@ -3,14 +3,16 @@ use std::sync::{Arc, mpsc::Sender};
 use std::{io::Read, net::TcpStream};
 use tracing::info;
 
+use crate::logic::ExtendedProtocol;
+
 #[derive(Debug, Clone)]
 pub struct Client {
     pub stream: Arc<TcpStream>,
-    pub sender: Sender<Protocol>,
+    pub sender: Sender<ExtendedProtocol>,
 }
 
 impl Client {
-    pub fn new(stream: Arc<TcpStream>, sender: Sender<Protocol>) -> Self {
+    pub fn new(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>) -> Self {
         Client { stream, sender }
     }
 
@@ -194,7 +196,7 @@ impl Client {
         // Send the packet to the server thread
         match packet {
             Some(pkt) => {
-                self.sender.send(pkt).map_err(|e| {
+                self.sender.send(ExtendedProtocol::Base(pkt)).map_err(|e| {
                     // If the send fails with SendError, it means the server thread has closed
                     std::io::Error::new(
                         std::io::ErrorKind::BrokenPipe,
