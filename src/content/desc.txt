@@ -30,5 +30,5 @@ _______.---./    .'                    \_.--._ ___________
              ''    .'
 
    Please report any bugs you might find on Github!
-      https://github.com/The24Kings/ImprovedLurk
+      https://github.com/The24Kings/ZeldaServer
                     Thank you!
