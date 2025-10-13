@@ -22,7 +22,7 @@ struct Args {
 fn main() -> ! {
     let args = Args::parse();
 
-    dotenvy::dotenv().expect("[MAIN] Failed to load .env file");
+    dotenvy::from_filename(".env.local").expect("[MAIN] Failed to load .env.local file");
     tracing_subscriber::fmt()
         .with_max_level(args.verbosity)
         .with_target(false)

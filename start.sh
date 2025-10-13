@@ -2,6 +2,9 @@
 
 mkdir -p logs
 
+cd `pwd`
+cargo build --release
+
 while true
 do
     stdbuf -oL ./target/release/ZeldaServer --port ${1:-8080} ${2:--vv} 2>&1 | tee -a ./logs/${1:-8080}_serverlog_`date +%m_%d_%y_%s`.log

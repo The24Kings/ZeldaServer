@@ -6,7 +6,7 @@ This project builds on the original [Lurk Server](https://github.com/The24Kings/
 
 > Now with its own dedicated library for the [Lurk Protocol](https://crates.io/crates/lurk_lcsc)!
 
-```
+```TXT
  ______    _     _           _____
 |___  /   | |   | |         / ____|
    / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __
@@ -68,17 +68,10 @@ git clone https://github.com/The24Kings/ZeldaServer.git
 cd ZeldaServer
 ```
 
-### 2. Build the project
-
-```bash
-cargo build --release
-```
-
-This produces an optimized binary in `target/release/`.
-
-### 3. Start the server
+### 2. Build and start the server
 
 The recommended way to start the server is with the included script:
+> `start.sh` will automatically build the server in release mode and start an instance running on `8080` with `INFO` verbosity.
 
 ```bash
 ./start.sh [PORT] [VERBOSITY]
