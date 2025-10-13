@@ -71,7 +71,7 @@ impl From<Monster> for PktCharacter {
         Self {
             author: None,
             message_type: PktType::CHARACTER,
-            name: Arc::from(monster.name.clone()),
+            name: monster.name.clone(),
             flags,
             attack: monster.attack,
             defense: monster.defense,
@@ -98,7 +98,7 @@ impl From<&Monster> for PktCharacter {
         Self {
             author: None,
             message_type: PktType::CHARACTER,
-            name: Arc::from(monster.name.clone()),
+            name: monster.name.clone(),
             flags,
             attack: monster.attack,
             defense: monster.defense,
@@ -125,7 +125,7 @@ impl From<&mut Monster> for PktCharacter {
         Self {
             author: None,
             message_type: PktType::CHARACTER,
-            name: Arc::from(monster.name.clone()),
+            name: monster.name.clone(),
             flags,
             attack: monster.attack,
             defense: monster.defense,
@@ -166,7 +166,7 @@ pub fn player_from_stream(
         player
             .author
             .as_ref()
-            .map_or(false, |author| Arc::ptr_eq(&author, &stream))
+            .is_some_and(|author| Arc::ptr_eq(author, &stream))
     })
 }
 
@@ -186,7 +186,7 @@ pub fn broadcast(
 
         debug!("[BROADCAST] Sending message to {}", name);
 
-        Protocol::Message(author.clone(), PktMessage::server(&name, &message))
+        Protocol::Message(author.clone(), PktMessage::server(name, &message))
             .send()
             .unwrap_or_else(|e| {
                 warn!("[BROADCAST] Failed to send message to {}: {}", name, e);
