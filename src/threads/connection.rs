@@ -25,10 +25,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
         },
     )
     .send()
-    .unwrap_or_else(|e| {
-        error!("[CONNECT] Failed to send version packet: {}", e);
-        return; // This is a critical error, so we return
-    });
+    .expect("[CONNECT] Failed to send version packet");
 
     Protocol::Game(
         client.stream.clone(),
@@ -41,10 +38,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
         },
     )
     .send()
-    .unwrap_or_else(|e| {
-        error!("[CONNECT] Failed to send game packet: {}", e);
-        return; // This is a critical error, so we return
-    });
+    .expect("[CONNECT] Failed to send game packet");
 
     // Main loop to read packets from the client
     loop {

@@ -220,7 +220,7 @@ pub fn server(
                 // ================================================================================
                 // Send all connections to the client
                 // ================================================================================
-                let connections = match map::exits(&rooms, nxt_room_id) {
+                let connections = match map::exits(rooms, nxt_room_id) {
                     Some(exits) => exits,
                     None => {
                         error!("[SERVER] No exits for room {}", nxt_room_id);
@@ -673,7 +673,7 @@ pub fn server(
                     }
                 };
 
-                map::alert_room(&players, &room, &player).unwrap_or_else(|e| {
+                map::alert_room(&players, room, &player).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
 
@@ -696,7 +696,7 @@ pub fn server(
                         error!("[SERVER] Failed to send room packet: {}", e);
                     });
 
-                let connections = match map::exits(&rooms, 0) {
+                let connections = match map::exits(rooms, 0) {
                     Some(exits) => exits,
                     None => {
                         error!("[SERVER] Unable to find room in map");
@@ -847,7 +847,7 @@ pub fn server(
 
                 map::message_room(
                     &players,
-                    &room,
+                    room,
                     format!("{}'s corpse disappeared into a puff of smoke.", player.name),
                     true,
                 )
@@ -855,7 +855,7 @@ pub fn server(
                     error!("[SERVER] Failed to message room: {}", e);
                 });
 
-                map::alert_room(&players, &room, &player).unwrap_or_else(|e| {
+                map::alert_room(&players, room, &player).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
                 // ^ ============================================================================ ^
@@ -891,7 +891,7 @@ pub fn server(
                         warn!("[SERVER] Failed to broadcast message: {}", e);
                     });
 
-                map::alert_room(&players, &room, &player).unwrap_or_else(|e| {
+                map::alert_room(&players, room, &player).unwrap_or_else(|e| {
                     warn!("[SERVER] Failed to alert players: {}", e);
                 });
 
@@ -934,10 +934,7 @@ pub fn server(
                         let name = action.argv[1].clone();
                         let content = action.argv[2..].join(" ");
 
-                        let recipient = players
-                            .get(name.as_str())
-                            .map(|p| p.author.clone())
-                            .flatten();
+                        let recipient = players.get(name.as_str()).and_then(|p| p.author.clone());
 
                         match recipient {
                             Some(recipient) => {
@@ -972,7 +969,7 @@ pub fn server(
                             room.players.retain(|name| !to_remove.contains(name));
                         }
 
-                        if to_remove.len() == 0 {
+                        if to_remove.is_empty() {
                             continue;
                         }
 
