@@ -1,21 +1,18 @@
 use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol};
-use std::io::ErrorKind::{BrokenPipe, UnexpectedEof, Unsupported};
+use std::io::ErrorKind::{UnexpectedEof, Unsupported};
 use std::net::TcpStream;
 use std::sync::{Arc, mpsc::Sender};
 use tracing::{error, info, warn};
 
 use crate::logic::{ExtendedProtocol, config::Config};
-use crate::threads::client::Client;
 
 pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, config: Arc<Config>) {
-    let client = Client::new(stream.clone(), sender);
-
     let description = std::fs::read_to_string(&config.description_path)
         .expect("[CONNECT] Failed to read description file!");
 
     // Send the initial game info to the client
     Protocol::Version(
-        client.stream.clone(),
+        stream.clone(),
         PktVersion {
             message_type: PktType::VERSION,
             major_rev: config.major_rev,
@@ -28,7 +25,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
     .expect("[CONNECT] Failed to send version packet");
 
     Protocol::Game(
-        client.stream.clone(),
+        stream.clone(),
         PktGame {
             message_type: PktType::GAME,
             initial_points: config.initial_points,
@@ -42,13 +39,11 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
 
     // Main loop to read packets from the client
     loop {
-        match client.read() {
-            Ok(_) => {
-                info!("[READ] Packet read successfully.");
-            }
+        let packet = match Protocol::recv(&stream) {
+            Ok(pkt) => pkt,
             Err(e) => {
                 match e.kind() {
-                    BrokenPipe | UnexpectedEof | Unsupported => {
+                    UnexpectedEof | Unsupported => {
                         error!("[READ] '{:?}' -> {}. Terminating.", e.kind(), e);
                     }
                     _ => {
@@ -58,8 +53,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
                 }
 
                 // Exit gracefully
-                client
-                    .sender
+                sender
                     .send(ExtendedProtocol::Base(Protocol::Leave(
                         stream.clone(),
                         PktLeave::default(),
@@ -70,6 +64,25 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
 
                 break;
             }
+        };
+
+        info!("[READ] Packet read successfully");
+
+        // Try to send the packet
+        if let Err(e) = sender.send(ExtendedProtocol::Base(packet)) {
+            error!("[READ] Failed to send packet: {}", e);
+
+            // Exit gracefully
+            sender
+                .send(ExtendedProtocol::Base(Protocol::Leave(
+                    stream.clone(),
+                    PktLeave::default(),
+                )))
+                .unwrap_or_else(|_| {
+                    error!("[CONNECT] Failed to send leave packet");
+                });
+
+            break;
         }
     }
 }
