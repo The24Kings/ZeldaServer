@@ -39,8 +39,18 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
 
     // Main loop to read packets from the client
     loop {
-        let packet = match Protocol::recv(&stream) {
-            Ok(pkt) => pkt,
+        match Protocol::recv(&stream) {
+            Ok(pkt) => {
+                info!("[READ] Packet read successfully");
+
+                // Try to send the packet
+                match sender.send(ExtendedProtocol::Base(pkt)) {
+                    Ok(()) => continue, // Don't fallout to graceful exit
+                    Err(e) => {
+                        error!("[READ] Failed to send packet: {}", e);
+                    }
+                };
+            }
             Err(e) => {
                 match e.kind() {
                     UnexpectedEof | Unsupported => {
@@ -48,41 +58,22 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
                     }
                     _ => {
                         warn!("[READ] '{:?}' -> {}. Continuing.", e.kind(), e);
-                        continue; // Continue processing other packets
+                        continue; // Non-terminal; Continue processing other packets
                     }
                 }
-
-                // Exit gracefully
-                sender
-                    .send(ExtendedProtocol::Base(Protocol::Leave(
-                        stream.clone(),
-                        PktLeave::default(),
-                    )))
-                    .unwrap_or_else(|_| {
-                        error!("[CONNECT] Failed to send leave packet");
-                    });
-
-                break;
             }
         };
 
-        info!("[READ] Packet read successfully");
+        // Exit gracefully
+        sender
+            .send(ExtendedProtocol::Base(Protocol::Leave(
+                stream.clone(),
+                PktLeave::default(),
+            )))
+            .unwrap_or_else(|_| {
+                error!("[CONNECT] Failed to send leave packet");
+            });
 
-        // Try to send the packet
-        if let Err(e) = sender.send(ExtendedProtocol::Base(packet)) {
-            error!("[READ] Failed to send packet: {}", e);
-
-            // Exit gracefully
-            sender
-                .send(ExtendedProtocol::Base(Protocol::Leave(
-                    stream.clone(),
-                    PktLeave::default(),
-                )))
-                .unwrap_or_else(|_| {
-                    error!("[CONNECT] Failed to send leave packet");
-                });
-
-            break;
-        }
+        break;
     }
 }
