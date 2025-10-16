@@ -18,7 +18,7 @@ pub struct Room {
 impl From<Room> for PktRoom {
     fn from(room: Room) -> Self {
         PktRoom {
-            message_type: PktType::ROOM,
+            packet_type: PktType::ROOM,
             room_number: room.room_number,
             room_name: room.title,
             description_len: room.desc.len() as u16,
@@ -38,7 +38,7 @@ impl From<Connection> for PktConnection {
     /// Create a new connection from the game map to send to the client
     fn from(conn: Connection) -> Self {
         PktConnection {
-            message_type: PktType::CONNECTION,
+            packet_type: PktType::CONNECTION,
             room_number: conn.room_number,
             room_name: conn.title,
             description_len: conn.desc_short.len() as u16,
@@ -70,7 +70,7 @@ impl From<Monster> for PktCharacter {
 
         Self {
             author: None,
-            message_type: PktType::CHARACTER,
+            packet_type: PktType::CHARACTER,
             name: monster.name.clone(),
             flags,
             attack: monster.attack,
@@ -97,7 +97,7 @@ impl From<&Monster> for PktCharacter {
 
         Self {
             author: None,
-            message_type: PktType::CHARACTER,
+            packet_type: PktType::CHARACTER,
             name: monster.name.clone(),
             flags,
             attack: monster.attack,
@@ -124,7 +124,7 @@ impl From<&mut Monster> for PktCharacter {
 
         Self {
             author: None,
-            message_type: PktType::CHARACTER,
+            packet_type: PktType::CHARACTER,
             name: monster.name.clone(),
             flags,
             attack: monster.attack,

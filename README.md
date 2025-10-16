@@ -45,7 +45,7 @@ _______.---./    .'                    \_.--._ ___________
 - **Room-based world navigation** — players can explore interconnected rooms
 - **Player management** — supports multiple players in a shared world
 - **Text-based interaction** — send and receive messages in real time
-- **Custom protocol** — communication happens over the **LURK protocol** (not plain telnet)
+- **Custom protocol** — communication happens over the **Lurk protocol** (not plain telnet)
 - **Rust-powered** — built with safety, speed, and concurrency in mind
 
 ---
@@ -55,7 +55,7 @@ _______.---./    .'                    \_.--._ ___________
 - [Rust](https://www.rust-lang.org/) (latest stable recommended)
 - [Cargo](https://doc.rust-lang.org/cargo/) (comes with Rust)
 - A Unix-like shell (Linux, macOS, or WSL on Windows) to run the `start.sh` script
-- A **LURK-compatible client** (telnet or netcat alone will not work)
+- A **Lurk-compatible client** (telnet or netcat alone will not work)
 
 ---
 
@@ -71,6 +71,7 @@ cd ZeldaServer
 ### 2. Build and start the server
 
 The recommended way to start the server is with the included script:
+
 > `start.sh` will automatically build the server in release mode and start an instance running on `8080` with `INFO` verbosity.
 
 ```bash
@@ -87,21 +88,21 @@ For example, to run on port `5050` with info debugging:
 
 ## Playing the Game
 
-ZeldaServer uses the **LURK protocol**, a custom message-based protocol designed specifically for this project.
+ZeldaServer uses the **Lurk protocol**, a custom message-based protocol designed specifically for this project.
 
-To connect and play, you will need a **LURK-compatible client** that implements the protocol:
+To connect and play, you will need a **Lurk-compatible client** that implements the protocol:
 
-- The client is responsible for sending correctly formatted LURK messages.
-- The server will respond with structured LURK responses (room state, messages, etc.).
+- The client is responsible for sending correctly formatted Lurk messages.
+- The server will respond with structured Lurk responses (room state, messages, etc.).
 - Plain-text clients like `telnet` will not work.
 
-👉 See the [LURK Protocol Documentation](https://github.com/The24Kings/LurkProtocol/wiki) for full details on message structure, commands, and expected behavior.
+👉 See the [Lurk Protocol Documentation](https://github.com/The24Kings/LurkProtocol/wiki) for full details on message structure, commands, and expected behavior.
 
 ---
 
 ## Example Client
 
-If you don’t want to build your own client from scratch, you can try [**LURKMAN**](https://github.com/col1010/LURKMAN), a client that fully implements the LURK protocol.
+If you don’t want to build your own client from scratch, you can try [**LURKMAN**](https://github.com/col1010/LURKMAN), a client that fully implements the Lurk protocol.
 
 This is a great starting point to connect to ZeldaServer and experience the game in action.
 

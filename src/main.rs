@@ -40,15 +40,15 @@ fn main() -> ! {
 
     // Create a channel for communication between threads
     let (tx, rx) = mpsc::channel();
-    let receiver = Arc::new(Mutex::new(rx));
     let sender = tx.clone();
+    let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
     let path = env::var("MAP_FILEPATH").expect("[MAIN] MAP_FILEPATH must be set.");
     let file = File::open(path).expect("[MAIN] Failed to open map file!");
     let mut rooms = map::build(file).expect("[MAIN] Failed to build map from file");
 
-    // Start the server thread with the map
+    // Start the server and command input threads
     info!("[MAIN] Parsed map successfully");
 
     let _ = std::thread::spawn(move || {
@@ -71,8 +71,6 @@ fn main() -> ! {
                 let client_config = client_config.clone();
 
                 // Handle the connection in a separate thread
-                info!("[MAIN] Started connection thread!");
-
                 let client_h = std::thread::spawn(move || {
                     connection(stream, sender, client_config);
                 });
