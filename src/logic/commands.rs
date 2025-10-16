@@ -60,7 +60,7 @@ pub fn input(sender: Sender<ExtendedProtocol>) -> ! {
                 argc,
             }))
             .unwrap_or_else(|_| {
-                error!("[INPUT] Failed to send INPUT packet");
+                error!("[INPUT] Failed to send command packet");
             })
     }
 }
