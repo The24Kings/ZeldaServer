@@ -542,7 +542,7 @@
     },
     {
         "room_number": 17,
-        "title": "B1 - Suspiciously Empty Room",
+        "title": "B1 - Small Ambush Arena",
         "connections": {
             "16": {
                 "room_number": 16,
