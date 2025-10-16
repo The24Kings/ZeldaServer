@@ -74,6 +74,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
                 error!("[CONNECT] Failed to send leave packet");
             });
 
+        info!("[CONNECT] Connection handler exiting.");
         break;
     }
 }
