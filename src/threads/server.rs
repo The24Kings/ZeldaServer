@@ -5,7 +5,8 @@ use lurk_lcsc::{
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
-use tracing::{debug, error, info, warn};
+use std::time::Instant;
+use tracing::{debug, error, info, trace, warn};
 
 use crate::logic::{ExtendedProtocol, config::Config, map};
 
@@ -24,6 +25,8 @@ pub fn server(
                 continue;
             }
         };
+
+        let start = Instant::now();
 
         match packet {
             ExtendedProtocol::Base(Protocol::Message(author, content)) => {
@@ -807,5 +810,11 @@ pub fn server(
                 }
             } // Protocol::COMMAND
         }
+
+        let end = Instant::now();
+        let delta = end.duration_since(start);
+        let micros = delta.subsec_micros();
+
+        trace!("Time delta: {}.{} seconds", delta.as_secs(), micros);
     }
 }
