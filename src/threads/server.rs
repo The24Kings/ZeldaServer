@@ -1,6 +1,7 @@
+use lurk_lcsc::{CharacterFlags, LurkError, Protocol};
+use lurk_lcsc::{PktCharacter, PktConnection, PktError, PktMessage, PktRoom, PktType};
 use lurk_lcsc::{
-    CharacterFlags, LurkError, PktAccept, PktCharacter, PktConnection, PktError, PktMessage,
-    PktRoom, PktType, Protocol,
+    send_accept, send_character, send_connection, send_error, send_message, send_room,
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
@@ -36,28 +37,20 @@ pub fn server(
                 let player = match players.get(content.recipient.as_ref()) {
                     Some(player) => player,
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::OTHER, "Player not found"),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::OTHER, "Player not found")
+                        );
 
                         continue;
                     }
                 };
 
                 if !player.flags.is_started() && !player.flags.is_ready() {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::NOTREADY, "Start the game first!")
+                    );
 
                     continue;
                 }
@@ -65,27 +58,16 @@ pub fn server(
                 let author = match &player.author {
                     Some(author) => author,
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(
-                                LurkError::OTHER,
-                                "Character does not have an active connection",
-                            ),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::OTHER, "Not connected")
+                        );
 
                         continue;
                     }
                 };
 
-                Protocol::Message(author.clone(), content)
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send message packet: {}", e);
-                    });
+                send_message!(author.clone(), content);
                 // ^ ============================================================================ ^
             } // Protocol::MESSAGE
             ExtendedProtocol::Base(Protocol::ChangeRoom(author, content)) => {
@@ -101,14 +83,10 @@ pub fn server(
                 };
 
                 if !player.flags.is_started() && !player.flags.is_ready() {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::NOTREADY, "Start the game first!")
+                    );
 
                     continue;
                 }
@@ -121,14 +99,10 @@ pub fn server(
                 // given connection. Shuffle the player around to the next room and send data.
                 // ================================================================================
                 if cur_room_id == nxt_room_id {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::BADROOM, "Player is already in the room"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::BADROOM, "Player is already in the room")
+                    );
 
                     continue;
                 }
@@ -136,14 +110,10 @@ pub fn server(
                 let cur_room = match rooms.get_mut(&cur_room_id) {
                     Some(room) => room,
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::BADROOM, "Room not found!"),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::BADROOM, "Room not found!")
+                        );
 
                         continue;
                     }
@@ -154,14 +124,10 @@ pub fn server(
                         info!("[SERVER] Found connection: '{}'", exit.title);
                     }
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::BADROOM, "Invalid connection!"),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::BADROOM, "Invalid connection!")
+                        );
 
                         continue;
                     }
@@ -179,14 +145,10 @@ pub fn server(
                 let new_room = match rooms.get_mut(&nxt_room_id) {
                     Some(room) => room,
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::BADROOM, "Room not found!"),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::BADROOM, "Room not found!")
+                        );
 
                         continue;
                     }
@@ -195,11 +157,7 @@ pub fn server(
                 info!("[SERVER] Adding player to new room");
                 new_room.players.push(player.name.clone());
 
-                Protocol::Room(author.clone(), PktRoom::from(new_room.clone()))
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send room packet: {}", e);
-                    });
+                send_room!(author.clone(), PktRoom::from(new_room.clone()));
 
                 let new_room = new_room.clone(); // End mutable borrow of new_room
                 // ^ ============================================================================ ^
@@ -210,11 +168,7 @@ pub fn server(
                 info!("[SERVER] Updating player room");
 
                 // Send the updated character back to the client
-                Protocol::Character(author.clone(), player.clone())
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send character packet: {}", e);
-                    });
+                send_character!(author.clone(), player.clone());
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -229,11 +183,7 @@ pub fn server(
                 };
 
                 for (_, new_room) in connections {
-                    Protocol::Connection(author.clone(), PktConnection::from(new_room))
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send connection packet: {}", e);
-                        });
+                    send_connection!(author.clone(), PktConnection::from(new_room));
                 }
                 // ^ ============================================================================ ^
 
@@ -242,13 +192,8 @@ pub fn server(
                 // ================================================================================
                 let player = player.clone(); // End mutable borrow of player
 
-                map::alert_room(&players, &cur_room, &player).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
-
-                map::alert_room(&players, &new_room, &player).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
+                map::alert_room(&players, &cur_room, &player);
+                map::alert_room(&players, &new_room, &player);
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -259,11 +204,7 @@ pub fn server(
                 debug!("[SERVER] Players: {:?}", players);
 
                 players.for_each(|player| {
-                    Protocol::Character(author.clone(), player.clone())
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send character packet: {}", e);
-                        });
+                    send_character!(author.clone(), player.clone());
                 });
 
                 let monsters = match &new_room.monsters {
@@ -272,11 +213,7 @@ pub fn server(
                 };
 
                 for monster in monsters {
-                    Protocol::Character(author.clone(), monster.into())
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send character packet: {}", e);
-                        });
+                    send_character!(author.clone(), PktCharacter::from(monster));
                 }
                 // ^ ============================================================================ ^
             } // Protocol::CHANGEROOM
@@ -293,14 +230,10 @@ pub fn server(
                 };
 
                 if !player.flags.is_started() && !player.flags.is_ready() {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::NOTREADY, "Start the game first!")
+                    );
 
                     continue;
                 }
@@ -342,14 +275,10 @@ pub fn server(
                         .filter(|m| m.health > 0)
                         .min_by_key(|m| (m.health, m.name.clone())),
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::NOFIGHT, "The room is eerily quiet..."),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::NOFIGHT, "The room is eerily quiet...")
+                        );
 
                         continue;
                     }
@@ -358,14 +287,10 @@ pub fn server(
                 let to_attack = match to_attack {
                     Some(m) => m,
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::NOFIGHT, "Let the dead rest."),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::NOFIGHT, "No monsters alive. Let them rest.")
+                        );
 
                         continue;
                     }
@@ -379,10 +304,7 @@ pub fn server(
                     &room,
                     format!("{} is attacking {}", attacker.name, to_attack.name),
                     false,
-                )
-                .unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to send message: {}", e);
-                });
+                );
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -402,10 +324,7 @@ pub fn server(
                         attacker.name, to_attack.name
                     ),
                     false,
-                )
-                .unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to send message: {}", e);
-                });
+                );
 
                 let damage = players_in_battle
                     .iter()
@@ -476,14 +395,10 @@ pub fn server(
                 room.players.push(attacker.name.clone()); // Add the name back so the attacker gets updated
 
                 for player in to_update {
-                    map::alert_room(&players, &room, player).unwrap_or_else(|e| {
-                        warn!("[SERVER] Failed to alert players: {}", e);
-                    });
+                    map::alert_room(&players, &room, player);
                 }
 
-                map::alert_room(&players, &room, &to_attack.into()).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
+                map::alert_room(&players, &room, &to_attack.into());
                 // ^ ============================================================================ ^
             } // Protocol::FIGHT
             ExtendedProtocol::Base(Protocol::PVPFight(author, content)) => {
@@ -514,14 +429,10 @@ pub fn server(
                 };
 
                 if !player.flags.is_started() && !player.flags.is_ready() {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::NOTREADY, "Start the game first!")
+                    );
 
                     continue;
                 }
@@ -543,14 +454,10 @@ pub fn server(
                         .iter_mut()
                         .find(|m| m.name.as_ref() == content.target_name.as_ref()),
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::OTHER, "No monsters to loot!"),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::OTHER, "No monsters to loot!")
+                        );
 
                         continue;
                     }
@@ -559,39 +466,27 @@ pub fn server(
                 let to_loot = match to_loot {
                     Some(m) => m,
                     None => {
-                        Protocol::Error(
+                        send_error!(
                             author.clone(),
-                            PktError::new(LurkError::BADMONSTER, "Monster doesn't exist!"),
-                        )
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send error packet: {}", e);
-                        });
+                            PktError::new(LurkError::BADMONSTER, "Monster doesn't exist!")
+                        );
 
                         continue;
                     }
                 };
 
                 if to_loot.health > 0 {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::BADMONSTER, "Monster is still alive!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::BADMONSTER, "Monster is still alive!")
+                    );
                 }
 
                 if to_loot.gold == 0 {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::BADMONSTER, "Monster already looted!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::BADMONSTER, "Monster already looted!")
+                    );
 
                     continue;
                 }
@@ -606,17 +501,8 @@ pub fn server(
                 // ================================================================================
                 // Send updated player and monster back to author
                 // ================================================================================
-                Protocol::Character(author.clone(), player.clone())
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send character packet: {}", e);
-                    });
-
-                Protocol::Character(author.clone(), to_loot.into())
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send character packet: {}", e);
-                    });
+                send_character!(author.clone(), player.clone());
+                send_character!(author.clone(), to_loot.into());
 
                 // ^ ============================================================================ ^
             } // Protocol::LOOT
@@ -636,14 +522,10 @@ pub fn server(
                 };
 
                 if !player.flags.is_ready() {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Supply of valid player first!"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::NOTREADY, "Supply of valid player first!")
+                    );
 
                     continue;
                 }
@@ -655,11 +537,7 @@ pub fn server(
 
                 let player = player.clone(); // End mutable borrow of player
 
-                Protocol::Character(author.clone(), player.clone())
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send character packet: {}", e);
-                    });
+                send_character!(author.clone(), player.clone());
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -673,14 +551,8 @@ pub fn server(
                     }
                 };
 
-                map::alert_room(&players, room, &player).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
-
-                map::broadcast(&players, format!("{} has started the game!", player.name))
-                    .unwrap_or_else(|e| {
-                        warn!("[SERVER] Failed to broadcast message: {}", e);
-                    });
+                map::alert_room(&players, room, &player);
+                map::broadcast(&players, format!("{} has started the game!", player.name));
 
                 info!("[SERVER] Adding player to starting room");
 
@@ -690,11 +562,7 @@ pub fn server(
                 let room_players = room.players.clone();
                 let room_monsters = room.monsters.clone();
 
-                Protocol::Room(author.clone(), PktRoom::from(room.clone()))
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send room packet: {}", e);
-                    });
+                send_room!(author.clone(), PktRoom::from(room.clone()));
 
                 let connections = match map::exits(rooms, 0) {
                     Some(exits) => exits,
@@ -705,11 +573,7 @@ pub fn server(
                 };
 
                 for (_, room) in connections {
-                    Protocol::Connection(author.clone(), PktConnection::from(room))
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send connection packet: {}", e);
-                        });
+                    send_connection!(author.clone(), PktConnection::from(room));
                 }
                 // ^ ============================================================================ ^
 
@@ -726,19 +590,11 @@ pub fn server(
                 };
 
                 players.for_each(|player| {
-                    Protocol::Character(author.clone(), player.clone())
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send character packet: {}", e);
-                        });
+                    send_character!(author.clone(), player.clone());
                 });
 
                 for monster in monsters {
-                    Protocol::Character(author.clone(), monster.into())
-                        .send()
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to send character packet: {}", e);
-                        });
+                    send_character!(author.clone(), monster.into());
                 }
                 // ^ ============================================================================ ^
             } // Protocol::START
@@ -755,14 +611,10 @@ pub fn server(
                     .unwrap_or(config.initial_points + 1); // This will cause the next check to fail
 
                 if total_stats > config.initial_points {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::STATERROR, "Invalid stats"),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::STATERROR, "Invalid stats")
+                    );
 
                     continue;
                 }
@@ -790,14 +642,10 @@ pub fn server(
                 };
 
                 if player.flags.is_started() {
-                    Protocol::Error(
+                    send_error!(
                         author.clone(),
-                        PktError::new(LurkError::PLAYEREXISTS, "Player is already in the game."),
-                    )
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send error packet: {}", e);
-                    });
+                        PktError::new(LurkError::PLAYEREXISTS, "Player is already in the game.")
+                    );
 
                     continue;
                 }
@@ -812,17 +660,9 @@ pub fn server(
                 // ================================================================================
                 // Send an Accept packet and updated character.
                 // ================================================================================
-                Protocol::Accept(author.clone(), PktAccept::new(PktType::CHARACTER))
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send accept packet: {}", e);
-                    });
+                send_accept!(author.clone(), PktType::CHARACTER);
 
-                Protocol::Character(author.clone(), player.clone())
-                    .send()
-                    .unwrap_or_else(|e| {
-                        error!("[SERVER] Failed to send character packet: {}", e);
-                    });
+                send_character!(author.clone(), player.clone());
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -850,14 +690,9 @@ pub fn server(
                     room,
                     format!("{}'s corpse disappeared into a puff of smoke.", player.name),
                     true,
-                )
-                .unwrap_or_else(|e| {
-                    error!("[SERVER] Failed to message room: {}", e);
-                });
+                );
 
-                map::alert_room(&players, room, &player).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
+                map::alert_room(&players, room, &player);
                 // ^ ============================================================================ ^
             } // Protocol::CHARACTER
             ExtendedProtocol::Base(Protocol::Leave(author, content)) => {
@@ -886,22 +721,12 @@ pub fn server(
                     }
                 };
 
-                map::broadcast(&players, format!("{} has left the game.", player.name))
-                    .unwrap_or_else(|e| {
-                        warn!("[SERVER] Failed to broadcast message: {}", e);
-                    });
-
-                map::alert_room(&players, room, &player).unwrap_or_else(|e| {
-                    warn!("[SERVER] Failed to alert players: {}", e);
-                });
+                map::broadcast(&players, format!("{} has left the game.", player.name));
+                map::alert_room(&players, room, &player);
 
                 match author.shutdown(std::net::Shutdown::Both) {
-                    Ok(_) => {
-                        info!("[SERVER] Connection shutdown successfully");
-                    }
-                    Err(e) => {
-                        error!("[SERVER] Failed to shutdown connection: {}", e);
-                    }
+                    Ok(_) => info!("[SERVER] Connection shutdown successfully"),
+                    Err(e) => error!("[SERVER] Failed to shutdown connection: {}", e),
                 }
                 // ^ ============================================================================ ^
             } // Protocol::LEAVE
@@ -921,9 +746,7 @@ pub fn server(
 
                         let message = action.argv[1..].join(" ");
 
-                        map::broadcast(&players, message).unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to broadcast message: {}", e);
-                        });
+                        map::broadcast(&players, message);
                     }
                     "message" => {
                         if action.argc < 3 {
@@ -938,14 +761,10 @@ pub fn server(
 
                         match recipient {
                             Some(recipient) => {
-                                Protocol::Message(
+                                send_message!(
                                     recipient.clone(),
-                                    PktMessage::server(&name, &content),
-                                )
-                                .send()
-                                .unwrap_or_else(|e| {
-                                    error!("[SERVER] Failed to send message packet: {}", e);
-                                });
+                                    PktMessage::server(&name, &content)
+                                );
                             }
                             None => {
                                 error!("[SERVER] Player not found: {}", action.argv[1]);
@@ -977,11 +796,10 @@ pub fn server(
 
                         map::broadcast(
                             &players,
-                            "Disconnected players have been removed; ChangeRoom to update player list!".to_string(),
-                        )
-                        .unwrap_or_else(|e| {
-                            error!("[SERVER] Failed to broadcast message: {}", e);
-                        });
+                            String::from(
+                                "Disconnected players have been removed; ChangeRoom to update player list!",
+                            ),
+                        );
                     }
                     _ => {
                         error!("[SERVER] Unsupported command!");

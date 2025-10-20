@@ -1,4 +1,4 @@
-use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol};
+use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol, send_game, send_version};
 use std::io::ErrorKind::{UnexpectedEof, Unsupported};
 use std::net::TcpStream;
 use std::sync::{Arc, mpsc::Sender};
@@ -12,7 +12,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
         .expect("[CONNECT] Failed to read description file!");
 
     // Send the initial game info to the client
-    Protocol::Version(
+    send_version!(
         stream.clone(),
         PktVersion {
             packet_type: PktType::VERSION,
@@ -20,12 +20,10 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
             minor_rev: config.minor_rev,
             extension_len: 0,
             extensions: None,
-        },
-    )
-    .send()
-    .expect("[CONNECT] Failed to send version packet");
+        }
+    );
 
-    Protocol::Game(
+    send_game!(
         stream.clone(),
         PktGame {
             packet_type: PktType::GAME,
@@ -33,10 +31,8 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
             stat_limit: config.stat_limit,
             description_len: description.len() as u16,
             description: Box::from(description),
-        },
-    )
-    .send()
-    .expect("[CONNECT] Failed to send game packet");
+        }
+    );
 
     // Main loop to read packets from the client
     loop {

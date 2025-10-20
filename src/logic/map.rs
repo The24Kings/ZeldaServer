@@ -1,9 +1,8 @@
-use lurk_lcsc::{
-    CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom, PktType, Protocol,
-};
+use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom, PktType};
+use lurk_lcsc::{send_character, send_message};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, net::TcpStream, sync::Arc};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Room {
@@ -171,10 +170,7 @@ pub fn player_from_stream(
 }
 
 /// Broadcast a message to all players in the game via Message packets.
-pub fn broadcast(
-    players: &HashMap<Arc<str>, PktCharacter>,
-    message: String,
-) -> Result<(), std::io::Error> {
+pub fn broadcast(players: &HashMap<Arc<str>, PktCharacter>, message: String) {
     info!("[BROADCAST] Sending message: {}", message);
 
     // Send the packet to the server
@@ -186,14 +182,8 @@ pub fn broadcast(
 
         debug!("[BROADCAST] Sending message to {}", name);
 
-        Protocol::Message(author.clone(), PktMessage::server(name, &message))
-            .send()
-            .unwrap_or_else(|e| {
-                warn!("[BROADCAST] Failed to send message to {}: {}", name, e);
-            });
+        send_message!(author.clone(), PktMessage::server(name, &message));
     }
-
-    Ok(())
 }
 
 pub fn message_room(
@@ -201,7 +191,7 @@ pub fn message_room(
     room: &Room,
     message: String,
     narration: bool,
-) -> Result<(), std::io::Error> {
+) {
     info!(
         "[ROOM MESSAGE] Messaging room {}: {}",
         room.room_number, message
@@ -226,23 +216,13 @@ pub fn message_room(
             PktMessage::server(&player.name, &message)
         };
 
-        Protocol::Message(author.clone(), message)
-            .send()
-            .unwrap_or_else(|e| {
-                error!("[ROOM MESSAGE] Failed to send message to '{}': {}", name, e);
-            });
+        send_message!(author.clone(), message);
     });
-
-    Ok(())
 }
 
 /// Alert all players in the current room of a character change by sending a Character packet
 /// to each player in the room.
-pub fn alert_room(
-    players: &HashMap<Arc<str>, PktCharacter>,
-    room: &Room,
-    alert: &PktCharacter,
-) -> Result<(), std::io::Error> {
+pub fn alert_room(players: &HashMap<Arc<str>, PktCharacter>, room: &Room, alert: &PktCharacter) {
     info!("[ALERT] Alerting players about: '{}'", alert.name);
 
     room.players.iter().for_each(|name| {
@@ -258,12 +238,6 @@ pub fn alert_room(
             None => return,
         };
 
-        Protocol::Character(author.clone(), alert.clone())
-            .send()
-            .unwrap_or_else(|e| {
-                error!("[ALERT] Failed to alert '{}': {}", name, e);
-            })
+        send_character!(author.clone(), alert.clone());
     });
-
-    Ok(())
 }
