@@ -4,8 +4,9 @@ use std::{env, io};
 use tracing::{error, info};
 
 use crate::logic::ExtendedProtocol;
+use crate::send_ext_cmd;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Action {
     pub kind: Box<str>,
     pub argv: Vec<String>,
@@ -51,16 +52,9 @@ pub fn input(sender: Sender<ExtendedProtocol>) -> ! {
         let argv: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
         let argc = argv.len();
 
-        let kind = argv[0].to_ascii_lowercase();
+        let kind = argv[0].to_ascii_lowercase().into();
+        let action = Action { kind, argv, argc };
 
-        sender
-            .send(ExtendedProtocol::Command(Action {
-                kind: kind.into(),
-                argv,
-                argc,
-            }))
-            .unwrap_or_else(|_| {
-                error!("[INPUT] Failed to send command packet");
-            })
+        send_ext_cmd!(sender, action.clone());
     }
 }

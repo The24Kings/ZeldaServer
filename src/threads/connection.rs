@@ -5,6 +5,7 @@ use std::sync::{Arc, mpsc::Sender};
 use tracing::{error, info, warn};
 
 use crate::logic::{ExtendedProtocol, config::Config};
+use crate::send_ext_base;
 
 pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, config: Arc<Config>) {
     let description = std::fs::read_to_string(&config.description_path)
@@ -65,16 +66,9 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
         };
 
         // Exit gracefully
-        sender
-            .send(ExtendedProtocol::Base(Protocol::Leave(
-                stream.clone(),
-                PktLeave::default(),
-            )))
-            .unwrap_or_else(|_| {
-                error!("[CONNECT] Failed to send leave packet");
-            });
-
-        info!("[CONNECT] Connection handler exiting.");
+        send_ext_base!(sender, Protocol::Leave(stream.clone(), PktLeave::default()));
         break;
     }
+
+    info!("[CONNECT] Connection handler exiting.");
 }
