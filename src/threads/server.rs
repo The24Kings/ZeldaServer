@@ -6,7 +6,7 @@ use lurk_lcsc::{
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use std::time::Instant;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::logic::{ExtendedProtocol, config::Config, map};
 
@@ -21,7 +21,7 @@ pub fn server(
         let packet = match receiver.lock().unwrap().recv() {
             Ok(packet) => packet,
             Err(e) => {
-                warn!("[SERVER] Error receiving packet: {}", e);
+                warn!("Error receiving packet: {}", e);
                 continue;
             }
         };
@@ -30,7 +30,7 @@ pub fn server(
 
         match packet {
             ExtendedProtocol::Base(Protocol::Message(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 // TODO: If they message a monster... like the deku under the tree, it might open the door
 
@@ -74,13 +74,13 @@ pub fn server(
                 // ^ ============================================================================ ^
             } // Protocol::MESSAGE
             ExtendedProtocol::Base(Protocol::ChangeRoom(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 // Find the player in the map
                 let player = match map::player_from_stream(&mut players, author.clone()) {
                     Some((_, player)) => player,
                     None => {
-                        error!("[SERVER] Unable to find player in map");
+                        error!("Unable to find player in map");
                         continue;
                     }
                 };
@@ -124,7 +124,7 @@ pub fn server(
 
                 match cur_room.connections.get(&nxt_room_id) {
                     Some(exit) => {
-                        info!("[SERVER] Found connection: '{}'", exit.title);
+                        info!("Found connection: '{}'", exit.title);
                     }
                     None => {
                         send_error!(
@@ -136,10 +136,10 @@ pub fn server(
                     }
                 }
 
-                info!("[SERVER] Setting current room to: {}", nxt_room_id);
+                info!("Setting current room to: {}", nxt_room_id);
                 player.current_room = nxt_room_id;
 
-                info!("[SERVER] Removing player from old room");
+                info!("Removing player from old room");
                 cur_room.players.retain(|name| *name != player.name);
 
                 let cur_room = cur_room.clone(); // End mutable borrow of cur_room
@@ -157,7 +157,7 @@ pub fn server(
                     }
                 };
 
-                info!("[SERVER] Adding player to new room");
+                info!("Adding player to new room");
                 new_room.players.push(player.name.clone());
 
                 send_room!(author.clone(), PktRoom::from(new_room.clone()));
@@ -168,7 +168,7 @@ pub fn server(
                 // ================================================================================
                 // Update the player data and send it to the client
                 // ================================================================================
-                info!("[SERVER] Updating player room");
+                info!("Updating player room");
 
                 // Send the updated character back to the client
                 send_character!(author.clone(), player.clone());
@@ -180,7 +180,7 @@ pub fn server(
                 let connections = match map::exits(rooms, nxt_room_id) {
                     Some(exits) => exits,
                     None => {
-                        error!("[SERVER] No exits for room {}", nxt_room_id);
+                        error!("No exits for room {}", nxt_room_id);
                         continue;
                     }
                 };
@@ -204,8 +204,6 @@ pub fn server(
                 // ================================================================================
                 let players = new_room.players.iter().filter_map(|name| players.get(name));
 
-                debug!("[SERVER] Players: {:?}", players);
-
                 players.for_each(|player| {
                     send_character!(author.clone(), player.clone());
                 });
@@ -221,13 +219,13 @@ pub fn server(
                 // ^ ============================================================================ ^
             } // Protocol::CHANGEROOM
             ExtendedProtocol::Base(Protocol::Fight(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 // Find the player in the map
                 let player = match map::player_from_stream(&mut players, author.clone()) {
                     Some((_, player)) => player,
                     None => {
-                        error!("[SERVER] Unable to find player in map");
+                        error!("Unable to find player in map");
                         continue;
                     }
                 };
@@ -251,7 +249,7 @@ pub fn server(
                 let mut room = match rooms.get_mut(&current_room) {
                     Some(room) => room.clone(), // To allow me to message the whole room without borrow checker issues
                     None => {
-                        error!("[SERVER] Room not found");
+                        error!("Room not found");
                         continue;
                     }
                 };
@@ -267,7 +265,7 @@ pub fn server(
                 let monsters = match rooms.get_mut(&current_room) {
                     Some(room) => &mut room.monsters,
                     None => {
-                        error!("[SERVER] Player isn't in a valid room");
+                        error!("Player isn't in a valid room");
                         continue;
                     }
                 };
@@ -299,8 +297,8 @@ pub fn server(
                     }
                 };
 
-                info!("[SERVER] Battling '{}'", to_attack.name);
-                info!("[SERVER] {} player(s) joining the battle", in_battle.len());
+                info!("Battling '{}'", to_attack.name);
+                info!("{} player(s) joining the battle", in_battle.len());
 
                 map::message_room(
                     &players,
@@ -338,12 +336,12 @@ pub fn server(
 
                 to_attack.health = to_attack.health.saturating_sub(damage);
 
-                info!("[SERVER] '{}' dealt {} damage", attacker.name, damage);
+                info!("'{}' dealt {} damage", attacker.name, damage);
 
                 if to_attack.health <= 0 {
                     victory = true;
 
-                    info!("[SERVER] '{}' defeated '{}'", attacker.name, to_attack.name);
+                    info!("'{}' defeated '{}'", attacker.name, to_attack.name);
                 }
                 // ^ ============================================================================ ^
 
@@ -357,12 +355,12 @@ pub fn server(
                     attacker.health = attacker.health.saturating_sub(damage);
 
                     info!(
-                        "[SERVER] '{}' took {} damage from '{}'",
+                        "'{}' took {} damage from '{}'",
                         attacker.name, damage, to_attack.name
                     );
 
                     if attacker.health <= 0 {
-                        info!("[SERVER] '{}' killed '{}'", to_attack.name, attacker.name);
+                        info!("'{}' killed '{}'", to_attack.name, attacker.name);
                     }
                 }
                 // ^ ============================================================================ ^
@@ -373,7 +371,7 @@ pub fn server(
                 if attacker.flags.is_alive() {
                     let regen = attacker.regen.try_into().unwrap_or(i16::MAX);
 
-                    info!("[SERVER] '{}' regenerated: {}", attacker.name, regen);
+                    info!("'{}' regenerated: {}", attacker.name, regen);
 
                     attacker.health = attacker.health.saturating_add(regen); // We went out of bounds on regen, cap to i16 MAX int
                 }
@@ -383,7 +381,7 @@ pub fn server(
                 // Update player HashMap with new stats and send all the updated players/ monster
                 // to client
                 // ================================================================================
-                info!("[SERVER] Updating players in fight");
+                info!("Updating players in fight");
 
                 let _ = players.insert(attacker.name.clone(), attacker.clone());
 
@@ -405,7 +403,7 @@ pub fn server(
                 // ^ ============================================================================ ^
             } // Protocol::FIGHT
             ExtendedProtocol::Base(Protocol::PVPFight(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 Protocol::Error(
                     author.clone(),
@@ -413,20 +411,20 @@ pub fn server(
                 )
                 .send()
                 .unwrap_or_else(|e| {
-                    error!("[SERVER] Failed to send error packet: {}", e);
+                    error!("Failed to send error packet: {}", e);
                 });
             } // Protocol::PVPFIGHT
             ExtendedProtocol::Base(Protocol::Loot(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 // Find the player in the map
                 let player = match map::player_from_stream(&mut players, author.clone()) {
                     Some((name, player)) => {
-                        info!("[SERVER] Found player '{}'", name);
+                        info!("Found player '{}'", name);
                         player
                     }
                     None => {
-                        error!("[SERVER] Unable to find player in map");
+                        error!("Unable to find player in map");
                         continue;
                     }
                 };
@@ -447,7 +445,7 @@ pub fn server(
                 let monsters = match rooms.get_mut(&player.current_room) {
                     Some(room) => &mut room.monsters,
                     None => {
-                        error!("[SERVER] Player isn't in a valid room");
+                        error!("Player isn't in a valid room");
                         continue;
                     }
                 };
@@ -510,16 +508,16 @@ pub fn server(
                 // ^ ============================================================================ ^
             } // Protocol::LOOT
             ExtendedProtocol::Base(Protocol::Start(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 // Find the player in the map
                 let player = match map::player_from_stream(&mut players, author.clone()) {
                     Some((name, player)) => {
-                        info!("[SERVER] Found player '{}'", name);
+                        info!("Found player '{}'", name);
                         player
                     }
                     None => {
-                        error!("[SERVER] Unable to find player in map");
+                        error!("Unable to find player in map");
                         continue;
                     }
                 };
@@ -549,7 +547,7 @@ pub fn server(
                 let room = match rooms.get_mut(&0) {
                     Some(room) => room,
                     None => {
-                        error!("[SERVER] Unable to find room in map");
+                        error!("Unable to find room in map");
                         continue;
                     }
                 };
@@ -557,7 +555,7 @@ pub fn server(
                 map::alert_room(&players, room, &player);
                 map::broadcast(&players, format!("{} has started the game!", player.name));
 
-                info!("[SERVER] Adding player to starting room");
+                info!("Adding player to starting room");
 
                 room.players.push(player.name);
 
@@ -570,7 +568,7 @@ pub fn server(
                 let connections = match map::exits(rooms, 0) {
                     Some(exits) => exits,
                     None => {
-                        error!("[SERVER] Unable to find room in map");
+                        error!("Unable to find room in map");
                         continue;
                     }
                 };
@@ -585,7 +583,7 @@ pub fn server(
                 // ================================================================================
                 let players = room_players.iter().filter_map(|name| players.get(name));
 
-                debug!("[SERVER] Players: {:?}", players);
+                debug!("Players: {:?}", players);
 
                 let monsters = match &room_monsters {
                     Some(monsters) => monsters.iter(),
@@ -602,7 +600,7 @@ pub fn server(
                 // ^ ============================================================================ ^
             } // Protocol::START
             ExtendedProtocol::Base(Protocol::Character(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 // ================================================================================
                 // Check the given stats are valid
@@ -630,11 +628,11 @@ pub fn server(
                 // ================================================================================
                 let player = match players.get_mut(&content.name) {
                     Some(player) => {
-                        info!("[SERVER] Obtained player");
+                        info!("Obtained player");
                         player
                     }
                     None => {
-                        info!("[SERVER] Could not find player; inserting and trying again");
+                        info!("Could not find player; inserting and trying again");
                         let _ = players.insert(
                             content.name.clone(),
                             PktCharacter::with_defaults_from(&content),
@@ -681,7 +679,7 @@ pub fn server(
                 let room = match rooms.get_mut(&old_room_number) {
                     Some(room) => room,
                     None => {
-                        warn!("[SERVER] Unable to find where the player left off in the map");
+                        warn!("Unable to find where the player left off in the map");
                         continue;
                     }
                 };
@@ -699,7 +697,7 @@ pub fn server(
                 // ^ ============================================================================ ^
             } // Protocol::CHARACTER
             ExtendedProtocol::Base(Protocol::Leave(author, content)) => {
-                info!("[SERVER] Received: {}", content);
+                info!("Received: {}", content);
 
                 // ================================================================================
                 // Grab the player and deactivate them, alert the server and the room that the player
@@ -719,7 +717,7 @@ pub fn server(
                 let room = match rooms.get(&player.current_room) {
                     Some(room) => room,
                     None => {
-                        warn!("[SERVER] Unable to find where the player left off in the map");
+                        warn!("Unable to find where the player left off in the map");
                         continue;
                     }
                 };
@@ -728,14 +726,14 @@ pub fn server(
                 map::alert_room(&players, room, &player);
 
                 match author.shutdown(std::net::Shutdown::Both) {
-                    Ok(_) => info!("[SERVER] Connection shutdown successfully"),
-                    Err(e) => error!("[SERVER] Failed to shutdown connection: {}", e),
+                    Ok(_) => info!("Connection shutdown successfully"),
+                    Err(e) => error!("Failed to shutdown connection: {}", e),
                 }
                 // ^ ============================================================================ ^
             } // Protocol::LEAVE
             ExtendedProtocol::Base(_) => {} // Ignore all other packets
             ExtendedProtocol::Command(action) => {
-                info!("[SERVER] Received: {}", action);
+                info!("Received: {}", action);
 
                 match action.kind.as_ref() {
                     "help" => {
@@ -743,7 +741,7 @@ pub fn server(
                     }
                     "broadcast" => {
                         if action.argc < 2 {
-                            error!("[SERVER] Broadcast command requires at least 2 arguments");
+                            error!("Broadcast command requires at least 2 arguments");
                             continue;
                         }
 
@@ -753,7 +751,7 @@ pub fn server(
                     }
                     "message" => {
                         if action.argc < 3 {
-                            error!("[SERVER] Message command requires at least 3 arguments");
+                            error!("Message command requires at least 3 arguments");
                             continue;
                         }
 
@@ -770,12 +768,12 @@ pub fn server(
                                 );
                             }
                             None => {
-                                error!("[SERVER] Player not found: {}", action.argv[1]);
+                                error!("Player not found: {}", action.argv[1]);
                             }
                         }
                     }
                     "nuke" => {
-                        info!("[SERVER] Nuke command received, removing disconnected players");
+                        info!("Nuke command received, removing disconnected players");
 
                         let to_remove: Vec<Arc<str>> = players
                             .iter()
@@ -795,7 +793,7 @@ pub fn server(
                             continue;
                         }
 
-                        info!("[SERVER] Removed {} disconnected players", to_remove.len());
+                        info!("Removed {} disconnected players", to_remove.len());
 
                         map::broadcast(
                             &players,
@@ -805,7 +803,7 @@ pub fn server(
                         );
                     }
                     _ => {
-                        error!("[SERVER] Unsupported command!");
+                        error!("Unsupported command!");
                     }
                 }
             } // Protocol::COMMAND
@@ -813,8 +811,9 @@ pub fn server(
 
         let end = Instant::now();
         let delta = end.duration_since(start);
-        let micros = delta.subsec_micros();
+        let secs = delta.as_secs();
+        let nanos = delta.subsec_nanos();
 
-        trace!("Time delta: {}.{} seconds", delta.as_secs(), micros);
+        debug!("Took: {secs}.{nanos} seconds to process packet.");
     }
 }

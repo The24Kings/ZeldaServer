@@ -17,7 +17,7 @@ macro_rules! send_ext_base {
         $sender
             .send(ExtendedProtocol::Base($protocol_variant))
             .unwrap_or_else(|_| {
-                ::tracing::error!("[CONNECT] Failed to send {} packet", $protocol_variant);
+                ::tracing::error!("Failed to send {} packet", $protocol_variant);
             });
     };
 }
@@ -28,7 +28,7 @@ macro_rules! send_ext_cmd {
         $sender
             .send(ExtendedProtocol::Command($command))
             .unwrap_or_else(|_| {
-                ::tracing::error!("[CONNECT] Failed to send {} packet", $command);
+                ::tracing::error!("Failed to send {} packet", $command);
             });
     };
 }

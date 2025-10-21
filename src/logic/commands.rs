@@ -25,9 +25,9 @@ impl std::fmt::Display for Action {
 }
 
 pub fn input(sender: Sender<ExtendedProtocol>) -> ! {
-    let prefix = env::var("CMD_PREFIX").expect("[INPUT] CMD_PREFIX must be set");
+    let prefix = env::var("CMD_PREFIX").expect("CMD_PREFIX must be set");
 
-    info!("[INPUT] Listening for commands with prefix: '{}'", prefix);
+    info!("Listening for commands with prefix: '{}'", prefix);
 
     loop {
         // Take input from the console.
@@ -45,7 +45,7 @@ pub fn input(sender: Sender<ExtendedProtocol>) -> ! {
             continue;
         }
 
-        info!("[INPUT] Parsing command.");
+        info!("Parsing command.");
 
         // Sanitize and Tokenize
         let input = input[prefix.len()..].trim().to_string();

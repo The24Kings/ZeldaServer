@@ -9,7 +9,7 @@ use crate::send_ext_base;
 
 pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, config: Arc<Config>) {
     let description = std::fs::read_to_string(&config.description_path)
-        .expect("[CONNECT] Failed to read description file!");
+        .expect("Failed to read description file!");
 
     // Send the initial game info to the client
     send_version!(
@@ -38,23 +38,23 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
     loop {
         match Protocol::recv(&stream) {
             Ok(pkt) => {
-                info!("[READ] Packet read successfully");
+                info!("Packet read successfully");
 
                 // Try to send the packet
                 match sender.send(ExtendedProtocol::Base(pkt)) {
                     Ok(()) => continue, // Don't fallout to graceful exit
                     Err(e) => {
-                        error!("[READ] Failed to send packet: {}", e);
+                        error!("Failed to send packet: {}", e);
                     }
                 };
             }
             Err(e) => {
                 match e.kind() {
                     UnexpectedEof | Unsupported => {
-                        error!("[READ] '{:?}' -> {}. Terminating.", e.kind(), e);
+                        error!("'{:?}' -> {}. Terminating.", e.kind(), e);
                     }
                     _ => {
-                        warn!("[READ] '{:?}' -> {}. Continuing.", e.kind(), e);
+                        warn!("'{:?}' -> {}. Continuing.", e.kind(), e);
                         continue; // Non-terminal; Continue processing other packets
                     }
                 }
@@ -66,5 +66,5 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
         break;
     }
 
-    info!("[CONNECT] Connection handler exiting.");
+    info!("Connection handler exiting.");
 }

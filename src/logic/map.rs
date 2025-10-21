@@ -2,7 +2,7 @@ use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom
 use lurk_lcsc::{send_character, send_message};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, net::TcpStream, sync::Arc};
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Room {
@@ -141,10 +141,10 @@ impl From<&mut Monster> for PktCharacter {
 pub fn build(data: File) -> Result<HashMap<u16, Room>, serde_json::Error> {
     let mut rooms: HashMap<u16, Room> = HashMap::new();
 
-    info!("[MAP] Building game map...");
+    info!("Building game map...");
 
     let deserialized: Vec<Room> = serde_json::from_reader(&data)?;
-    info!("[MAP] Game map built with {} rooms.", deserialized.len());
+    info!("Game map built with {} rooms.", deserialized.len());
 
     for room in deserialized {
         rooms.insert(room.room_number, room);
@@ -171,7 +171,7 @@ pub fn player_from_stream(
 
 /// Broadcast a message to all players in the game via Message packets.
 pub fn broadcast(players: &HashMap<Arc<str>, PktCharacter>, message: String) {
-    info!("[BROADCAST] Sending message: {}", message);
+    info!("Sending message: {}", message);
 
     // Send the packet to the server
     for (name, player) in players {
@@ -180,7 +180,7 @@ pub fn broadcast(players: &HashMap<Arc<str>, PktCharacter>, message: String) {
             None => continue,
         };
 
-        debug!("[BROADCAST] Sending message to {}", name);
+        debug!("Sending message to {}", name);
 
         send_message!(author.clone(), PktMessage::server(name, &message));
     }
@@ -208,7 +208,7 @@ pub fn message_room(
             None => return,
         };
 
-        debug!("[ROOM MESSAGE] Sending message to '{}'", name);
+        trace!("[ROOM MESSAGE] Sending message to '{}'", name);
 
         let message = if narration {
             PktMessage::narrator(&player.name, &message)
@@ -223,10 +223,10 @@ pub fn message_room(
 /// Alert all players in the current room of a character change by sending a Character packet
 /// to each player in the room.
 pub fn alert_room(players: &HashMap<Arc<str>, PktCharacter>, room: &Room, alert: &PktCharacter) {
-    info!("[ALERT] Alerting players about: '{}'", alert.name);
+    info!("Alerting players about: '{}'", alert.name);
 
     room.players.iter().for_each(|name| {
-        debug!("[ALERT] Alerting player: '{}'", name);
+        trace!("Alerting player: '{}'", name);
 
         let player = match players.get(name) {
             Some(player) => player,
