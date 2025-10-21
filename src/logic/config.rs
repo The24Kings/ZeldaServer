@@ -16,28 +16,27 @@ pub struct Config {
 
 impl Config {
     pub fn load() -> Self {
-        info!("[CONFIG] Loading configuration...");
+        info!("Loading configuration...");
 
         let cmd_prefix = env::var("CMD_PREFIX").unwrap_or_else(|_| "!".into());
-        let map_path = env::var("MAP_FILEPATH").expect("[CONFIG] MAP_FILEPATH must be set.");
-        let description_path =
-            env::var("DESC_FILEPATH").expect("[CONFIG] DESC_FILEPATH must be set.");
+        let map_path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
+        let description_path = env::var("DESC_FILEPATH").expect("DESC_FILEPATH must be set.");
         let stat_limit = env::var("STAT_LIMIT")
-            .expect("[CONFIG] STAT_LIMIT must be set.")
+            .expect("STAT_LIMIT must be set.")
             .parse()
-            .expect("[CONFIG] Failed to parse STAT_LIMIT");
+            .expect("Failed to parse STAT_LIMIT");
         let initial_points = env::var("INITIAL_POINTS")
-            .expect("[CONFIG] INITIAL_POINTS must be set.")
+            .expect("INITIAL_POINTS must be set.")
             .parse()
-            .expect("[CONFIG] Failed to parse INITIAL_POINTS");
+            .expect("Failed to parse INITIAL_POINTS");
         let major_rev = env::var("MAJOR_REV")
-            .expect("[CONFIG] MAJOR_REV must be set.")
+            .expect("MAJOR_REV must be set.")
             .parse()
-            .expect("[CONFIG] Failed to parse MAJOR_REV");
+            .expect("Failed to parse MAJOR_REV");
         let minor_rev = env::var("MINOR_REV")
-            .expect("[CONFIG] MINOR_REV must be set.")
+            .expect("MINOR_REV must be set.")
             .parse()
-            .expect("[CONFIG] Failed to parse MINOR_REV");
+            .expect("Failed to parse MINOR_REV");
         let help_cmd = indoc! {"Lurk Server CLI:
             Usage:
                 ${CMD_PREFIX}help                           - Display this help message
@@ -46,7 +45,7 @@ impl Config {
                 ${CMD_PREFIX}nuke                           - Remove all disconnected players on the map"
         }.replace("${CMD_PREFIX}", &cmd_prefix);
 
-        info!("[CONFIG] Successfully loaded configuration!");
+        info!("Successfully loaded configuration!");
 
         Config {
             cmd_prefix,

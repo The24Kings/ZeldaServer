@@ -1,9 +1,8 @@
-use lurk_lcsc::{
-    CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom, PktType, Protocol,
-};
+use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom, PktType};
+use lurk_lcsc::{send_character, send_message};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, net::TcpStream, sync::Arc};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, trace};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Room {
@@ -142,10 +141,10 @@ impl From<&mut Monster> for PktCharacter {
 pub fn build(data: File) -> Result<HashMap<u16, Room>, serde_json::Error> {
     let mut rooms: HashMap<u16, Room> = HashMap::new();
 
-    info!("[MAP] Building game map...");
+    info!("Building game map...");
 
     let deserialized: Vec<Room> = serde_json::from_reader(&data)?;
-    info!("[MAP] Game map built with {} rooms.", deserialized.len());
+    info!("Game map built with {} rooms.", deserialized.len());
 
     for room in deserialized {
         rooms.insert(room.room_number, room);
@@ -171,11 +170,8 @@ pub fn player_from_stream(
 }
 
 /// Broadcast a message to all players in the game via Message packets.
-pub fn broadcast(
-    players: &HashMap<Arc<str>, PktCharacter>,
-    message: String,
-) -> Result<(), std::io::Error> {
-    info!("[BROADCAST] Sending message: {}", message);
+pub fn broadcast(players: &HashMap<Arc<str>, PktCharacter>, message: String) {
+    info!("Sending message: {}", message);
 
     // Send the packet to the server
     for (name, player) in players {
@@ -184,16 +180,10 @@ pub fn broadcast(
             None => continue,
         };
 
-        debug!("[BROADCAST] Sending message to {}", name);
+        debug!("Sending message to {}", name);
 
-        Protocol::Message(author.clone(), PktMessage::server(name, &message))
-            .send()
-            .unwrap_or_else(|e| {
-                warn!("[BROADCAST] Failed to send message to {}: {}", name, e);
-            });
+        send_message!(author.clone(), PktMessage::server(name, &message));
     }
-
-    Ok(())
 }
 
 pub fn message_room(
@@ -201,7 +191,7 @@ pub fn message_room(
     room: &Room,
     message: String,
     narration: bool,
-) -> Result<(), std::io::Error> {
+) {
     info!(
         "[ROOM MESSAGE] Messaging room {}: {}",
         room.room_number, message
@@ -218,7 +208,7 @@ pub fn message_room(
             None => return,
         };
 
-        debug!("[ROOM MESSAGE] Sending message to '{}'", name);
+        trace!("[ROOM MESSAGE] Sending message to '{}'", name);
 
         let message = if narration {
             PktMessage::narrator(&player.name, &message)
@@ -226,27 +216,17 @@ pub fn message_room(
             PktMessage::server(&player.name, &message)
         };
 
-        Protocol::Message(author.clone(), message)
-            .send()
-            .unwrap_or_else(|e| {
-                error!("[ROOM MESSAGE] Failed to send message to '{}': {}", name, e);
-            });
+        send_message!(author.clone(), message);
     });
-
-    Ok(())
 }
 
 /// Alert all players in the current room of a character change by sending a Character packet
 /// to each player in the room.
-pub fn alert_room(
-    players: &HashMap<Arc<str>, PktCharacter>,
-    room: &Room,
-    alert: &PktCharacter,
-) -> Result<(), std::io::Error> {
-    info!("[ALERT] Alerting players about: '{}'", alert.name);
+pub fn alert_room(players: &HashMap<Arc<str>, PktCharacter>, room: &Room, alert: &PktCharacter) {
+    info!("Alerting players about: '{}'", alert.name);
 
     room.players.iter().for_each(|name| {
-        debug!("[ALERT] Alerting player: '{}'", name);
+        trace!("Alerting player: '{}'", name);
 
         let player = match players.get(name) {
             Some(player) => player,
@@ -258,12 +238,6 @@ pub fn alert_room(
             None => return,
         };
 
-        Protocol::Character(author.clone(), alert.clone())
-            .send()
-            .unwrap_or_else(|e| {
-                error!("[ALERT] Failed to alert '{}': {}", name, e);
-            })
+        send_character!(author.clone(), alert.clone());
     });
-
-    Ok(())
 }
