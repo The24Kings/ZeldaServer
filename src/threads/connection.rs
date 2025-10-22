@@ -18,7 +18,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
             packet_type: PktType::VERSION,
             major_rev: config.major_rev,
             minor_rev: config.minor_rev,
-            extension_len: 0,
+            extensions_len: 0,
             extensions: None,
         }
     );
