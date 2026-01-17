@@ -781,16 +781,15 @@ pub fn server(
                             .map(|(name, _)| name.clone())
                             .collect();
 
-                        // Remove from main list
-                        players.retain(|name, _| !to_remove.contains(name));
-
-                        // Remove from room list
-                        for room in rooms.values_mut() {
-                            room.players.retain(|name| !to_remove.contains(name));
+                        if to_remove.is_empty() {
+                            info!("No disconnected players");
+                            continue;
                         }
 
-                        if to_remove.is_empty() {
-                            continue;
+                        // Remove from main list and room lists
+                        players.retain(|name, _| !to_remove.contains(name));
+                        for room in rooms.values_mut() {
+                            room.players.retain(|name| !to_remove.contains(name));
                         }
 
                         info!("Removed {} disconnected players", to_remove.len());
