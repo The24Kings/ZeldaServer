@@ -802,6 +802,41 @@ pub fn server(
                             ),
                         );
                     }
+                    "revive" => {
+                        info!("Revive command received, reviving all dead monsters");
+
+                        let mut revived_count = 0usize;
+
+                        for room in rooms.values_mut() {
+                            if let Some(monsters) = &mut room.monsters {
+                                let pkts: Vec<PktCharacter> = monsters
+                                    .iter_mut()
+                                    .filter(|m| m.health <= 0 && m.max_health > 0)
+                                    .map(|m| {
+                                        m.health = m.max_health;
+                                        PktCharacter::from(m)
+                                    })
+                                    .collect();
+
+                                if !pkts.is_empty() {
+                                    let room = room.clone();
+                                    let n = pkts.len();
+                                    for pkt in pkts {
+                                        map::alert_room(&players, &room, &pkt);
+                                    }
+                                    revived_count += n;
+                                }
+                            }
+                        }
+
+                        if revived_count == 0 {
+                            info!("No monsters to revive");
+                            continue;
+                        }
+
+                        map::broadcast(&players, String::from("All dead monsters have been revived!"));
+                        info!("Revived {} monster(s)", revived_count);
+                    }
                     _ => {
                         error!("Unsupported command!");
                     }

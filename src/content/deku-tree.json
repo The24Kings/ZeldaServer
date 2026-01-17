@@ -15,6 +15,7 @@
             {
                 "name": "Deku Baba",
                 "current_room": 0,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -44,6 +45,7 @@
             {
                 "name": "Deku Baba 1",
                 "current_room": 1,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -53,6 +55,7 @@
             {
                 "name": "Deku Baba 2",
                 "current_room": 1,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -62,6 +65,7 @@
             {
                 "name": "Deku Baba 3",
                 "current_room": 1,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -114,6 +118,7 @@
             {
                 "name": "Skullwalltula 1",
                 "current_room": 3,
+                "max_health": 2,
                 "health": 2,
                 "attack": 1,
                 "defense": 0,
@@ -123,6 +128,7 @@
             {
                 "name": "Skullwalltula 2",
                 "current_room": 3,
+                "max_health": 2,
                 "health": 2,
                 "attack": 1,
                 "defense": 0,
@@ -132,6 +138,7 @@
             {
                 "name": "Skullwalltula 3",
                 "current_room": 3,
+                "max_health": 2,
                 "health": 2,
                 "attack": 1,
                 "defense": 0,
@@ -161,6 +168,7 @@
             {
                 "name": "Deku Baba",
                 "current_room": 4,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -170,6 +178,7 @@
             {
                 "name": "Deku Scrub",
                 "current_room": 4,
+                "max_health": 15,
                 "health": 15,
                 "attack": 5,
                 "defense": 20,
@@ -204,6 +213,7 @@
             {
                 "name": "Skulltula 1",
                 "current_room": 5,
+                "max_health": 30,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -213,6 +223,7 @@
             {
                 "name": "Skulltula 2",
                 "current_room": 5,
+                "max_health": 30,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -222,6 +233,7 @@
             {
                 "name": "Skulltula 3",
                 "current_room": 5,
+                "max_health": 30,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -251,6 +263,7 @@
             {
                 "name": "Deku Baba 1",
                 "current_room": 6,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -260,6 +273,7 @@
             {
                 "name": "Deku Baba 2",
                 "current_room": 6,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -289,6 +303,7 @@
             {
                 "name": "Gold Skulltula",
                 "current_room": 7,
+                "max_health": 1,
                 "health": 1,
                 "attack": 1,
                 "defense": 0,
@@ -313,6 +328,7 @@
             {
                 "name": "Treasure Chest",
                 "current_room": 8,
+                "max_health": 0,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -378,6 +394,7 @@
             {
                 "name": "Gold Skulltula",
                 "current_room": 11,
+                "max_health": 1,
                 "health": 1,
                 "attack": 1,
                 "defense": 0,
@@ -387,6 +404,7 @@
             {
                 "name": "Small Treasure Chest",
                 "current_room": 11,
+                "max_health": 0,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -411,6 +429,7 @@
             {
                 "name": "Treasure Chest",
                 "current_room": 12,
+                "max_health": 0,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -463,6 +482,7 @@
             {
                 "name": "Skulltula",
                 "current_room": 14,
+                "max_health": 30,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -505,6 +525,7 @@
             {
                 "name": "Deku Baba 1",
                 "current_room": 16,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -514,6 +535,7 @@
             {
                 "name": "Deku Baba 2",
                 "current_room": 16,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -523,6 +545,7 @@
             {
                 "name": "Deku Baba 3",
                 "current_room": 16,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -532,6 +555,7 @@
             {
                 "name": "Fire Keese",
                 "current_room": 16,
+                "max_health": 10,
                 "health": 10,
                 "attack": 20,
                 "defense": 2,
@@ -566,6 +590,7 @@
             {
                 "name": "Skulltula",
                 "current_room": 17,
+                "max_health": 30,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -575,6 +600,7 @@
             {
                 "name": "Deku Baba",
                 "current_room": 17,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -584,6 +610,7 @@
             {
                 "name": "Gohma Larva 1",
                 "current_room": 17,
+                "max_health": 20,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -593,6 +620,7 @@
             {
                 "name": "Gohma Larva 2",
                 "current_room": 17,
+                "max_health": 20,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -602,6 +630,7 @@
             {
                 "name": "Gohma Larva 3",
                 "current_room": 17,
+                "max_health": 20,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -626,6 +655,7 @@
             {
                 "name": "Skulltula",
                 "current_room": 18,
+                "max_health": 30,
                 "health": 30,
                 "attack": 2,
                 "defense": 20,
@@ -635,6 +665,7 @@
             {
                 "name": "Gold Skulltula",
                 "current_room": 18,
+                "max_health": 1,
                 "health": 1,
                 "attack": 1,
                 "defense": 0,
@@ -687,6 +718,7 @@
             {
                 "name": "Deku Baba 1",
                 "current_room": 20,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -696,6 +728,7 @@
             {
                 "name": "Deku Baba 2",
                 "current_room": 20,
+                "max_health": 8,
                 "health": 8,
                 "attack": 3,
                 "defense": 1,
@@ -705,6 +738,7 @@
             {
                 "name": "Keese",
                 "current_room": 20,
+                "max_health": 10,
                 "health": 10,
                 "attack": 5,
                 "defense": 2,
@@ -734,6 +768,7 @@
             {
                 "name": "Scrub 1",
                 "current_room": 21,
+                "max_health": 0,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -743,6 +778,7 @@
             {
                 "name": "Scrub 2",
                 "current_room": 21,
+                "max_health": 0,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -752,6 +788,7 @@
             {
                 "name": "Scrub 3",
                 "current_room": 21,
+                "max_health": 0,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -761,6 +798,7 @@
             {
                 "name": "Scrub 4",
                 "current_room": 21,
+                "max_health": 0,
                 "health": 0,
                 "attack": 0,
                 "defense": 999,
@@ -785,6 +823,7 @@
             {
                 "name": "Queen Gohma",
                 "current_room": 22,
+                "max_health": 100,
                 "health": 100,
                 "attack": 25,
                 "defense": 15,
@@ -794,6 +833,7 @@
             {
                 "name": "Gohma Larva 1",
                 "current_room": 22,
+                "max_health": 20,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -803,6 +843,7 @@
             {
                 "name": "Gohma Larva 2",
                 "current_room": 22,
+                "max_health": 20,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -812,6 +853,7 @@
             {
                 "name": "Gohma Larva 3",
                 "current_room": 22,
+                "max_health": 20,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
@@ -821,6 +863,7 @@
             {
                 "name": "Gohma Larva 4",
                 "current_room": 22,
+                "max_health": 20,
                 "health": 20,
                 "attack": 5,
                 "defense": 1,
