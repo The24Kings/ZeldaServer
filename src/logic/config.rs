@@ -42,7 +42,8 @@ impl Config {
                 ${CMD_PREFIX}help                           - Display this help message
                 ${CMD_PREFIX}broadcast <content>            - Send a message to all players
                 ${CMD_PREFIX}message <recipient> <content>  - Send a private message to a player
-                ${CMD_PREFIX}nuke                           - Remove all disconnected players on the map"
+                ${CMD_PREFIX}nuke                           - Remove all disconnected players on the map
+                ${CMD_PREFIX}revive                         - Revive all monsters on the map"
         }.replace("${CMD_PREFIX}", &cmd_prefix);
 
         info!("Successfully loaded configuration!");
