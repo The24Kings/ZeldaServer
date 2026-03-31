@@ -481,6 +481,8 @@ pub fn server(
                         author.clone(),
                         PktError::new(LurkError::BADMONSTER, "Monster is still alive!")
                     );
+
+                    continue;
                 }
 
                 if to_loot.gold == 0 {
@@ -503,7 +505,7 @@ pub fn server(
                 // Send updated player and monster back to author
                 // ================================================================================
                 send_character!(author.clone(), player.clone());
-                send_character!(author.clone(), to_loot.into());
+                send_character!(author.clone(), PktCharacter::from(to_loot));
 
                 // ^ ============================================================================ ^
             } // Protocol::LOOT
@@ -538,7 +540,7 @@ pub fn server(
 
                 let player = player.clone(); // End mutable borrow of player
 
-                send_character!(author.clone(), player.clone());
+                send_character!(author.clone(), player);
                 // ^ ============================================================================ ^
 
                 // ================================================================================
@@ -595,7 +597,7 @@ pub fn server(
                 });
 
                 for monster in monsters {
-                    send_character!(author.clone(), monster.into());
+                    send_character!(author.clone(), PktCharacter::from(monster));
                 }
                 // ^ ============================================================================ ^
             } // Protocol::START
@@ -833,7 +835,10 @@ pub fn server(
                             continue;
                         }
 
-                        map::broadcast(&players, String::from("All dead monsters have been revived!"));
+                        map::broadcast(
+                            &players,
+                            String::from("All dead monsters have been revived!"),
+                        );
                         info!("Revived {} monster(s)", revived_count);
                     }
                     _ => {

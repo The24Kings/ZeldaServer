@@ -1,5 +1,5 @@
+use lurk_lcsc::send_to;
 use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom, PktType};
-use lurk_lcsc::{send_character, send_message};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, net::TcpStream, sync::Arc};
 use tracing::{debug, info, trace};
@@ -174,7 +174,6 @@ pub fn player_from_stream(
 pub fn broadcast(players: &HashMap<Arc<str>, PktCharacter>, message: String) {
     info!("Sending message: {}", message);
 
-    // Send the packet to the server
     for (name, player) in players {
         let author = match player.author.as_ref() {
             Some(author) => author,
@@ -183,7 +182,8 @@ pub fn broadcast(players: &HashMap<Arc<str>, PktCharacter>, message: String) {
 
         debug!("Sending message to {}", name);
 
-        send_message!(author.clone(), PktMessage::server(name, &message));
+        let msg = PktMessage::server(name, &message);
+        let _ = send_to(author.as_ref(), &msg);
     }
 }
 
@@ -217,7 +217,7 @@ pub fn message_room(
             PktMessage::server(&player.name, &message)
         };
 
-        send_message!(author.clone(), message);
+        let _ = send_to(author.as_ref(), &message);
     });
 }
 
@@ -239,6 +239,6 @@ pub fn alert_room(players: &HashMap<Arc<str>, PktCharacter>, room: &Room, alert:
             None => return,
         };
 
-        send_character!(author.clone(), alert.clone());
+        let _ = send_to(author.as_ref(), alert);
     });
 }
