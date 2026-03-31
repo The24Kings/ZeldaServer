@@ -1,16 +1,15 @@
 use serde::Serialize;
+use std::io;
 use std::sync::mpsc::Sender;
-use std::{env, io};
 use tracing::{error, info};
 
 use crate::logic::ExtendedProtocol;
 use crate::send_ext_cmd;
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize)]
 pub struct Action {
     pub kind: Box<str>,
     pub argv: Vec<String>,
-    pub argc: usize,
 }
 
 impl std::fmt::Display for Action {
@@ -24,9 +23,7 @@ impl std::fmt::Display for Action {
     }
 }
 
-pub fn input(sender: Sender<ExtendedProtocol>) -> ! {
-    let prefix = env::var("CMD_PREFIX").expect("CMD_PREFIX must be set");
-
+pub fn input(sender: Sender<ExtendedProtocol>, prefix: String) -> ! {
     info!("Listening for commands with prefix: '{}'", prefix);
 
     loop {
@@ -50,11 +47,10 @@ pub fn input(sender: Sender<ExtendedProtocol>) -> ! {
         // Sanitize and Tokenize
         let input = input[prefix.len()..].trim().to_string();
         let argv: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
-        let argc = argv.len();
 
         let kind = argv[0].to_ascii_lowercase().into();
-        let action = Action { kind, argv, argc };
+        let action = Action { kind, argv };
 
-        send_ext_cmd!(sender, action.clone());
+        send_ext_cmd!(sender, action);
     }
 }

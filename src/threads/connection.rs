@@ -8,9 +8,6 @@ use crate::logic::{ExtendedProtocol, config::Config};
 use crate::send_ext_base;
 
 pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, config: Arc<Config>) {
-    let description = std::fs::read_to_string(&config.description_path)
-        .expect("Failed to read description file!");
-
     // Send the initial game info to the client
     send_version!(
         stream.clone(),
@@ -29,8 +26,8 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
             packet_type: PktType::GAME,
             initial_points: config.initial_points,
             stat_limit: config.stat_limit,
-            description_len: description.len() as u16,
-            description: Box::from(description),
+            description_len: config.description.len() as u16,
+            description: config.description.clone(),
         }
     );
 

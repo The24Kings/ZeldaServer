@@ -15,7 +15,7 @@ impl GameState {
                 info!("{}", self.config.help_cmd);
             }
             "broadcast" => {
-                if action.argc < 2 {
+                if action.argv.len() < 2 {
                     error!("Broadcast command requires at least 2 arguments");
                     return;
                 }
@@ -25,7 +25,7 @@ impl GameState {
                 self.broadcast(message);
             }
             "message" => {
-                if action.argc < 3 {
+                if action.argv.len() < 3 {
                     error!("Message command requires at least 3 arguments");
                     return;
                 }

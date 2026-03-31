@@ -26,11 +26,13 @@ macro_rules! send_ext_base {
 
 #[macro_export]
 macro_rules! send_ext_cmd {
-    ($sender:expr, $command:expr) => {
+    ($sender:expr, $command:expr) => {{
+        let cmd = $command;
+        let cmd_str = cmd.to_string();
         $sender
-            .send(ExtendedProtocol::Command($command))
+            .send(ExtendedProtocol::Command(cmd))
             .unwrap_or_else(|_| {
-                ::tracing::error!("Failed to send {} packet", $command);
+                ::tracing::error!("Failed to send {} packet", cmd_str);
             });
-    };
+    }};
 }
