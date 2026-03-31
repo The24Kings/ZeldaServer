@@ -167,7 +167,8 @@ impl GameState {
         // ================================================================================
         info!("Updating players in fight");
 
-        let _ = self.players.insert(attacker.name.clone(), attacker.clone());
+        let attacker_name = attacker.name.clone();
+        let _ = self.players.insert(attacker_name.clone(), attacker); // Move, not clone
 
         for name in &in_battle {
             if let Some(player) = self.players.get(name) {
@@ -178,7 +179,7 @@ impl GameState {
         let monster_pkt: PktCharacter = to_attack.into();
         let to_update = in_battle.iter().filter_map(|name| self.players.get(name));
 
-        room.players.push(attacker.name.clone()); // Add the name back so the attacker gets updated
+        room.players.push(attacker_name); // Add the name back so the attacker gets updated
 
         for player in to_update {
             self.alert_room(&room, player);

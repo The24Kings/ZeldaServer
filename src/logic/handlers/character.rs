@@ -1,9 +1,9 @@
 use lurk_lcsc::{CharacterFlags, LurkError};
 use lurk_lcsc::{PktCharacter, PktError, PktType};
-use lurk_lcsc::{send_accept, send_character, send_error};
+use lurk_lcsc::{send_accept, send_error, send_to};
 use std::net::TcpStream;
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::logic::state::GameState;
 
@@ -34,43 +34,49 @@ impl GameState {
         // We ignore the flags from the client and set the correct ones accordingly.
         // Store the old room so that we may remove the player later and set ignore input room
         // ================================================================================
-        let player = match self.players.get_mut(&content.name) {
-            Some(player) => {
-                info!("Obtained player");
-                player
-            }
-            None => {
-                info!("Could not find player; inserting and trying again");
-                let _ = self.players.insert(
-                    content.name.clone(),
-                    PktCharacter::with_defaults_from(&content),
+        let (player_name, old_room_number) = {
+            let player = match self.players.get_mut(&content.name) {
+                Some(player) => {
+                    info!("Obtained player");
+                    player
+                }
+                None => {
+                    info!("Could not find player; inserting and trying again");
+                    let _ = self.players.insert(
+                        content.name.clone(),
+                        PktCharacter::with_defaults_from(&content),
+                    );
+
+                    self.players.get_mut(&content.name).unwrap() // We just inserted so this is okay; we want to panic if insert fails
+                }
+            };
+
+            if player.flags.is_started() {
+                send_error!(
+                    author.clone(),
+                    PktError::new(LurkError::PLAYEREXISTS, "Player is already in the game.")
                 );
 
-                self.players.get_mut(&content.name).unwrap() // We just inserted so this is okay; we want to panic if insert fails
+                return;
             }
+
+            let old_room_number = player.current_room;
+
+            player.flags = CharacterFlags::alive();
+            player.author = Some(author.clone());
+            player.current_room = 0; // Start in the first room
+
+            (player.name.clone(), old_room_number)
         };
-
-        if player.flags.is_started() {
-            send_error!(
-                author.clone(),
-                PktError::new(LurkError::PLAYEREXISTS, "Player is already in the game.")
-            );
-
-            return;
-        }
-
-        let old_room_number = player.current_room;
-
-        player.flags = CharacterFlags::alive();
-        player.author = Some(author.clone());
-        player.current_room = 0; // Start in the first room
 
         // ================================================================================
         // Send an Accept packet and updated character.
         // ================================================================================
         send_accept!(author.clone(), PktType::CHARACTER);
 
-        send_character!(author.clone(), player.clone());
+        if let Some(player) = self.players.get(&player_name) {
+            let _ = send_to(author.as_ref(), player);
+        }
 
         // ================================================================================
         // Remove the player from the room they left off in to avoid 2 players existing on
@@ -80,26 +86,20 @@ impl GameState {
             return;
         }
 
-        let player = player.clone(); // End mutable borrow of player
+        if let Some(room) = self.rooms.get_mut(&old_room_number) {
+            room.players.retain(|name| name != &player_name);
+        }
 
-        let room = match self.rooms.get_mut(&old_room_number) {
-            Some(room) => room,
-            None => {
-                warn!("Unable to find where the player left off in the map");
-                return;
+        if let Some(room) = self.rooms.get(&old_room_number) {
+            self.message_room(
+                room,
+                format!("{}'s corpse disappeared into a puff of smoke.", player_name),
+                true,
+            );
+
+            if let Some(player) = self.players.get(&player_name) {
+                self.alert_room(room, player);
             }
-        };
-
-        room.players.retain(|name| name != &player.name);
-
-        let room = room.clone(); // End mutable borrow of room
-
-        self.message_room(
-            &room,
-            format!("{}'s corpse disappeared into a puff of smoke.", player.name),
-            true,
-        );
-
-        self.alert_room(&room, &player);
+        }
     }
 }

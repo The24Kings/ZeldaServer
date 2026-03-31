@@ -1,7 +1,6 @@
 use lurk_lcsc::LurkError;
-use lurk_lcsc::{
-    PktCharacter, PktConnection, PktError, send_character, send_connection, send_error,
-};
+use lurk_lcsc::PktCharacter;
+use lurk_lcsc::{PktConnection, PktError, send_error, send_to};
 use std::collections::HashMap;
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -44,14 +43,15 @@ impl GameState {
         // Send all players in the room
         for name in &room.players {
             if let Some(player) = self.players.get(name) {
-                send_character!(author.clone(), player.clone());
+                let _ = send_to(author.as_ref(), player);
             }
         }
 
         // Send all monsters in the room
         if let Some(monsters) = &room.monsters {
             for monster in monsters {
-                send_character!(author.clone(), PktCharacter::from(monster));
+                let pkt = PktCharacter::from(monster);
+                let _ = send_to(author.as_ref(), &pkt);
             }
         }
     }
@@ -67,7 +67,8 @@ impl GameState {
         };
 
         for conn in connections.values() {
-            send_connection!(author.clone(), PktConnection::from(conn.clone()));
+            let pkt = PktConnection::from(conn);
+            let _ = send_to(author.as_ref(), &pkt);
         }
     }
 

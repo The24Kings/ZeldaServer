@@ -1,7 +1,7 @@
 use lurk_lcsc::PktStart;
 use lurk_lcsc::{CharacterFlags, LurkError};
 use lurk_lcsc::{PktError, PktRoom};
-use lurk_lcsc::{send_character, send_error, send_room};
+use lurk_lcsc::{send_error, send_room, send_to};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
@@ -13,69 +13,67 @@ impl GameState {
     pub fn handle_start(&mut self, author: Arc<TcpStream>, content: PktStart) {
         info!("Received: {}", content);
 
-        // Find the player in the map
-        let player = match map::player_from_stream(&mut self.players, author.clone()) {
-            Some((name, player)) => {
-                info!("Found player '{}'", name);
-                player
-            }
-            None => {
-                error!("Unable to find player in map");
+        // ================================================================================
+        // Phase 1: Find player, validate, activate, extract name
+        // ================================================================================
+        let player_name = {
+            let player = match map::player_from_stream(&mut self.players, author.clone()) {
+                Some((name, player)) => {
+                    info!("Found player '{}'", name);
+                    player
+                }
+                None => {
+                    error!("Unable to find player in map");
+                    return;
+                }
+            };
+
+            if !player.flags.is_ready() {
+                send_error!(
+                    author.clone(),
+                    PktError::new(LurkError::NOTREADY, "Supply of valid player first!")
+                );
+
                 return;
             }
+
+            player.flags |= CharacterFlags::STARTED;
+
+            player.name.clone()
         };
 
-        if !player.flags.is_ready() {
-            send_error!(
-                author.clone(),
-                PktError::new(LurkError::NOTREADY, "Supply of valid player first!")
-            );
-
-            return;
+        // Send updated character
+        if let Some(player) = self.players.get(&player_name) {
+            let _ = send_to(author.as_ref(), player);
         }
 
         // ================================================================================
-        // Activate the character and send the information off to client
+        // Alert room and broadcast (shared borrows only)
         // ================================================================================
-        player.flags |= CharacterFlags::STARTED;
-
-        let player = player.clone(); // End mutable borrow of player
-
-        send_character!(author.clone(), player);
+        if let Some(room) = self.rooms.get(&0)
+            && let Some(player) = self.players.get(&player_name)
+        {
+            self.alert_room(room, player);
+        }
+        self.broadcast(format!("{} has started the game!", player_name));
 
         // ================================================================================
-        // Send the starting room and connections to the client
+        // Mutate: add player to starting room
         // ================================================================================
-        let room = match self.rooms.get(&0) {
-            Some(room) => room,
-            None => {
-                error!("Unable to find room in map");
-                return;
-            }
-        };
+        if let Some(room) = self.rooms.get_mut(&0) {
+            info!("Adding player to starting room");
+            room.players.push(player_name);
+        }
 
-        self.alert_room(room, &player);
-        self.broadcast(format!("{} has started the game!", player.name));
-
-        let room = match self.rooms.get_mut(&0) {
-            Some(room) => room,
-            None => {
-                error!("Unable to find room in map");
-                return;
-            }
-        };
-
-        info!("Adding player to starting room");
-
-        room.players.push(player.name);
-
-        send_room!(author.clone(), PktRoom::from(room.clone()));
+        // ================================================================================
+        // Send room, connections, and contents (shared borrows)
+        // ================================================================================
+        if let Some(room) = self.rooms.get(&0) {
+            send_room!(author.clone(), PktRoom::from(room));
+        }
 
         self.send_connections(&author, 0);
 
-        // ================================================================================
-        // Send the all players and monsters in the room excluding the author
-        // ================================================================================
         if let Some(room) = self.rooms.get(&0) {
             self.send_room_contents(&author, room);
         }

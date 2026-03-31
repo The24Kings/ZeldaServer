@@ -1,7 +1,7 @@
 use lurk_lcsc::LurkError;
 use lurk_lcsc::PktLoot;
 use lurk_lcsc::{PktCharacter, PktError};
-use lurk_lcsc::{send_character, send_error};
+use lurk_lcsc::{send_error, send_to};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
@@ -94,7 +94,9 @@ impl GameState {
         // ================================================================================
         // Send updated player and monster back to author
         // ================================================================================
-        send_character!(author.clone(), player.clone());
-        send_character!(author.clone(), PktCharacter::from(to_loot));
+        let _ = send_to(author.as_ref(), player);
+
+        let monster_pkt = PktCharacter::from(to_loot);
+        let _ = send_to(author.as_ref(), &monster_pkt);
     }
 }

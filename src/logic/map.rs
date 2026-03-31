@@ -14,14 +14,14 @@ pub struct Room {
     pub monsters: Option<Vec<Monster>>,
 }
 
-impl From<Room> for PktRoom {
-    fn from(room: Room) -> Self {
+impl From<&Room> for PktRoom {
+    fn from(room: &Room) -> Self {
         PktRoom {
             packet_type: PktType::ROOM,
             room_number: room.room_number,
-            room_name: room.title,
+            room_name: room.title.clone(),
             description_len: room.desc.len() as u16,
-            description: room.desc,
+            description: room.desc.clone(),
         }
     }
 }
@@ -33,15 +33,14 @@ pub struct Connection {
     pub desc_short: Box<str>,
 }
 
-impl From<Connection> for PktConnection {
-    /// Create a new connection from the game map to send to the client
-    fn from(conn: Connection) -> Self {
+impl From<&Connection> for PktConnection {
+    fn from(conn: &Connection) -> Self {
         PktConnection {
             packet_type: PktType::CONNECTION,
             room_number: conn.room_number,
-            room_name: conn.title,
+            room_name: conn.title.clone(),
             description_len: conn.desc_short.len() as u16,
-            description: conn.desc_short,
+            description: conn.desc_short.clone(),
         }
     }
 }
@@ -56,33 +55,6 @@ pub struct Monster {
     pub defense: u16,
     pub gold: u16,
     pub desc: Box<str>,
-}
-
-impl From<Monster> for PktCharacter {
-    fn from(monster: Monster) -> Self {
-        let mut flags = CharacterFlags::MONSTER | CharacterFlags::BATTLE;
-
-        if monster.health <= 0 {
-            flags |= CharacterFlags::dead();
-        } else {
-            flags |= CharacterFlags::alive();
-        };
-
-        Self {
-            author: None,
-            packet_type: PktType::CHARACTER,
-            name: monster.name.clone(),
-            flags,
-            attack: monster.attack,
-            defense: monster.defense,
-            regen: 0,
-            health: monster.health,
-            gold: monster.gold,
-            current_room: monster.current_room,
-            description_len: monster.desc.len() as u16,
-            description: monster.desc.clone(),
-        }
-    }
 }
 
 impl From<&Monster> for PktCharacter {
