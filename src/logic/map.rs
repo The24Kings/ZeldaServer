@@ -1,9 +1,8 @@
 use indexmap::IndexSet;
-use lurk_lcsc::send_to;
-use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom, PktType};
+use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktRoom, PktType};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, net::TcpStream, sync::Arc};
-use tracing::{debug, info, trace};
+use tracing::info;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Room {
@@ -127,10 +126,6 @@ pub fn build(data: File) -> Result<HashMap<u16, Room>, serde_json::Error> {
     Ok(rooms)
 }
 
-pub fn exits(rooms: &HashMap<u16, Room>, room_number: u16) -> Option<HashMap<u16, Connection>> {
-    rooms.get(&room_number).map(|room| room.connections.clone())
-}
-
 pub fn player_from_stream(
     players: &mut HashMap<Arc<str>, PktCharacter>,
     stream: Arc<TcpStream>,
@@ -141,77 +136,4 @@ pub fn player_from_stream(
             .as_ref()
             .is_some_and(|author| Arc::ptr_eq(author, &stream))
     })
-}
-
-/// Broadcast a message to all players in the game via Message packets.
-pub fn broadcast(players: &HashMap<Arc<str>, PktCharacter>, message: String) {
-    info!("Sending message: {}", message);
-
-    for (name, player) in players {
-        let author = match player.author.as_ref() {
-            Some(author) => author,
-            None => continue,
-        };
-
-        debug!("Sending message to {}", name);
-
-        let msg = PktMessage::server(name, &message);
-        let _ = send_to(author.as_ref(), &msg);
-    }
-}
-
-pub fn message_room(
-    players: &HashMap<Arc<str>, PktCharacter>,
-    room: &Room,
-    message: String,
-    narration: bool,
-) {
-    info!(
-        "[ROOM MESSAGE] Messaging room {}: {}",
-        room.room_number, message
-    );
-
-    room.players.iter().for_each(|name| {
-        let player = match players.get(name) {
-            Some(player) => player,
-            None => return,
-        };
-
-        let author = match player.author.as_ref() {
-            Some(author) => author,
-            None => return,
-        };
-
-        trace!("[ROOM MESSAGE] Sending message to '{}'", name);
-
-        let message = if narration {
-            PktMessage::narrator(&player.name, &message)
-        } else {
-            PktMessage::server(&player.name, &message)
-        };
-
-        let _ = send_to(author.as_ref(), &message);
-    });
-}
-
-/// Alert all players in the current room of a character change by sending a Character packet
-/// to each player in the room.
-pub fn alert_room(players: &HashMap<Arc<str>, PktCharacter>, room: &Room, alert: &PktCharacter) {
-    info!("Alerting players about: '{}'", alert.name);
-
-    room.players.iter().for_each(|name| {
-        trace!("Alerting player: '{}'", name);
-
-        let player = match players.get(name) {
-            Some(player) => player,
-            None => return,
-        };
-
-        let author = match player.author.as_ref() {
-            Some(author) => author,
-            None => return,
-        };
-
-        let _ = send_to(author.as_ref(), alert);
-    });
 }

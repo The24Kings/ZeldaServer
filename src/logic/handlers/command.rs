@@ -4,7 +4,6 @@ use std::sync::Arc;
 use tracing::{error, info};
 
 use crate::logic::commands::Action;
-use crate::logic::map;
 use crate::logic::state::GameState;
 
 impl GameState {
@@ -78,6 +77,7 @@ impl GameState {
             "revive" => {
                 info!("Revive command received, reviving all dead monsters");
 
+                let mut alerts = Vec::new();
                 let mut revived_count = 0usize;
 
                 for room in self.rooms.values_mut() {
@@ -92,12 +92,8 @@ impl GameState {
                             .collect();
 
                         if !pkts.is_empty() {
-                            let room = room.clone();
-                            let n = pkts.len();
-                            for pkt in pkts {
-                                map::alert_room(&self.players, &room, &pkt);
-                            }
-                            revived_count += n;
+                            revived_count += pkts.len();
+                            alerts.push((room.clone(), pkts));
                         }
                     }
                 }
@@ -105,6 +101,12 @@ impl GameState {
                 if revived_count == 0 {
                     info!("No monsters to revive");
                     return;
+                }
+
+                for (room, pkts) in &alerts {
+                    for pkt in pkts {
+                        self.alert_room(room, pkt);
+                    }
                 }
 
                 self.broadcast(String::from("All dead monsters have been revived!"));

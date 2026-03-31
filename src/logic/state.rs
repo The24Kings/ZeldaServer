@@ -1,10 +1,13 @@
 use lurk_lcsc::LurkError;
 use lurk_lcsc::PktCharacter;
+use lurk_lcsc::PktMessage;
 use lurk_lcsc::{PktConnection, PktError, send_error, send_to};
 use std::collections::HashMap;
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::error;
+use tracing::info;
+use tracing::trace;
 
 use crate::logic::config::Config;
 use crate::logic::map::{self, Room};
@@ -80,18 +83,70 @@ impl GameState {
         map::player_from_stream(&mut self.players, stream.clone())
     }
 
+    /// Internal helper: send a constructed message to each named player.
+    fn send_to_players<'a>(
+        players: &'a HashMap<Arc<str>, PktCharacter>,
+        names: impl Iterator<Item = &'a Arc<str>>,
+        msg_fn: impl Fn(&Arc<str>) -> PktMessage,
+    ) {
+        for name in names {
+            let player = match players.get(name) {
+                Some(player) => player,
+                None => continue,
+            };
+
+            let author = match player.author.as_ref() {
+                Some(author) => author,
+                None => continue,
+            };
+
+            let msg = msg_fn(name);
+            let _ = send_to(author.as_ref(), &msg);
+        }
+    }
+
     /// Broadcast a message to all connected players.
     pub fn broadcast(&self, message: String) {
-        map::broadcast(&self.players, message);
+        info!("Sending message: {}", message);
+        GameState::send_to_players(&self.players, self.players.keys(), |name| {
+            PktMessage::server(name, &message)
+        });
     }
 
     /// Send a message to all players in a specific room.
     pub fn message_room(&self, room: &Room, message: String, narration: bool) {
-        map::message_room(&self.players, room, message, narration);
+        info!(
+            "[ROOM MESSAGE] Messaging room {}: {}",
+            room.room_number, message
+        );
+        GameState::send_to_players(&self.players, room.players.iter(), |name| {
+            if narration {
+                PktMessage::narrator(name, &message)
+            } else {
+                PktMessage::server(name, &message)
+            }
+        });
     }
 
-    /// Alert all players in a room about a character change.
+    /// Alert all players in the current room of a character change by sending a Character packet
+    /// to each player in the room.
     pub fn alert_room(&self, room: &Room, alert: &PktCharacter) {
-        map::alert_room(&self.players, room, alert);
+        info!("Alerting players about: '{}'", alert.name);
+
+        room.players.iter().for_each(|name| {
+            trace!("Alerting player: '{}'", name);
+
+            let player = match self.players.get(name) {
+                Some(player) => player,
+                None => return,
+            };
+
+            let author = match player.author.as_ref() {
+                Some(author) => author,
+                None => return,
+            };
+
+            let _ = send_to(author.as_ref(), alert);
+        });
     }
 }

@@ -50,75 +50,83 @@ impl GameState {
             .map(|(name, _)| name.clone())
             .collect();
 
-        let monsters = match self.rooms.get_mut(&current_room) {
-            Some(room) => &mut room.monsters,
-            None => {
-                error!("Player isn't in a valid room");
-                return;
+        // Find the target monster index so we can send messages
+        // before acquiring mutable access for the fight.
+        let target_idx = {
+            let monsters = match self
+                .rooms
+                .get(&current_room)
+                .and_then(|r| r.monsters.as_ref())
+            {
+                Some(m) => m,
+                None => {
+                    send_error!(
+                        author.clone(),
+                        PktError::new(LurkError::NOFIGHT, "The room is eerily quiet...")
+                    );
+                    return;
+                }
+            };
+
+            match monsters
+                .iter()
+                .enumerate()
+                .filter(|(_, m)| m.health > 0)
+                .min_by_key(|(_, m)| (m.health, m.name.clone()))
+            {
+                Some((idx, _)) => idx,
+                None => {
+                    send_error!(
+                        author.clone(),
+                        PktError::new(LurkError::NOFIGHT, "No monsters alive. Let them rest.")
+                    );
+                    return;
+                }
             }
         };
 
-        let to_attack = match monsters {
-            Some(monsters) => monsters
-                .iter_mut()
-                .filter(|m| m.health > 0)
-                .min_by_key(|m| (m.health, m.name.clone())),
-            None => {
-                send_error!(
-                    author.clone(),
-                    PktError::new(LurkError::NOFIGHT, "The room is eerily quiet...")
-                );
+        let target_name = self.rooms[&current_room]
+            .monsters
+            .as_ref()
+            .expect("monsters confirmed present above")[target_idx]
+            .name
+            .clone();
 
-                return;
-            }
-        };
-
-        let to_attack = match to_attack {
-            Some(m) => m,
-            None => {
-                send_error!(
-                    author.clone(),
-                    PktError::new(LurkError::NOFIGHT, "No monsters alive. Let them rest.")
-                );
-
-                return;
-            }
-        };
-
-        info!("Battling '{}'", to_attack.name);
+        info!("Battling '{}'", target_name);
         info!("{} player(s) joining the battle", in_battle.len());
 
-        map::message_room(
-            &self.players,
+        self.message_room(
             &room,
-            format!("{} is attacking {}", attacker.name, to_attack.name),
+            format!("{} is attacking {}", attacker.name, target_name),
             false,
         );
 
         // ================================================================================
         // Calculate the fight logic: Action Phase!
         // ================================================================================
-        let players_in_battle: Vec<_> = in_battle
+        let battle_damage: u16 = in_battle
             .iter()
             .filter_map(|name| self.players.get(name))
-            .collect();
+            .map(|p| p.attack)
+            .sum();
         let mut victory = false;
 
-        map::message_room(
-            &self.players,
+        self.message_room(
             &room,
-            format!(
-                "Joining '{}' in attacking '{}'",
-                attacker.name, to_attack.name
-            ),
+            format!("Joining '{}' in attacking '{}'", attacker.name, target_name),
             false,
         );
 
-        let damage = players_in_battle
-            .iter()
-            .map(|player| player.attack)
-            .sum::<u16>()
-            .saturating_sub(to_attack.defense);
+        // Now acquire mutable access to the target monster for the fight
+        let to_attack = &mut self
+            .rooms
+            .get_mut(&current_room)
+            .expect("room confirmed present above")
+            .monsters
+            .as_mut()
+            .expect("monsters confirmed present above")[target_idx];
+
+        let damage = battle_damage.saturating_sub(to_attack.defense);
         let damage = damage.try_into().unwrap_or(i16::MAX); // We went out of bounds on damage, cap to i16 MAX int
 
         to_attack.health = to_attack.health.saturating_sub(damage);
