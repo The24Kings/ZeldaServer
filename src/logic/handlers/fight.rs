@@ -34,7 +34,7 @@ impl GameState {
         let current_room = player.current_room;
 
         let mut room = match self.rooms.get_mut(&current_room) {
-            Some(room) => room.clone(), // To allow me to message the whole room without borrow checker issues
+            Some(room) => room.clone(),
             None => {
                 error!("Room not found");
                 return;
@@ -179,7 +179,7 @@ impl GameState {
         let monster_pkt: PktCharacter = to_attack.into();
         let to_update = in_battle.iter().filter_map(|name| self.players.get(name));
 
-        room.players.push(attacker_name); // Add the name back so the attacker gets updated
+        room.players.insert(attacker_name); // Add the name back so the attacker gets updated
 
         for player in to_update {
             self.alert_room(&room, player);

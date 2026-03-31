@@ -83,7 +83,7 @@ impl GameState {
 
         if let Some(new_room) = self.rooms.get_mut(&nxt_room_id) {
             info!("Adding player to new room");
-            new_room.players.push(player_name.clone());
+            new_room.players.insert(player_name.clone());
         }
 
         // ================================================================================

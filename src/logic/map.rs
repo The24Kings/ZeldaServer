@@ -1,3 +1,4 @@
+use indexmap::IndexSet;
 use lurk_lcsc::send_to;
 use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktMessage, PktRoom, PktType};
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ pub struct Room {
     pub title: Box<str>,
     pub connections: HashMap<u16, Connection>,
     pub desc: Box<str>,
-    pub players: Vec<Arc<str>>,
+    pub players: IndexSet<Arc<str>>,
     pub monsters: Option<Vec<Monster>>,
 }
 

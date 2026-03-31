@@ -62,7 +62,7 @@ impl GameState {
         // ================================================================================
         if let Some(room) = self.rooms.get_mut(&0) {
             info!("Adding player to starting room");
-            room.players.push(player_name);
+            room.players.insert(player_name);
         }
 
         // ================================================================================
