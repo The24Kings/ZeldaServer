@@ -1,10 +1,8 @@
 use serde::Serialize;
 use std::io;
-use std::sync::mpsc::Sender;
 use tracing::{error, info};
 
-use crate::logic::ExtendedProtocol;
-use crate::send_ext_cmd;
+use crate::logic::GameSender;
 
 #[derive(Serialize)]
 pub struct Action {
@@ -23,7 +21,7 @@ impl std::fmt::Display for Action {
     }
 }
 
-pub fn input(sender: Sender<ExtendedProtocol>, prefix: String) -> ! {
+pub fn input(sender: GameSender, prefix: String) -> ! {
     info!("Listening for commands with prefix: '{}'", prefix);
 
     loop {
@@ -51,6 +49,6 @@ pub fn input(sender: Sender<ExtendedProtocol>, prefix: String) -> ! {
         let kind = argv[0].to_ascii_lowercase().into();
         let action = Action { kind, argv };
 
-        send_ext_cmd!(sender, action);
+        sender.send_cmd(action);
     }
 }

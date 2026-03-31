@@ -11,32 +11,26 @@ impl GameState {
         // ================================================================================
         // Get the recipient player and their connection fd to send them the message.
         // ================================================================================
-        let player = match self.players.get(content.recipient.as_ref()) {
-            Some(player) => player,
-            None => {
-                send_error!(
-                    author.clone(),
-                    PktError::new(LurkError::OTHER, "Player not found")
-                );
+        let Some(player) = self.players.get(content.recipient.as_ref()) else {
+            send_error!(
+                author.clone(),
+                PktError::new(LurkError::OTHER, "Player not found")
+            );
 
-                return;
-            }
+            return;
         };
 
         if !GameState::ensure_started(player, &author) {
             return;
         }
 
-        let author = match &player.author {
-            Some(author) => author,
-            None => {
-                send_error!(
-                    author.clone(),
-                    PktError::new(LurkError::OTHER, "Not connected")
-                );
+        let Some(author) = &player.author else {
+            send_error!(
+                author.clone(),
+                PktError::new(LurkError::OTHER, "Not connected")
+            );
 
-                return;
-            }
+            return;
         };
 
         send_message!(author.clone(), content);

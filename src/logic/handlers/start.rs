@@ -17,16 +17,12 @@ impl GameState {
         // Phase 1: Find player, validate, activate, extract name
         // ================================================================================
         let player_name = {
-            let player = match map::player_from_stream(&mut self.players, author.clone()) {
-                Some((name, player)) => {
-                    info!("Found player '{}'", name);
-                    player
-                }
-                None => {
-                    error!("Unable to find player in map");
-                    return;
-                }
+            let Some((name, player)) = map::player_from_stream(&mut self.players, author.clone())
+            else {
+                error!("Unable to find player in map");
+                return;
             };
+            info!("Found player '{}'", name);
 
             if !player.flags.is_ready() {
                 send_error!(

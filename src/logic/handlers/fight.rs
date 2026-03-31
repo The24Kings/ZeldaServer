@@ -14,12 +14,9 @@ impl GameState {
         info!("Received: {}", content);
 
         // Find the player in the map
-        let player = match map::player_from_stream(&mut self.players, author.clone()) {
-            Some((_, player)) => player,
-            None => {
-                error!("Unable to find player in map");
-                return;
-            }
+        let Some((_, player)) = map::player_from_stream(&mut self.players, author.clone()) else {
+            error!("Unable to find player in map");
+            return;
         };
 
         if !GameState::ensure_started(player, &author) {
@@ -33,13 +30,11 @@ impl GameState {
         let mut attacker = player.clone();
         let current_room = player.current_room;
 
-        let mut room = match self.rooms.get_mut(&current_room) {
-            Some(room) => room.clone(),
-            None => {
-                error!("Room not found");
-                return;
-            }
+        let Some(room_ref) = self.rooms.get_mut(&current_room) else {
+            error!("Room not found");
+            return;
         };
+        let mut room = room_ref.clone();
 
         room.players.retain(|player| player != &attacker.name); // Remove attacker for narration purposes
 
@@ -53,36 +48,32 @@ impl GameState {
         // Find the target monster index so we can send messages
         // before acquiring mutable access for the fight.
         let target_idx = {
-            let monsters = match self
+            let Some(monsters) = self
                 .rooms
                 .get(&current_room)
                 .and_then(|r| r.monsters.as_ref())
-            {
-                Some(m) => m,
-                None => {
-                    send_error!(
-                        author.clone(),
-                        PktError::new(LurkError::NOFIGHT, "The room is eerily quiet...")
-                    );
-                    return;
-                }
+            else {
+                send_error!(
+                    author.clone(),
+                    PktError::new(LurkError::NOFIGHT, "The room is eerily quiet...")
+                );
+                return;
             };
 
-            match monsters
+            let Some((idx, _)) = monsters
                 .iter()
                 .enumerate()
                 .filter(|(_, m)| m.health > 0)
                 .min_by_key(|(_, m)| (m.health, m.name.clone()))
-            {
-                Some((idx, _)) => idx,
-                None => {
-                    send_error!(
-                        author.clone(),
-                        PktError::new(LurkError::NOFIGHT, "No monsters alive. Let them rest.")
-                    );
-                    return;
-                }
-            }
+            else {
+                send_error!(
+                    author.clone(),
+                    PktError::new(LurkError::NOFIGHT, "No monsters alive. Let them rest.")
+                );
+                return;
+            };
+
+            idx
         };
 
         let target_name = self.rooms[&current_room]

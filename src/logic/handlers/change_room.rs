@@ -17,12 +17,10 @@ impl GameState {
         // Phase 1: Find player, validate, extract IDs
         // ================================================================================
         let (player_name, cur_room_id) = {
-            let player = match map::player_from_stream(&mut self.players, author.clone()) {
-                Some((_, player)) => player,
-                None => {
-                    error!("Unable to find player in map");
-                    return;
-                }
+            let Some((_, player)) = map::player_from_stream(&mut self.players, author.clone())
+            else {
+                error!("Unable to find player in map");
+                return;
             };
 
             if !GameState::ensure_started(player, &author) {
@@ -44,29 +42,25 @@ impl GameState {
         }
 
         // Validate connection exists
-        match self.rooms.get(&cur_room_id) {
-            Some(room) => match room.connections.get(&nxt_room_id) {
-                Some(exit) => {
-                    info!("Found connection: '{}'", exit.title);
-                }
-                None => {
-                    send_error!(
-                        author.clone(),
-                        PktError::new(LurkError::BADROOM, "Invalid connection!")
-                    );
+        let Some(room) = self.rooms.get(&cur_room_id) else {
+            send_error!(
+                author.clone(),
+                PktError::new(LurkError::BADROOM, "Room not found!")
+            );
 
-                    return;
-                }
-            },
-            None => {
-                send_error!(
-                    author.clone(),
-                    PktError::new(LurkError::BADROOM, "Room not found!")
-                );
+            return;
+        };
 
-                return;
-            }
-        }
+        let Some(exit) = room.connections.get(&nxt_room_id) else {
+            send_error!(
+                author.clone(),
+                PktError::new(LurkError::BADROOM, "Invalid connection!")
+            );
+
+            return;
+        };
+
+        info!("Found connection: '{}'", exit.title);
 
         // ================================================================================
         // Phase 2: Apply the changes to the player and room

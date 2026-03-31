@@ -15,9 +15,9 @@ impl GameState {
         // Grab the player and deactivate them, extract name for later lookups
         // ================================================================================
         let (player_name, current_room) = {
-            let player = match map::player_from_stream(&mut self.players, author.clone()) {
-                Some((_, player)) => player,
-                None => return,
+            let Some((_, player)) = map::player_from_stream(&mut self.players, author.clone())
+            else {
+                return;
             };
 
             player.flags = CharacterFlags::empty();
@@ -29,12 +29,9 @@ impl GameState {
         // ================================================================================
         // Alert the server and the room
         // ================================================================================
-        let room = match self.rooms.get(&current_room) {
-            Some(room) => room,
-            None => {
-                warn!("Unable to find where the player left off in the map");
-                return;
-            }
+        let Some(room) = self.rooms.get(&current_room) else {
+            warn!("Unable to find where the player left off in the map");
+            return;
         };
 
         self.broadcast(format!("{} has left the game.", player_name));

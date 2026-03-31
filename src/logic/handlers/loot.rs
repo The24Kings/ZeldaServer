@@ -14,16 +14,12 @@ impl GameState {
         info!("Received: {}", content);
 
         // Find the player in the map
-        let player = match map::player_from_stream(&mut self.players, author.clone()) {
-            Some((name, player)) => {
-                info!("Found player '{}'", name);
-                player
-            }
-            None => {
-                error!("Unable to find player in map");
-                return;
-            }
+        let Some((name, player)) = map::player_from_stream(&mut self.players, author.clone())
+        else {
+            error!("Unable to find player in map");
+            return;
         };
+        info!("Found player '{}'", name);
 
         if !GameState::ensure_started(player, &author) {
             return;
@@ -33,38 +29,30 @@ impl GameState {
         // Get the target monster, check if they exists and are dead, then shuffle the
         // gold to the player.
         // ================================================================================
-        let monsters = match self.rooms.get_mut(&player.current_room) {
-            Some(room) => &mut room.monsters,
-            None => {
-                error!("Player isn't in a valid room");
-                return;
-            }
+        let Some(room) = self.rooms.get_mut(&player.current_room) else {
+            error!("Player isn't in a valid room");
+            return;
         };
 
-        let to_loot = match monsters {
-            Some(monsters) => monsters
-                .iter_mut()
-                .find(|m| m.name.as_ref() == content.target_name.as_ref()),
-            None => {
-                send_error!(
-                    author.clone(),
-                    PktError::new(LurkError::OTHER, "No monsters to loot!")
-                );
+        let Some(monsters) = &mut room.monsters else {
+            send_error!(
+                author.clone(),
+                PktError::new(LurkError::OTHER, "No monsters to loot!")
+            );
 
-                return;
-            }
+            return;
         };
 
-        let to_loot = match to_loot {
-            Some(m) => m,
-            None => {
-                send_error!(
-                    author.clone(),
-                    PktError::new(LurkError::BADMONSTER, "Monster doesn't exist!")
-                );
+        let Some(to_loot) = monsters
+            .iter_mut()
+            .find(|m| m.name.as_ref() == content.target_name.as_ref())
+        else {
+            send_error!(
+                author.clone(),
+                PktError::new(LurkError::BADMONSTER, "Monster doesn't exist!")
+            );
 
-                return;
-            }
+            return;
         };
 
         if to_loot.health > 0 {

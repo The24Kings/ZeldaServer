@@ -61,15 +61,12 @@ impl GameState {
 
     /// Send all connection exits for a room to a client.
     pub fn send_connections(&self, author: &Arc<TcpStream>, room_id: u16) {
-        let connections = match self.rooms.get(&room_id) {
-            Some(room) => &room.connections,
-            None => {
-                error!("No exits for room {}", room_id);
-                return;
-            }
+        let Some(room) = self.rooms.get(&room_id) else {
+            error!("No exits for room {}", room_id);
+            return;
         };
 
-        for conn in connections.values() {
+        for conn in room.connections.values() {
             let pkt = PktConnection::from(conn);
             let _ = send_to(author.as_ref(), &pkt);
         }
@@ -90,14 +87,11 @@ impl GameState {
         msg_fn: impl Fn(&Arc<str>) -> PktMessage,
     ) {
         for name in names {
-            let player = match players.get(name) {
-                Some(player) => player,
-                None => continue,
+            let Some(player) = players.get(name) else {
+                continue;
             };
-
-            let author = match player.author.as_ref() {
-                Some(author) => author,
-                None => continue,
+            let Some(author) = player.author.as_ref() else {
+                continue;
             };
 
             let msg = msg_fn(name);
@@ -136,14 +130,11 @@ impl GameState {
         room.players.iter().for_each(|name| {
             trace!("Alerting player: '{}'", name);
 
-            let player = match self.players.get(name) {
-                Some(player) => player,
-                None => return,
+            let Some(player) = self.players.get(name) else {
+                return;
             };
-
-            let author = match player.author.as_ref() {
-                Some(author) => author,
-                None => return,
+            let Some(author) = player.author.as_ref() else {
+                return;
             };
 
             let _ = send_to(author.as_ref(), alert);

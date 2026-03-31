@@ -1,4 +1,5 @@
 use lurk_lcsc::Protocol;
+use std::sync::mpsc::Sender;
 
 use crate::logic::commands::Action;
 
@@ -13,26 +14,24 @@ pub enum ExtendedProtocol {
     Command(Action),
 }
 
-#[macro_export]
-macro_rules! send_ext_base {
-    ($sender:expr, $protocol_variant:expr) => {
-        $sender
-            .send(ExtendedProtocol::Base($protocol_variant))
-            .unwrap_or_else(|_| {
-                ::tracing::error!("Failed to send {} packet", $protocol_variant);
-            });
-    };
-}
+/// Type-safe wrapper around `Sender<ExtendedProtocol>`
+pub struct GameSender(pub Sender<ExtendedProtocol>);
 
-#[macro_export]
-macro_rules! send_ext_cmd {
-    ($sender:expr, $command:expr) => {{
-        let cmd = $command;
-        let cmd_str = cmd.to_string();
-        $sender
-            .send(ExtendedProtocol::Command(cmd))
-            .unwrap_or_else(|_| {
-                ::tracing::error!("Failed to send {} packet", cmd_str);
+impl GameSender {
+    pub fn send_base(&self, pkt: Protocol) {
+        self.0
+            .send(ExtendedProtocol::Base(pkt))
+            .unwrap_or_else(|e| {
+                tracing::error!("Failed to send packet: {}", e);
             });
-    }};
+    }
+
+    pub fn send_cmd(&self, action: Action) {
+        let action_str = action.to_string();
+        self.0
+            .send(ExtendedProtocol::Command(action))
+            .unwrap_or_else(|_| {
+                tracing::error!("Failed to send {} packet", action_str);
+            });
+    }
 }

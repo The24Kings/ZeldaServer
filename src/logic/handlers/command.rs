@@ -38,14 +38,12 @@ impl GameState {
                     .get(name.as_str())
                     .and_then(|p| p.author.clone());
 
-                match recipient {
-                    Some(recipient) => {
-                        send_message!(recipient.clone(), PktMessage::server(&name, &content));
-                    }
-                    None => {
-                        error!("Player not found: {}", action.argv[1]);
-                    }
-                }
+                let Some(recipient) = recipient else {
+                    error!("Player not found: {}", action.argv[1]);
+                    return;
+                };
+
+                send_message!(recipient.clone(), PktMessage::server(&name, &content));
             }
             "nuke" => {
                 info!("Nuke command received, removing disconnected players");

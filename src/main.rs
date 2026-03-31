@@ -1,4 +1,4 @@
-use crate::logic::{commands::input, config::Config, map};
+use crate::logic::{GameSender, commands::input, config::Config, map};
 use crate::threads::{connection::connection, server::server};
 use clap::Parser;
 use std::sync::{Arc, Mutex, mpsc};
@@ -71,7 +71,7 @@ fn main() -> ! {
 
     let _ = std::thread::spawn(move || {
         info!("Started input thread!");
-        input(tx.clone(), input_prefix);
+        input(GameSender(tx), input_prefix);
     });
 
     loop {
@@ -80,7 +80,7 @@ fn main() -> ! {
                 info!("New connection: {}", addr);
 
                 let stream = Arc::new(stream);
-                let sender = sender.clone();
+                let sender = GameSender(sender.clone());
                 let client_config = client_config.clone();
 
                 // Handle the connection in a separate thread

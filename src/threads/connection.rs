@@ -1,13 +1,13 @@
 use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol, send_game, send_version};
 use std::io::ErrorKind::{UnexpectedEof, Unsupported};
 use std::net::TcpStream;
-use std::sync::{Arc, mpsc::Sender};
+use std::sync::Arc;
 use tracing::{error, info, warn};
 
-use crate::logic::{ExtendedProtocol, config::Config};
-use crate::send_ext_base;
+use crate::logic::GameSender;
+use crate::logic::config::Config;
 
-pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, config: Arc<Config>) {
+pub fn connection(stream: Arc<TcpStream>, sender: GameSender, config: Arc<Config>) {
     // Send the initial game info to the client
     send_version!(
         stream.clone(),
@@ -37,13 +37,8 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
             Ok(pkt) => {
                 info!("Packet read successfully");
 
-                // Try to send the packet
-                match sender.send(ExtendedProtocol::Base(pkt)) {
-                    Ok(()) => continue, // Don't fallout to graceful exit
-                    Err(e) => {
-                        error!("Failed to send packet: {}", e);
-                    }
-                };
+                sender.send_base(pkt);
+                continue; // Don't fallout to graceful exit
             }
             Err(e) => {
                 match e.kind() {
@@ -59,7 +54,7 @@ pub fn connection(stream: Arc<TcpStream>, sender: Sender<ExtendedProtocol>, conf
         };
 
         // Exit gracefully
-        send_ext_base!(sender, Protocol::Leave(stream.clone(), PktLeave::default()));
+        sender.send_base(Protocol::Leave(stream.clone(), PktLeave::default()));
         break;
     }
 
