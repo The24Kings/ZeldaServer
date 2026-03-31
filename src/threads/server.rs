@@ -1,21 +1,20 @@
 use lurk_lcsc::{CharacterFlags, LurkError, Protocol};
-use lurk_lcsc::{PktCharacter, PktConnection, PktError, PktMessage, PktRoom, PktType};
-use lurk_lcsc::{
-    send_accept, send_character, send_connection, send_error, send_message, send_room,
-};
+use lurk_lcsc::{PktCharacter, PktError, PktMessage, PktRoom, PktType};
+use lurk_lcsc::{send_accept, send_character, send_error, send_message, send_room};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use std::time::Instant;
 use tracing::{debug, error, info, warn};
 
+use crate::logic::state::GameState;
 use crate::logic::{ExtendedProtocol, config::Config, map};
 
 pub fn server(
     receiver: Arc<Mutex<Receiver<ExtendedProtocol>>>,
     config: Arc<Config>,
-    rooms: &mut HashMap<u16, map::Room>,
+    rooms: HashMap<u16, map::Room>,
 ) -> ! {
-    let mut players: HashMap<Arc<str>, PktCharacter> = HashMap::new();
+    let mut state = GameState::new(rooms, config.clone());
 
     loop {
         let packet = match receiver.lock().unwrap().recv() {
@@ -37,7 +36,7 @@ pub fn server(
                 // ================================================================================
                 // Get the recipient player and their connection fd to send them the message.
                 // ================================================================================
-                let player = match players.get(content.recipient.as_ref()) {
+                let player = match state.players.get(content.recipient.as_ref()) {
                     Some(player) => player,
                     None => {
                         send_error!(
@@ -49,12 +48,7 @@ pub fn server(
                     }
                 };
 
-                if !player.flags.is_started() && !player.flags.is_ready() {
-                    send_error!(
-                        author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!")
-                    );
-
+                if !GameState::ensure_started(player, &author) {
                     continue;
                 }
 
@@ -77,7 +71,7 @@ pub fn server(
                 info!("Received: {}", content);
 
                 // Find the player in the map
-                let player = match map::player_from_stream(&mut players, author.clone()) {
+                let player = match map::player_from_stream(&mut state.players, author.clone()) {
                     Some((_, player)) => player,
                     None => {
                         error!("Unable to find player in map");
@@ -85,12 +79,7 @@ pub fn server(
                     }
                 };
 
-                if !player.flags.is_started() && !player.flags.is_ready() {
-                    send_error!(
-                        author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!")
-                    );
-
+                if !GameState::ensure_started(player, &author) {
                     continue;
                 }
 
@@ -110,7 +99,7 @@ pub fn server(
                     continue;
                 }
                 // Check if the room is a valid connection
-                let cur_room = match rooms.get_mut(&cur_room_id) {
+                let cur_room = match state.rooms.get_mut(&cur_room_id) {
                     Some(room) => room,
                     None => {
                         send_error!(
@@ -145,7 +134,7 @@ pub fn server(
                 let cur_room = cur_room.clone(); // End mutable borrow of cur_room
 
                 // Find the next room in the map, add the player, and send it off
-                let new_room = match rooms.get_mut(&nxt_room_id) {
+                let new_room = match state.rooms.get_mut(&nxt_room_id) {
                     Some(room) => room,
                     None => {
                         send_error!(
@@ -175,54 +164,26 @@ pub fn server(
                 // ^ ============================================================================ ^
 
                 // ================================================================================
-                // Send all connections to the client
-                // ================================================================================
-                let connections = match map::exits(rooms, nxt_room_id) {
-                    Some(exits) => exits,
-                    None => {
-                        error!("No exits for room {}", nxt_room_id);
-                        continue;
-                    }
-                };
-
-                for (_, new_room) in connections {
-                    send_connection!(author.clone(), PktConnection::from(new_room));
-                }
-                // ^ ============================================================================ ^
-
-                // ================================================================================
                 // Update info for all other connected clients
                 // ================================================================================
                 let player = player.clone(); // End mutable borrow of player
 
-                map::alert_room(&players, &cur_room, &player);
-                map::alert_room(&players, &new_room, &player);
+                state.alert_room(&cur_room, &player);
+                state.alert_room(&new_room, &player);
                 // ^ ============================================================================ ^
 
                 // ================================================================================
-                // Send the all players and monsters in the room excluding the author
+                // Send all connections and room contents to the client
                 // ================================================================================
-                let players = new_room.players.iter().filter_map(|name| players.get(name));
-
-                players.for_each(|player| {
-                    send_character!(author.clone(), player.clone());
-                });
-
-                let monsters = match &new_room.monsters {
-                    Some(monsters) => monsters.iter(),
-                    None => [].iter(),
-                };
-
-                for monster in monsters {
-                    send_character!(author.clone(), PktCharacter::from(monster));
-                }
+                state.send_connections(&author, nxt_room_id);
+                state.send_room_contents(&author, &new_room);
                 // ^ ============================================================================ ^
             } // Protocol::CHANGEROOM
             ExtendedProtocol::Base(Protocol::Fight(author, content)) => {
                 info!("Received: {}", content);
 
                 // Find the player in the map
-                let player = match map::player_from_stream(&mut players, author.clone()) {
+                let player = match map::player_from_stream(&mut state.players, author.clone()) {
                     Some((_, player)) => player,
                     None => {
                         error!("Unable to find player in map");
@@ -230,12 +191,7 @@ pub fn server(
                     }
                 };
 
-                if !player.flags.is_started() && !player.flags.is_ready() {
-                    send_error!(
-                        author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!")
-                    );
-
+                if !GameState::ensure_started(player, &author) {
                     continue;
                 }
 
@@ -246,7 +202,7 @@ pub fn server(
                 let mut attacker = player.clone();
                 let current_room = player.current_room;
 
-                let mut room = match rooms.get_mut(&current_room) {
+                let mut room = match state.rooms.get_mut(&current_room) {
                     Some(room) => room.clone(), // To allow me to message the whole room without borrow checker issues
                     None => {
                         error!("Room not found");
@@ -256,13 +212,14 @@ pub fn server(
 
                 room.players.retain(|player| player != &attacker.name); // Remove attacker for narration purposes
 
-                let in_battle: Vec<Arc<str>> = players
+                let in_battle: Vec<Arc<str>> = state
+                    .players
                     .iter()
                     .filter(|(_, p)| p.flags.is_battle() && p.current_room == current_room)
                     .map(|(name, _)| name.clone())
                     .collect();
 
-                let monsters = match rooms.get_mut(&current_room) {
+                let monsters = match state.rooms.get_mut(&current_room) {
                     Some(room) => &mut room.monsters,
                     None => {
                         error!("Player isn't in a valid room");
@@ -301,7 +258,7 @@ pub fn server(
                 info!("{} player(s) joining the battle", in_battle.len());
 
                 map::message_room(
-                    &players,
+                    &state.players,
                     &room,
                     format!("{} is attacking {}", attacker.name, to_attack.name),
                     false,
@@ -313,12 +270,12 @@ pub fn server(
                 // ================================================================================
                 let players_in_battle: Vec<_> = in_battle
                     .iter()
-                    .filter_map(|name| players.get(name))
+                    .filter_map(|name| state.players.get(name))
                     .collect();
                 let mut victory = false;
 
                 map::message_room(
-                    &players,
+                    &state.players,
                     &room,
                     format!(
                         "Joining '{}' in attacking '{}'",
@@ -383,23 +340,26 @@ pub fn server(
                 // ================================================================================
                 info!("Updating players in fight");
 
-                let _ = players.insert(attacker.name.clone(), attacker.clone());
+                let _ = state
+                    .players
+                    .insert(attacker.name.clone(), attacker.clone());
 
                 for name in &in_battle {
-                    if let Some(player) = players.get(name) {
-                        let _ = players.insert(name.clone(), player.clone());
+                    if let Some(player) = state.players.get(name) {
+                        let _ = state.players.insert(name.clone(), player.clone());
                     }
                 }
 
-                let to_update = in_battle.iter().filter_map(|name| players.get(name));
+                let monster_pkt: PktCharacter = to_attack.into();
+                let to_update = in_battle.iter().filter_map(|name| state.players.get(name));
 
                 room.players.push(attacker.name.clone()); // Add the name back so the attacker gets updated
 
                 for player in to_update {
-                    map::alert_room(&players, &room, player);
+                    state.alert_room(&room, player);
                 }
 
-                map::alert_room(&players, &room, &to_attack.into());
+                state.alert_room(&room, &monster_pkt);
                 // ^ ============================================================================ ^
             } // Protocol::FIGHT
             ExtendedProtocol::Base(Protocol::PVPFight(author, content)) => {
@@ -418,7 +378,7 @@ pub fn server(
                 info!("Received: {}", content);
 
                 // Find the player in the map
-                let player = match map::player_from_stream(&mut players, author.clone()) {
+                let player = match map::player_from_stream(&mut state.players, author.clone()) {
                     Some((name, player)) => {
                         info!("Found player '{}'", name);
                         player
@@ -429,12 +389,7 @@ pub fn server(
                     }
                 };
 
-                if !player.flags.is_started() && !player.flags.is_ready() {
-                    send_error!(
-                        author.clone(),
-                        PktError::new(LurkError::NOTREADY, "Start the game first!")
-                    );
-
+                if !GameState::ensure_started(player, &author) {
                     continue;
                 }
 
@@ -442,7 +397,7 @@ pub fn server(
                 // Get the target monster, check if they exists and are dead, then shuffle the
                 // gold to the player.
                 // ================================================================================
-                let monsters = match rooms.get_mut(&player.current_room) {
+                let monsters = match state.rooms.get_mut(&player.current_room) {
                     Some(room) => &mut room.monsters,
                     None => {
                         error!("Player isn't in a valid room");
@@ -513,7 +468,7 @@ pub fn server(
                 info!("Received: {}", content);
 
                 // Find the player in the map
-                let player = match map::player_from_stream(&mut players, author.clone()) {
+                let player = match map::player_from_stream(&mut state.players, author.clone()) {
                     Some((name, player)) => {
                         info!("Found player '{}'", name);
                         player
@@ -546,7 +501,7 @@ pub fn server(
                 // ================================================================================
                 // Send the starting room and connections to the client
                 // ================================================================================
-                let room = match rooms.get_mut(&0) {
+                let room = match state.rooms.get(&0) {
                     Some(room) => room,
                     None => {
                         error!("Unable to find room in map");
@@ -554,50 +509,31 @@ pub fn server(
                     }
                 };
 
-                map::alert_room(&players, room, &player);
-                map::broadcast(&players, format!("{} has started the game!", player.name));
+                state.alert_room(room, &player);
+                state.broadcast(format!("{} has started the game!", player.name));
 
-                info!("Adding player to starting room");
-
-                room.players.push(player.name);
-
-                // End mutable borrow of room
-                let room_players = room.players.clone();
-                let room_monsters = room.monsters.clone();
-
-                send_room!(author.clone(), PktRoom::from(room.clone()));
-
-                let connections = match map::exits(rooms, 0) {
-                    Some(exits) => exits,
+                let room = match state.rooms.get_mut(&0) {
+                    Some(room) => room,
                     None => {
                         error!("Unable to find room in map");
                         continue;
                     }
                 };
 
-                for (_, room) in connections {
-                    send_connection!(author.clone(), PktConnection::from(room));
-                }
+                info!("Adding player to starting room");
+
+                room.players.push(player.name);
+
+                send_room!(author.clone(), PktRoom::from(room.clone()));
+
+                state.send_connections(&author, 0);
                 // ^ ============================================================================ ^
 
                 // ================================================================================
                 // Send the all players and monsters in the room excluding the author
                 // ================================================================================
-                let players = room_players.iter().filter_map(|name| players.get(name));
-
-                debug!("Players: {:?}", players);
-
-                let monsters = match &room_monsters {
-                    Some(monsters) => monsters.iter(),
-                    None => [].iter(),
-                };
-
-                players.for_each(|player| {
-                    send_character!(author.clone(), player.clone());
-                });
-
-                for monster in monsters {
-                    send_character!(author.clone(), PktCharacter::from(monster));
+                if let Some(room) = state.rooms.get(&0) {
+                    state.send_room_contents(&author, room);
                 }
                 // ^ ============================================================================ ^
             } // Protocol::START
@@ -628,19 +564,19 @@ pub fn server(
                 // We ignore the flags from the client and set the correct ones accordingly.
                 // Store the old room so that we may remove the player later and set ignore input room
                 // ================================================================================
-                let player = match players.get_mut(&content.name) {
+                let player = match state.players.get_mut(&content.name) {
                     Some(player) => {
                         info!("Obtained player");
                         player
                     }
                     None => {
                         info!("Could not find player; inserting and trying again");
-                        let _ = players.insert(
+                        let _ = state.players.insert(
                             content.name.clone(),
                             PktCharacter::with_defaults_from(&content),
                         );
 
-                        players.get_mut(&content.name).unwrap() // We just inserted so this is okay; we want to panic if insert fails
+                        state.players.get_mut(&content.name).unwrap() // We just inserted so this is okay; we want to panic if insert fails
                     }
                 };
 
@@ -678,7 +614,7 @@ pub fn server(
 
                 let player = player.clone(); // End mutable borrow of player
 
-                let room = match rooms.get_mut(&old_room_number) {
+                let room = match state.rooms.get_mut(&old_room_number) {
                     Some(room) => room,
                     None => {
                         warn!("Unable to find where the player left off in the map");
@@ -688,14 +624,15 @@ pub fn server(
 
                 room.players.retain(|name| name != &player.name);
 
-                map::message_room(
-                    &players,
-                    room,
+                let room = room.clone(); // End mutable borrow of room
+
+                state.message_room(
+                    &room,
                     format!("{}'s corpse disappeared into a puff of smoke.", player.name),
                     true,
                 );
 
-                map::alert_room(&players, room, &player);
+                state.alert_room(&room, &player);
                 // ^ ============================================================================ ^
             } // Protocol::CHARACTER
             ExtendedProtocol::Base(Protocol::Leave(author, content)) => {
@@ -706,7 +643,7 @@ pub fn server(
                 // has been deactivated, but is technically still there.
                 // Shutdown the connection.
                 // ================================================================================
-                let player = match map::player_from_stream(&mut players, author.clone()) {
+                let player = match map::player_from_stream(&mut state.players, author.clone()) {
                     Some((_, player)) => player,
                     None => continue,
                 };
@@ -716,7 +653,7 @@ pub fn server(
 
                 let player = player.clone(); // End mutable borrow of player
 
-                let room = match rooms.get(&player.current_room) {
+                let room = match state.rooms.get(&player.current_room) {
                     Some(room) => room,
                     None => {
                         warn!("Unable to find where the player left off in the map");
@@ -724,8 +661,8 @@ pub fn server(
                     }
                 };
 
-                map::broadcast(&players, format!("{} has left the game.", player.name));
-                map::alert_room(&players, room, &player);
+                state.broadcast(format!("{} has left the game.", player.name));
+                state.alert_room(room, &player);
 
                 match author.shutdown(std::net::Shutdown::Both) {
                     Ok(_) => info!("Connection shutdown successfully"),
@@ -749,7 +686,7 @@ pub fn server(
 
                         let message = action.argv[1..].join(" ");
 
-                        map::broadcast(&players, message);
+                        state.broadcast(message);
                     }
                     "message" => {
                         if action.argc < 3 {
@@ -760,7 +697,10 @@ pub fn server(
                         let name = action.argv[1].clone();
                         let content = action.argv[2..].join(" ");
 
-                        let recipient = players.get(name.as_str()).and_then(|p| p.author.clone());
+                        let recipient = state
+                            .players
+                            .get(name.as_str())
+                            .and_then(|p| p.author.clone());
 
                         match recipient {
                             Some(recipient) => {
@@ -777,7 +717,8 @@ pub fn server(
                     "nuke" => {
                         info!("Nuke command received, removing disconnected players");
 
-                        let to_remove: Vec<Arc<str>> = players
+                        let to_remove: Vec<Arc<str>> = state
+                            .players
                             .iter()
                             .filter(|(_, player)| player.author.is_none())
                             .map(|(name, _)| name.clone())
@@ -789,15 +730,14 @@ pub fn server(
                         }
 
                         // Remove from main list and room lists
-                        players.retain(|name, _| !to_remove.contains(name));
-                        for room in rooms.values_mut() {
+                        state.players.retain(|name, _| !to_remove.contains(name));
+                        for room in state.rooms.values_mut() {
                             room.players.retain(|name| !to_remove.contains(name));
                         }
 
                         info!("Removed {} disconnected players", to_remove.len());
 
-                        map::broadcast(
-                            &players,
+                        state.broadcast(
                             String::from(
                                 "Disconnected players have been removed; ChangeRoom to update player list!",
                             ),
@@ -808,7 +748,7 @@ pub fn server(
 
                         let mut revived_count = 0usize;
 
-                        for room in rooms.values_mut() {
+                        for room in state.rooms.values_mut() {
                             if let Some(monsters) = &mut room.monsters {
                                 let pkts: Vec<PktCharacter> = monsters
                                     .iter_mut()
@@ -823,7 +763,7 @@ pub fn server(
                                     let room = room.clone();
                                     let n = pkts.len();
                                     for pkt in pkts {
-                                        map::alert_room(&players, &room, &pkt);
+                                        map::alert_room(&state.players, &room, &pkt);
                                     }
                                     revived_count += n;
                                 }
@@ -835,10 +775,7 @@ pub fn server(
                             continue;
                         }
 
-                        map::broadcast(
-                            &players,
-                            String::from("All dead monsters have been revived!"),
-                        );
+                        state.broadcast(String::from("All dead monsters have been revived!"));
                         info!("Revived {} monster(s)", revived_count);
                     }
                     _ => {

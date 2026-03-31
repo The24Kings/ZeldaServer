@@ -363,9 +363,9 @@ checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
 name = "lurk_lcsc"
-version = "2.3.13"
+version = "2.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58fe4c61c833aceba3d25997fb54d163fcd2d79895d96ed482f89ed49cc44b54"
+checksum = "c0d76633e3b6e478373ab323f430ea5be36ff05d2c25be2dee7864e93f53e73a"
 dependencies = [
  "bitflags",
  "serde",

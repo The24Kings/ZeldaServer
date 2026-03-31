@@ -58,14 +58,14 @@ fn main() -> ! {
     // Build the game map
     let path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
     let file = File::open(path).expect("Failed to open map file!");
-    let mut rooms = map::build(file).expect("Failed to build map from file");
+    let rooms = map::build(file).expect("Failed to build map from file");
 
     // Start the server and command input threads
     info!("Parsed map successfully");
 
     let _ = std::thread::spawn(move || {
         info!("Started server thread!");
-        server(receiver, server_config, &mut rooms);
+        server(receiver, server_config, rooms);
     });
 
     let _ = std::thread::spawn(move || {

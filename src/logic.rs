@@ -5,6 +5,7 @@ use crate::logic::commands::Action;
 pub mod commands;
 pub mod config;
 pub mod map;
+pub mod state;
 
 pub enum ExtendedProtocol {
     Base(Protocol),
