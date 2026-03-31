@@ -1,7 +1,7 @@
 use indexmap::IndexSet;
 use lurk_lcsc::{CharacterFlags, PktCharacter, PktConnection, PktRoom, PktType};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::File, net::TcpStream, sync::Arc};
+use std::{collections::HashMap, fs::File, sync::Arc};
 use tracing::info;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -124,16 +124,4 @@ pub fn build(data: File) -> Result<HashMap<u16, Room>, serde_json::Error> {
     }
 
     Ok(rooms)
-}
-
-pub fn player_from_stream(
-    players: &mut HashMap<Arc<str>, PktCharacter>,
-    stream: Arc<TcpStream>,
-) -> Option<(&Arc<str>, &mut PktCharacter)> {
-    players.iter_mut().find(|(_, player)| {
-        player
-            .author
-            .as_ref()
-            .is_some_and(|author| Arc::ptr_eq(author, &stream))
-    })
 }

@@ -6,30 +6,32 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
 
-use crate::logic::map;
 use crate::logic::state::GameState;
 
 impl GameState {
     pub fn handle_loot(&mut self, author: Arc<TcpStream>, content: PktLoot) {
         info!("Received: {}", content);
 
-        // Find the player in the map
-        let Some((name, player)) = map::player_from_stream(&mut self.players, author.clone())
-        else {
-            error!("Unable to find player in map");
-            return;
-        };
-        info!("Found player '{}'", name);
+        // Find the player, validate, and extract needed data
+        let (player_name, current_room) = {
+            let Some((name, player)) = self.player_from_stream(&author) else {
+                error!("Unable to find player in map");
+                return;
+            };
+            info!("Found player '{}'", name);
 
-        if !GameState::ensure_started(player, &author) {
-            return;
-        }
+            if !GameState::ensure_started(player, &author) {
+                return;
+            }
+
+            (name.clone(), player.current_room)
+        };
 
         // ================================================================================
         // Get the target monster, check if they exists and are dead, then shuffle the
         // gold to the player.
         // ================================================================================
-        let Some(room) = self.rooms.get_mut(&player.current_room) else {
+        let Some(room) = self.rooms.get_mut(&current_room) else {
             error!("Player isn't in a valid room");
             return;
         };
@@ -75,16 +77,21 @@ impl GameState {
 
         // Shuffle gold to player
         let gold = to_loot.gold;
-
         to_loot.gold = 0;
+
+        let monster_pkt = PktCharacter::from(to_loot);
+
+        // Re-lookup player to transfer gold
+        let Some(player) = self.players.get_mut(&player_name) else {
+            error!("Player disappeared during loot");
+            return;
+        };
         player.gold += gold;
 
         // ================================================================================
         // Send updated player and monster back to author
         // ================================================================================
         let _ = send_to(author.as_ref(), player);
-
-        let monster_pkt = PktCharacter::from(to_loot);
         let _ = send_to(author.as_ref(), &monster_pkt);
     }
 }

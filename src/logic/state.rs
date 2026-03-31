@@ -10,7 +10,7 @@ use tracing::info;
 use tracing::trace;
 
 use crate::logic::config::Config;
-use crate::logic::map::{self, Room};
+use crate::logic::map::Room;
 
 /// Central game state holding all players, rooms, and server configuration.
 pub struct GameState {
@@ -73,11 +73,16 @@ impl GameState {
     }
 
     /// Find a player by their TCP stream.
-    pub fn player_by_stream(
+    pub fn player_from_stream(
         &mut self,
         stream: &Arc<TcpStream>,
     ) -> Option<(&Arc<str>, &mut PktCharacter)> {
-        map::player_from_stream(&mut self.players, stream.clone())
+        self.players.iter_mut().find(|(_, player)| {
+            player
+                .author
+                .as_ref()
+                .is_some_and(|author| Arc::ptr_eq(author, stream))
+        })
     }
 
     /// Internal helper: send a constructed message to each named player.

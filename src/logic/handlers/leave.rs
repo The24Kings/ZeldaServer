@@ -4,7 +4,6 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info, warn};
 
-use crate::logic::map;
 use crate::logic::state::GameState;
 
 impl GameState {
@@ -15,8 +14,7 @@ impl GameState {
         // Grab the player and deactivate them, extract name for later lookups
         // ================================================================================
         let (player_name, current_room) = {
-            let Some((_, player)) = map::player_from_stream(&mut self.players, author.clone())
-            else {
+            let Some((_, player)) = self.player_from_stream(&author) else {
                 return;
             };
 

@@ -6,7 +6,6 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
 
-use crate::logic::map;
 use crate::logic::state::GameState;
 
 impl GameState {
@@ -17,8 +16,7 @@ impl GameState {
         // Phase 1: Find player, validate, extract IDs
         // ================================================================================
         let (player_name, cur_room_id) = {
-            let Some((_, player)) = map::player_from_stream(&mut self.players, author.clone())
-            else {
+            let Some((_, player)) = self.player_from_stream(&author) else {
                 error!("Unable to find player in map");
                 return;
             };

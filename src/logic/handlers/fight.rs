@@ -6,30 +6,30 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
 
-use crate::logic::map;
 use crate::logic::state::GameState;
 
 impl GameState {
     pub fn handle_fight(&mut self, author: Arc<TcpStream>, content: PktFight) {
         info!("Received: {}", content);
 
-        // Find the player in the map
-        let Some((_, player)) = map::player_from_stream(&mut self.players, author.clone()) else {
-            error!("Unable to find player in map");
-            return;
-        };
+        // Find the player and extract needed data in a scoped block
+        let (mut attacker, current_room) = {
+            let Some((_, player)) = self.player_from_stream(&author) else {
+                error!("Unable to find player in map");
+                return;
+            };
 
-        if !GameState::ensure_started(player, &author) {
-            return;
-        }
+            if !GameState::ensure_started(player, &author) {
+                return;
+            }
+
+            (player.clone(), player.current_room)
+        };
 
         // ================================================================================
         // Collect all players that will join us in battle, then get the target monster,
         // check if they exists and are dead
         // ================================================================================
-        let mut attacker = player.clone();
-        let current_room = player.current_room;
-
         let Some(room_ref) = self.rooms.get_mut(&current_room) else {
             error!("Room not found");
             return;
