@@ -1,8 +1,8 @@
-use crate::logic::{commands::input, config::Config, map};
+use crate::logic::{GameSender, commands::input, config::Config, map};
 use crate::threads::{connection::connection, server::server};
 use clap::Parser;
 use std::sync::{Arc, Mutex, mpsc};
-use std::{env, fs::File, net::TcpListener};
+use std::{fs::File, net::TcpListener};
 use time::{UtcOffset, format_description::parse};
 use tracing::{debug, info, warn};
 use tracing_subscriber::fmt::time::OffsetTime;
@@ -56,21 +56,22 @@ fn main() -> ! {
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
-    let file = File::open(path).expect("Failed to open map file!");
-    let mut rooms = map::build(file).expect("Failed to build map from file");
+    let file = File::open(&*server_config.map_path).expect("Failed to open map file!");
+    let rooms = map::build(file).expect("Failed to build map from file");
 
     // Start the server and command input threads
     info!("Parsed map successfully");
 
     let _ = std::thread::spawn(move || {
         info!("Started server thread!");
-        server(receiver, server_config, &mut rooms);
+        server(receiver, server_config, rooms);
     });
+
+    let input_prefix = client_config.cmd_prefix.clone().into_string();
 
     let _ = std::thread::spawn(move || {
         info!("Started input thread!");
-        input(tx.clone());
+        input(GameSender(tx), input_prefix);
     });
 
     loop {
@@ -79,7 +80,7 @@ fn main() -> ! {
                 info!("New connection: {}", addr);
 
                 let stream = Arc::new(stream);
-                let sender = sender.clone();
+                let sender = GameSender(sender.clone());
                 let client_config = client_config.clone();
 
                 // Handle the connection in a separate thread

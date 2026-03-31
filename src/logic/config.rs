@@ -4,14 +4,14 @@ use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub cmd_prefix: String,
-    pub map_path: String,
-    pub description_path: String,
+    pub cmd_prefix: Box<str>,
+    pub map_path: Box<str>,
+    pub description: Box<str>,
     pub stat_limit: u16,
     pub initial_points: u16,
     pub major_rev: u8,
     pub minor_rev: u8,
-    pub help_cmd: String,
+    pub help_cmd: Box<str>,
 }
 
 impl Config {
@@ -21,6 +21,9 @@ impl Config {
         let cmd_prefix = env::var("CMD_PREFIX").unwrap_or_else(|_| "!".into());
         let map_path = env::var("MAP_FILEPATH").expect("MAP_FILEPATH must be set.");
         let description_path = env::var("DESC_FILEPATH").expect("DESC_FILEPATH must be set.");
+        let description = std::fs::read_to_string(&description_path)
+            .expect("Failed to read description file!")
+            .into();
         let stat_limit = env::var("STAT_LIMIT")
             .expect("STAT_LIMIT must be set.")
             .parse()
@@ -37,21 +40,21 @@ impl Config {
             .expect("MINOR_REV must be set.")
             .parse()
             .expect("Failed to parse MINOR_REV");
-        let help_cmd = indoc! {"Lurk Server CLI:
+        let help_cmd: Box<str> = indoc! {"Lurk Server CLI:
             Usage:
                 ${CMD_PREFIX}help                           - Display this help message
                 ${CMD_PREFIX}broadcast <content>            - Send a message to all players
                 ${CMD_PREFIX}message <recipient> <content>  - Send a private message to a player
                 ${CMD_PREFIX}nuke                           - Remove all disconnected players on the map
                 ${CMD_PREFIX}revive                         - Revive all monsters on the map"
-        }.replace("${CMD_PREFIX}", &cmd_prefix);
+        }.replace("${CMD_PREFIX}", &cmd_prefix).into();
 
         info!("Successfully loaded configuration!");
 
         Config {
-            cmd_prefix,
-            map_path,
-            description_path,
+            cmd_prefix: cmd_prefix.into(),
+            map_path: map_path.into(),
+            description,
             stat_limit,
             initial_points,
             major_rev,
