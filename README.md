@@ -6,7 +6,7 @@ This project builds on the original [Lurk Server](https://github.com/The24Kings/
 
 > Now with its own dedicated library for the [Lurk Protocol](https://crates.io/crates/lurk_lcsc)!
 
-```TXT
+```
  ______    _     _           _____
 |___  /   | |   | |         / ____|
    / / ___| | __| | __ _   | (___   ___ _ ____   _____ _ __
@@ -52,10 +52,18 @@ _______.---./    .'                    \_.--._ ___________
 
 ## Requirements
 
+- A **Lurk-compatible client** (telnet or netcat alone will not work)
+
+**To build natively:**
+
 - [Rust](https://www.rust-lang.org/) (latest stable recommended)
 - [Cargo](https://doc.rust-lang.org/cargo/) (comes with Rust)
 - A Unix-like shell (Linux, macOS, or WSL on Windows) to run the `start.sh` script
-- A **Lurk-compatible client** (telnet or netcat alone will not work)
+
+**To build with Docker:**
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/) (included with Docker Desktop)
 
 ---
 
@@ -68,9 +76,19 @@ git clone https://github.com/The24Kings/ZeldaServer.git
 cd ZeldaServer
 ```
 
-### 2. Build and start the server
+### 2. Configure the environment
 
-The recommended way to start the server is with the included script:
+Copy the provided `.env` template to `.env.local` and edit it with your desired settings:
+
+```bash
+cp .env .env.local
+```
+
+The `.env.local` file is required for the server to run.
+
+### 3. Build and start the server
+
+#### Option A: Using the start script
 
 > `start.sh` will automatically build the server in release mode and start an instance running on `8080` with `INFO` verbosity.
 
@@ -82,6 +100,54 @@ For example, to run on port `5050` with info debugging:
 
 ```bash
 ./start.sh 5050 -vv
+```
+
+#### Option B: Using Docker Compose
+
+Build and start the server with default settings (port `8080`, verbosity `-vv`):
+
+```bash
+docker compose up --build
+```
+
+To customize the port or verbosity:
+
+```bash
+PORT=5050 VERBOSITY=-vvv docker compose up --build
+```
+
+To run in the background:
+
+```bash
+docker compose up --build -d
+```
+
+To stop the server:
+
+```bash
+docker compose down
+```
+
+Server logs are persisted to the `logs/` directory on the host via a volume mount.
+
+#### Option C: Using Docker directly
+
+Build the image:
+
+```bash
+docker build -t zelda-server .
+```
+
+Run the container:
+
+```bash
+docker run -p 8080:8080 -e PORT=8080 -e VERBOSITY=-vv zelda-server
+```
+
+To persist logs, mount the `logs/` directory:
+
+```bash
+docker run -p 8080:8080 -e PORT=8080 -e VERBOSITY=-vv -v ./logs:/app/logs zelda-server
 ```
 
 ---
@@ -96,7 +162,7 @@ To connect and play, you will need a **Lurk-compatible client** that implements 
 - The server will respond with structured Lurk responses (room state, messages, etc.).
 - Plain-text clients like `telnet` will not work.
 
-👉 See the [Lurk Protocol Documentation](https://github.com/The24Kings/LurkProtocol/wiki) for full details on message structure, commands, and expected behavior.
+> See the [Lurk Protocol Documentation](https://github.com/The24Kings/LurkProtocol/wiki) for full details on message structure, commands, and expected behavior.
 
 ---
 
