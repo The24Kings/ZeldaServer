@@ -1,12 +1,10 @@
-use lurk_lcsc::PktStart;
-use lurk_lcsc::{CharacterFlags, LurkError};
-use lurk_lcsc::{PktError, PktRoom};
+use lurk_lcsc::{CharacterFlags, LurkError, PktError, PktRoom, PktStart};
 use lurk_lcsc::{send_error, send_room, send_to};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
 
-use crate::logic::state::GameState;
+use crate::logic::GameState;
 
 impl GameState {
     pub fn handle_start(&mut self, author: Arc<TcpStream>, content: PktStart) {

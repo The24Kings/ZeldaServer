@@ -3,8 +3,7 @@ use lurk_lcsc::{PktCharacter, PktMessage};
 use std::sync::Arc;
 use tracing::{error, info};
 
-use crate::logic::commands::Action;
-use crate::logic::state::GameState;
+use crate::logic::{Action, GameState};
 
 impl GameState {
     pub fn handle_command(&mut self, action: Action) {

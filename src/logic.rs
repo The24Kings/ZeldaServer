@@ -1,7 +1,10 @@
 use lurk_lcsc::Protocol;
 use std::sync::mpsc::Sender;
 
-use crate::logic::commands::Action;
+pub use crate::logic::commands::Action;
+pub use crate::logic::config::Config;
+pub use crate::logic::map::{Connection, Monster, Room};
+pub use crate::logic::state::GameState;
 
 pub mod commands;
 pub mod config;

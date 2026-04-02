@@ -4,13 +4,12 @@ use std::sync::{Arc, Mutex, mpsc::Receiver};
 use std::time::Instant;
 use tracing::{debug, warn};
 
-use crate::logic::state::GameState;
-use crate::logic::{ExtendedProtocol, config::Config, map};
+use crate::logic::{Config, ExtendedProtocol, GameState, Room};
 
 pub fn server(
     receiver: Arc<Mutex<Receiver<ExtendedProtocol>>>,
     config: Arc<Config>,
-    rooms: HashMap<u16, map::Room>,
+    rooms: HashMap<u16, Room>,
 ) -> ! {
     let mut state = GameState::new(rooms, config);
 

@@ -1,11 +1,11 @@
-use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol, send_game, send_version};
+use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol};
+use lurk_lcsc::{send_game, send_version};
 use std::io::ErrorKind::{UnexpectedEof, Unsupported};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info, warn};
 
-use crate::logic::GameSender;
-use crate::logic::config::Config;
+use crate::logic::{Config, GameSender};
 
 pub fn connection(stream: Arc<TcpStream>, sender: GameSender, config: Arc<Config>) {
     // Send the initial game info to the client
