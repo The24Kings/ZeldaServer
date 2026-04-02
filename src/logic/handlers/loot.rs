@@ -1,12 +1,10 @@
-use lurk_lcsc::LurkError;
-use lurk_lcsc::PktLoot;
-use lurk_lcsc::{PktCharacter, PktError};
+use lurk_lcsc::{LurkError, PktCharacter, PktError, PktLoot};
 use lurk_lcsc::{send_error, send_to};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
 
-use crate::logic::state::GameState;
+use crate::logic::GameState;
 
 impl GameState {
     pub fn handle_loot(&mut self, author: Arc<TcpStream>, content: PktLoot) {

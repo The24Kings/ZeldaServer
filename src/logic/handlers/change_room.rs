@@ -1,12 +1,10 @@
-use lurk_lcsc::LurkError;
-use lurk_lcsc::PktChangeRoom;
-use lurk_lcsc::{PktError, PktRoom};
+use lurk_lcsc::{LurkError, PktChangeRoom, PktError, PktRoom};
 use lurk_lcsc::{send_error, send_room, send_to};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info};
 
-use crate::logic::state::GameState;
+use crate::logic::GameState;
 
 impl GameState {
     pub fn handle_change_room(&mut self, author: Arc<TcpStream>, content: PktChangeRoom) {

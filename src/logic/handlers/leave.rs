@@ -1,10 +1,9 @@
-use lurk_lcsc::CharacterFlags;
-use lurk_lcsc::PktLeave;
+use lurk_lcsc::{CharacterFlags, PktLeave};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{error, info, warn};
 
-use crate::logic::state::GameState;
+use crate::logic::GameState;
 
 impl GameState {
     pub fn handle_leave(&mut self, author: Arc<TcpStream>, content: PktLeave) {

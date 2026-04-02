@@ -9,8 +9,7 @@ use tracing::error;
 use tracing::info;
 use tracing::trace;
 
-use crate::logic::config::Config;
-use crate::logic::map::Room;
+use crate::logic::{Config, Room};
 
 /// Central game state holding all players, rooms, and server configuration.
 pub struct GameState {
