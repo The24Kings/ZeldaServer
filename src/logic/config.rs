@@ -1,11 +1,12 @@
 use indoc::indoc;
 use std::env;
+use std::path::Path;
 use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct Config {
     pub cmd_prefix: Box<str>,
-    pub map_path: Box<str>,
+    pub map_path: Box<Path>,
     pub description: Box<str>,
     pub stat_limit: u16,
     pub initial_points: u16,
@@ -53,7 +54,7 @@ impl Config {
 
         Config {
             cmd_prefix: cmd_prefix.into(),
-            map_path: map_path.into(),
+            map_path: Path::new(&map_path).into(),
             description,
             stat_limit,
             initial_points,

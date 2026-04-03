@@ -56,7 +56,7 @@ fn main() -> ! {
     let receiver = Arc::new(Mutex::new(rx));
 
     // Build the game map
-    let file = File::open(&*server_config.map_path).expect("Failed to open map file!");
+    let file = File::open(&server_config.map_path).expect("Failed to open map file!");
     let rooms = map::build(file).expect("Failed to build map from file");
 
     // Start the server and command input threads
