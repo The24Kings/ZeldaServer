@@ -1,15 +1,20 @@
 use clap::Parser;
+use lurk_sansio::{ClientId, GameConfig, GameEngine, Room};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, mpsc};
 use std::{fs::File, net::TcpListener};
 use time::{UtcOffset, format_description::parse};
 use tracing::{debug, info, warn};
 use tracing_subscriber::fmt::time::OffsetTime;
 
-use crate::logic::{Config, GameSender, commands::input, map};
+use crate::logic::{Config, GameSender, command::input};
 use crate::threads::{connection, server};
 
 pub mod logic;
 pub mod threads;
+
+static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -44,7 +49,7 @@ fn main() -> ! {
 
     // Load server and client configurations
     let server_config = Arc::new(Config::load());
-    let client_config = server_config.clone(); // The Arc will handle all reference counting, it's not actually cloning all the data :)
+    let client_config = server_config.clone();
 
     let address = format!("0.0.0.0:{}", args.port);
     let listener = TcpListener::bind(&address).expect("Failed to bind to address");
@@ -56,16 +61,21 @@ fn main() -> ! {
     let sender = tx.clone();
     let receiver = Arc::new(Mutex::new(rx));
 
-    // Build the game map
+    // Build the game map — deserialize directly into lurk-sansio types
     let file = File::open(&server_config.map_path).expect("Failed to open map file!");
-    let rooms = map::build(file).expect("Failed to build map from file");
+    let rooms: Vec<Room> = serde_json::from_reader(&file).expect("Failed to build map from file");
+    let rooms: HashMap<u16, Room> = rooms.into_iter().map(|r| (r.room_number, r)).collect();
+    info!("Parsed map successfully with {} rooms", rooms.len());
 
-    // Start the server and command input threads
-    info!("Parsed map successfully");
+    let game_config = GameConfig {
+        initial_points: server_config.initial_points,
+        stat_limit: server_config.stat_limit,
+    };
+    let engine = GameEngine::new(rooms, game_config);
 
     let _ = std::thread::spawn(move || {
         info!("Started server thread!");
-        server(receiver, server_config, rooms);
+        server(receiver, server_config, engine);
     });
 
     let input_prefix = client_config.cmd_prefix.clone().into_string();
@@ -80,13 +90,16 @@ fn main() -> ! {
             Ok((stream, addr)) => {
                 info!("New connection: {}", addr);
 
+                let client_id = ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed));
                 let stream = Arc::new(stream);
                 let sender = GameSender(sender.clone());
                 let client_config = client_config.clone();
 
-                // Handle the connection in a separate thread
+                // Register the client with the server thread before spawning
+                sender.send_connect(client_id, stream.clone());
+
                 let client_h = std::thread::spawn(move || {
-                    connection(stream, sender, client_config);
+                    connection(stream, sender, client_config, client_id);
                 });
 
                 debug!("Spawned client thread: {:?}", client_h.thread().id());

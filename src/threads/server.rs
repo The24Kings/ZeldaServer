@@ -1,17 +1,21 @@
-use lurk_lcsc::Protocol;
+use lurk_sansio::{ClientId, GameEngine};
 use std::collections::HashMap;
+use std::net::TcpStream;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use std::time::Instant;
 use tracing::{debug, warn};
 
-use crate::logic::{Config, ExtendedProtocol, GameState, Room};
+use crate::logic::command::handle_command;
+use crate::logic::execute::execute_output;
+use crate::logic::translate::translate;
+use crate::logic::{Config, ExtendedProtocol};
 
 pub fn server(
     receiver: Arc<Mutex<Receiver<ExtendedProtocol>>>,
     config: Arc<Config>,
-    rooms: HashMap<u16, Room>,
+    mut engine: GameEngine,
 ) -> ! {
-    let mut state = GameState::new(rooms, config);
+    let mut clients: HashMap<ClientId, Arc<TcpStream>> = HashMap::new();
 
     loop {
         let packet = match receiver.lock().unwrap().recv() {
@@ -25,41 +29,30 @@ pub fn server(
         let start = Instant::now();
 
         match packet {
-            ExtendedProtocol::Base(Protocol::Message(author, content)) => {
-                state.handle_message(author, content);
+            ExtendedProtocol::Connect(id, stream) => {
+                debug!("Registering {}", id);
+                clients.insert(id, stream);
             }
-            ExtendedProtocol::Base(Protocol::ChangeRoom(author, content)) => {
-                state.handle_change_room(author, content);
+            ExtendedProtocol::Client(id, protocol) => {
+                if let Some(input) = translate(id, protocol) {
+                    engine.handle_input(input);
+                }
             }
-            ExtendedProtocol::Base(Protocol::Fight(author, content)) => {
-                state.handle_fight(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::PVPFight(author, content)) => {
-                state.handle_pvp_fight(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Loot(author, content)) => {
-                state.handle_loot(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Start(author, content)) => {
-                state.handle_start(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Character(author, content)) => {
-                state.handle_character(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Leave(author, content)) => {
-                state.handle_leave(author, content);
-            }
-            ExtendedProtocol::Base(_) => {} // Ignore all other packets
             ExtendedProtocol::Command(action) => {
-                state.handle_command(action);
+                handle_command(&mut engine, &clients, &config, action);
             }
         }
 
-        let end = Instant::now();
-        let delta = end.duration_since(start);
-        let secs = delta.as_secs();
-        let nanos = delta.subsec_nanos();
+        // Drain all outputs and execute IO
+        while let Some(output) = engine.poll_output() {
+            execute_output(&output, &clients, &engine);
+        }
 
-        debug!("Took: {secs}.{nanos} seconds to process packet.");
+        let delta = start.elapsed();
+        debug!(
+            "Took: {}.{} seconds to process packet.",
+            delta.as_secs(),
+            delta.subsec_nanos()
+        );
     }
 }
