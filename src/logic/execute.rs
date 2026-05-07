@@ -82,13 +82,23 @@ pub fn execute_output(
             sender_name,
             recipient_name,
             message,
+        } => {
+            if let Some(stream) = clients.get(client) {
+                let pkt = PktMessage::player(sender_name, recipient_name, message);
+                let _ = send_to(stream.as_ref(), &pkt);
+            }
+        }
+        Output::SendNarration {
+            client,
+            recipient_name,
+            message,
             narration,
         } => {
             if let Some(stream) = clients.get(client) {
                 let pkt = if *narration {
                     PktMessage::narrator(recipient_name, message)
                 } else {
-                    PktMessage::server(sender_name, message)
+                    PktMessage::server(recipient_name, message)
                 };
                 let _ = send_to(stream.as_ref(), &pkt);
             }
