@@ -5,11 +5,20 @@ use lurk_sansio::{ClientId, GameEngine, Output};
 use std::collections::HashMap;
 use std::net::{Shutdown, TcpStream};
 use std::sync::Arc;
+use tracing::debug;
+
+/// Shutdown and remove a client from the clients map.
+pub fn disconnect_client(client: &ClientId, clients: &mut HashMap<ClientId, Arc<TcpStream>>) {
+    if let Some(stream) = clients.remove(client) {
+        debug!("Disconnecting client {}", client);
+        let _ = stream.shutdown(Shutdown::Both);
+    }
+}
 
 /// Execute a single Output event by performing the actual IO.
 pub fn execute_output(
     output: &Output,
-    clients: &HashMap<ClientId, Arc<TcpStream>>,
+    clients: &mut HashMap<ClientId, Arc<TcpStream>>,
     engine: &GameEngine,
 ) {
     match output {
@@ -177,9 +186,7 @@ pub fn execute_output(
             }
         }
         Output::Disconnect { client } => {
-            if let Some(stream) = clients.get(client) {
-                let _ = stream.shutdown(Shutdown::Both);
-            }
+            disconnect_client(client, clients);
         }
     }
 }

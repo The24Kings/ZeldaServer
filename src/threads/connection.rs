@@ -2,7 +2,7 @@ use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol};
 use lurk_lcsc::{send_game, send_version};
 use lurk_sansio::ClientId;
 use std::io::ErrorKind::{UnexpectedEof, Unsupported};
-use std::net::TcpStream;
+use std::net::{Shutdown, TcpStream};
 use std::sync::Arc;
 use tracing::{error, info, warn};
 
@@ -62,5 +62,6 @@ pub fn connection(
         break;
     }
 
+    let _ = stream.shutdown(Shutdown::Both);
     info!("Connection handler exiting.");
 }
