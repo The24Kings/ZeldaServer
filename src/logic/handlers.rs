@@ -1,9 +1,0 @@
-mod change_room;
-mod character;
-mod command;
-mod fight;
-mod leave;
-mod loot;
-mod message;
-mod pvp_fight;
-mod start;

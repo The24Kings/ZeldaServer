@@ -1,17 +1,22 @@
-use lurk_lcsc::Protocol;
+use lurk_engine::{ClientId, GameEngine};
+use lurk_protocol::Protocol;
 use std::collections::HashMap;
+use std::net::TcpStream;
 use std::sync::{Arc, Mutex, mpsc::Receiver};
 use std::time::Instant;
 use tracing::{debug, warn};
 
-use crate::logic::{Config, ExtendedProtocol, GameState, Room};
+use crate::logic::command::handle_command;
+use crate::logic::execute::{disconnect_client, execute_output};
+use crate::logic::translate::translate;
+use crate::logic::{Config, ExtendedProtocol};
 
 pub fn server(
     receiver: Arc<Mutex<Receiver<ExtendedProtocol>>>,
     config: Arc<Config>,
-    rooms: HashMap<u16, Room>,
+    mut engine: GameEngine,
 ) -> ! {
-    let mut state = GameState::new(rooms, config);
+    let mut clients: HashMap<ClientId, Arc<TcpStream>> = HashMap::new();
 
     loop {
         let packet = match receiver.lock().unwrap().recv() {
@@ -24,42 +29,45 @@ pub fn server(
 
         let start = Instant::now();
 
-        match packet {
-            ExtendedProtocol::Base(Protocol::Message(author, content)) => {
-                state.handle_message(author, content);
+        let disconnect_id = match packet {
+            ExtendedProtocol::Connect(id, stream) => {
+                debug!("Registering {}", id);
+                clients.insert(id, stream);
+                None
             }
-            ExtendedProtocol::Base(Protocol::ChangeRoom(author, content)) => {
-                state.handle_change_room(author, content);
+            ExtendedProtocol::Client(id, protocol) => {
+                let is_leave = matches!(protocol, Protocol::Leave(_));
+                if let Some(input) = translate(id, protocol) {
+                    engine.handle_input(input);
+                }
+                if is_leave { Some(id) } else { None }
             }
-            ExtendedProtocol::Base(Protocol::Fight(author, content)) => {
-                state.handle_fight(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::PVPFight(author, content)) => {
-                state.handle_pvp_fight(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Loot(author, content)) => {
-                state.handle_loot(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Start(author, content)) => {
-                state.handle_start(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Character(author, content)) => {
-                state.handle_character(author, content);
-            }
-            ExtendedProtocol::Base(Protocol::Leave(author, content)) => {
-                state.handle_leave(author, content);
-            }
-            ExtendedProtocol::Base(_) => {} // Ignore all other packets
             ExtendedProtocol::Command(action) => {
-                state.handle_command(action);
+                handle_command(&mut engine, &clients, &config, action);
+                None
             }
+        };
+
+        let delta = start.elapsed();
+        let duration = delta.as_secs() as f64 + delta.subsec_nanos() as f64 / 1_000_000_000.0;
+
+        debug!("Took: {:.9} seconds to process packet.", duration);
+
+        let start = Instant::now();
+
+        // Drain all outputs and execute IO
+        while let Some(output) = engine.poll_output() {
+            execute_output(&output, &mut clients, &engine);
         }
 
-        let end = Instant::now();
-        let delta = end.duration_since(start);
-        let secs = delta.as_secs();
-        let nanos = delta.subsec_nanos();
+        let delta = start.elapsed();
+        let duration = delta.as_secs() as f64 + delta.subsec_nanos() as f64 / 1_000_000_000.0;
 
-        debug!("Took: {secs}.{nanos} seconds to process packet.");
+        debug!("Took: {:.9} seconds to process I/O.", duration);
+
+        // Ensure disconnection even if the engine didn't emit Output::Disconnect
+        if let Some(id) = disconnect_id {
+            disconnect_client(&id, &mut clients);
+        }
     }
 }
