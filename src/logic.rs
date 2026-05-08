@@ -1,5 +1,5 @@
-use lurk_lcsc::Protocol;
-use lurk_sansio::ClientId;
+use lurk_engine::ClientId;
+use lurk_protocol::Protocol;
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;

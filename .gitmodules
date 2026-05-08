@@ -1,0 +1,6 @@
+[submodule "lurk_protocol"]
+	path = lurk_protocol
+	url = ./lurk_protocol/
+[submodule "lurk_engine"]
+	path = lurk_engine
+	url = ./lurk_engine/

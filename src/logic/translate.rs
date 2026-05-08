@@ -1,7 +1,7 @@
-use lurk_lcsc::Protocol;
-use lurk_sansio::{ClientId, Input};
+use lurk_engine::{ClientId, Input};
+use lurk_protocol::Protocol;
 
-/// Translate a lurk_lcsc Protocol message into a lurk-sansio Input event.
+/// Translate a lurk_protocol Protocol message into a lurk-sansio Input event.
 pub fn translate(client: ClientId, protocol: Protocol) -> Option<Input> {
     match protocol {
         Protocol::Character(pkt) => Some(Input::Character {

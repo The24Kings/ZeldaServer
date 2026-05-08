@@ -1,6 +1,6 @@
-use lurk_lcsc::{PktGame, PktLeave, PktType, PktVersion, Protocol};
-use lurk_lcsc::{send_game, send_version};
-use lurk_sansio::ClientId;
+use lurk_engine::ClientId;
+use lurk_protocol::{PktGame, PktLeave, PktType, PktVersion, Protocol};
+use lurk_protocol::{send_game, send_version};
 use std::io::ErrorKind::{UnexpectedEof, Unsupported};
 use std::net::{Shutdown, TcpStream};
 use std::sync::Arc;

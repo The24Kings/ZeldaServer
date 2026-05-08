@@ -1,5 +1,5 @@
 use clap::Parser;
-use lurk_sansio::{ClientId, GameConfig, GameEngine, Room};
+use lurk_engine::{ClientId, GameConfig, GameEngine, Room};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, mpsc};

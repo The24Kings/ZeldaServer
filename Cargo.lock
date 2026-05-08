@@ -14,8 +14,8 @@ dependencies = [
  "env_logger",
  "indexmap",
  "indoc",
- "lurk-sansio",
- "lurk_lcsc",
+ "lurk_engine",
+ "lurk_protocol",
  "regex",
  "serde",
  "serde_json",
@@ -100,9 +100,9 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "bitflags"
-version = "2.11.0"
+version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "843867be96c8daad0d758b57df9392b6d8d271134fce549de6ce169ff98a92af"
+checksum = "c4512299f36f043ab09a583e57bceb5a5aab7a73db1805848e8fef3c9e8c78b3"
 dependencies = [
  "serde_core",
 ]
@@ -388,21 +388,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
-name = "lurk-sansio"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20b9d95764bad87dcd2bd33e7408d1a8682dba79cb75b56a656499e5330753e5"
+name = "lurk_engine"
+version = "1.0.0"
 dependencies = [
  "indexmap",
- "lurk_lcsc",
+ "lurk_protocol",
  "serde",
 ]
 
 [[package]]
-name = "lurk_lcsc"
-version = "2.3.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "988eef9619111bfc284401e5ee548fe5ef4dc0a45169b7f3ecc86c7bca84da44"
+name = "lurk_protocol"
+version = "2.3.0"
 dependencies = [
  "bitflags",
  "serde",

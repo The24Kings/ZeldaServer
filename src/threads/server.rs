@@ -1,5 +1,5 @@
-use lurk_lcsc::Protocol;
-use lurk_sansio::{ClientId, GameEngine};
+use lurk_engine::{ClientId, GameEngine};
+use lurk_protocol::Protocol;
 use std::collections::HashMap;
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex, mpsc::Receiver};

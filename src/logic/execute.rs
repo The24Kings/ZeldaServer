@@ -1,7 +1,7 @@
-use lurk_lcsc::{
+use lurk_engine::{ClientId, GameEngine, Output};
+use lurk_protocol::{
     PktAccept, PktCharacter, PktConnection, PktError, PktMessage, PktRoom, PktType, send_to,
 };
-use lurk_sansio::{ClientId, GameEngine, Output};
 use std::collections::HashMap;
 use std::net::{Shutdown, TcpStream};
 use std::sync::Arc;

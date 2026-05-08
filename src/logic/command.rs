@@ -1,5 +1,5 @@
-use lurk_lcsc::{PktCharacter, PktMessage, PktType, send_to};
-use lurk_sansio::{ClientId, GameEngine};
+use lurk_engine::{ClientId, GameEngine};
+use lurk_protocol::{PktCharacter, PktMessage, PktType, send_to};
 use serde::Serialize;
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -152,12 +152,12 @@ pub fn handle_command(
         "revive" => {
             info!("Revive command received, reviving all dead monsters");
 
-            let mut alerts: Vec<(u16, Vec<lurk_sansio::Character>)> = Vec::new();
+            let mut alerts: Vec<(u16, Vec<lurk_engine::Character>)> = Vec::new();
             let mut revived_count = 0usize;
 
             for room in engine.rooms_mut().values_mut() {
                 if let Some(monsters) = &mut room.monsters {
-                    let revived: Vec<lurk_sansio::Character> = monsters
+                    let revived: Vec<lurk_engine::Character> = monsters
                         .iter_mut()
                         .filter(|m| m.health <= 0 && m.max_health > 0)
                         .map(|m| {
